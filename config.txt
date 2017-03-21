@@ -1,0 +1,10 @@
+# Configuration file for GSP
+
+### DHuS-specific configuration
+dhusget_path=lib/
+filelist=filelist.txt
+
+username=slingshot
+password=esa@ADALbertSTEINweg80AC!
+
+
