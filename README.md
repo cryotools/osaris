@@ -7,6 +7,7 @@
    http://gmt.soest.hawaii.edu/projects/gmt5sar/wiki
 
 ### PREPARATION
-- Open and edit config.txt
+- Edit config.txt
+- Make sure .sh files are executable (chmod +x <filename>)
 
 ...

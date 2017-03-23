@@ -1,10 +1,46 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Configuration file for GSP
+# - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+SAR_sensor="Sentinel"
+SAR_datatype="TOPS"
+swaths="1 2 3"
+
+input_files="folder"
+# Options:
+# folder - specify a folder containing input files
+# download - use the DHuS script to obtain data, configure, below
+
+input_PATH="/home/loibldav/Temp/DHuS"
+# Path to Sentinel scenes (existing files or download target)
+
+work_PATH="/home/loibldav/Temp/GSP-Processing"
+# Path to working directory
+
+output_PATH="/home/loibldav/Temp/GSP-Output"
+# Path to directory where all output will be written
+
+orbits_PATH="/home/loibldav/Processing/S1-orbits"
+# Path to directory containing S1 orbit data
+
+topo_PATH="/home/loibldav/Processing/GMT-topodata/Bishkek"
+# Path to directory containing topo data (dem.grd file)
+# Generate at http://topex.ucsd.edu/gmtsar/demgen/
 
 ### DHuS-specific configuration
-dhusget_path=lib/
-filelist=filelist.txt
+### Only required when downloading is activated
+dhusget_PATH="../../Tools/"
 
-username=slingshot
-password=esa@ADALbertSTEINweg80AC!
+username="slingshot"
+password="esa@ADALbertSTEINweg80AC!"
 
+use_filelist="true"
+filelist="filelist.txt"
 
+# If not using a file list, specifiy the DHuSget search configuration manually 
+download_string="-F 'UUID:95f9a36f-cf54-4119-a725-a801a5162013"
+
+download_option="manifest"
+# Options: product - manifest - all
+
+concurrent_downloads="8"
