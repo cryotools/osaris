@@ -23,6 +23,9 @@ output_PATH="/home/loibldav/Temp/GSP-Output"
 orbits_PATH="/home/loibldav/Processing/S1-orbits"
 # Path to directory containing S1 orbit data
 
+update_orbits=0
+# Activate (1) or deactivate (2) automatic orbit retrieval
+
 topo_PATH="/home/loibldav/Processing/GMT-topodata/Bishkek"
 # Path to directory containing topo data (dem.grd file)
 # Generate at http://topex.ucsd.edu/gmtsar/demgen/

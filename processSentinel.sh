@@ -4,6 +4,8 @@ echo "- - - - - - - - - - - - - - - - - - - -"
 echo "Starting Sentinel data processing ..."
 echo "- - - - - - - - - - - - - - - - - - - -"
 
+preproc_batch_tops.csh data.in dem.grd 2
+
 # 1 - start from preprocess
 # 2 - start from align SLC images
 # 3 - start from make topo_ra 
