@@ -4,7 +4,69 @@ echo "- - - - - - - - - - - - - - - - - - - -"
 echo "Starting Sentinel data processing ..."
 echo "- - - - - - - - - - - - - - - - - - - -"
 
-preproc_batch_tops.csh data.in dem.grd 2
+# Before going into detail, remove old stuff and create working dirs
+for swath in $swaths; do
+    cd $work_PATH
+    rm -r F$swath/raw; mkdir F$swath; cd F$swath; mkdir raw; mkdir topo; cd topo; ln -s $topo_PATH/dem.grd .;
+done
+
+# Process S1A data as defined in data.in, line by line
+dataline_count=0
+
+cd $work_PATH/raw/
+
+while read -r dataline
+do
+    cd $work_PATH/raw/
+    
+    echo "Reading scenes and orbits from file data.in"
+    ((dataline_count++))
+    current_scene=${dataline:0:64}
+    current_orbit=${dataline:65:77}
+    
+    echo "Current scene: $current_scene"
+    echo "Current orbit: $current_orbit"
+    
+    
+    if [ "$dataline_count" -eq 1 ]; then
+    	echo "First line processed, waiting for more input data"    
+    elif [ -z ${previous_scene+x} ]; then
+    	echo "The scene was not read correctly from data.in. Please check."
+    elif  [ -z ${previous_orbit+x} ]; then
+    	echo "The orbit was not read correctly from data.in. Please check."
+    else 
+    	# TODO: a) process all swaths; b) process swaths as set in $swaths by config.txt    	
+    	# echo $theStr | sed s/./A/5        <-- Use this to replace swath-numbers in scene strings ...
+    	echo
+    	echo "- - - "
+    	echo "Starting align_tops.csh with options:"
+    	echo "Scene 1: $previous_scene"
+    	echo "Orbit 1: $previous_orbit"
+    	echo "Scene 2: $current_scene"
+    	echo "Orbit 2: $current_orbit"
+    	
+
+    	#align_tops.csh $previous_scene $previous_orbit $current_scene $current_orbit dem.grd 
+    	
+    	# ln -s ../../raw/*F$swath* .
+    	cd $work_PATH/F1/raw/
+    	ln -s ../../raw/*F1* .
+    	
+    	cd $work_PATH/F1/
+    	
+    	echo "- - - "
+    	echo "Starting p2p_S1A_TOPS.csh with options:"
+    	echo "S1A${previous_scene:15:8}_${previous_scene:24:6}_F1 S1A${current_scene:15:8}_${current_scene:24:6}_F1 $GSP_directory/config.txt"
+    	p2p_S1A_TOPS.csh S1A${previous_scene:15:8}_${previous_scene:24:6}_F1 S1A${current_scene:15:8}_${current_scene:24:6}_F1 $GSP_directory/config.txt #>& log &
+    fi
+    
+    previous_scene=$current_scene
+    previous_orbit=$current_orbit
+        
+    #
+done < "data.in"
+
+#preproc_batch_tops.csh data.in dem.grd 2
 
 # 1 - start from preprocess
 # 2 - start from align SLC images

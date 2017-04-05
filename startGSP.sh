@@ -48,6 +48,7 @@ echo "Log will be written to $logfile"
 echo "Errors will be written to $errfile"
 echo
 
+
 1>>$logfile
 2>>$errfile
 
@@ -135,11 +136,11 @@ for S1_package in $( ls ); do
             ((swath_counter++))
         done
         
-        echo
-        echo "SWATH NAME 0: ${swath_names[0]}"
-        echo "SWATH NAME 1: ${swath_names[1]}"
-        echo "SWATH NAME 2: ${swath_names[2]}"
-        echo
+        if [ "$debug" -eq 1 ]; then
+            echo "SWATH NAME 0: ${swath_names[0]}"
+            echo "SWATH NAME 1: ${swath_names[1]}"
+            echo "SWATH NAME 2: ${swath_names[2]}"
+        fi
                       
         ln -s $work_PATH/orig/${S1_file[$counter]}.SAFE/annotation/*.xml .
         ln -s $work_PATH/orig/${S1_file[$counter]}.SAFE/measurement/*.tiff .
@@ -151,12 +152,13 @@ for S1_package in $( ls ); do
 
 	target_scene=${S1_file[$counter]}
 	target_sensor=$( echo ${target_scene:0:3} | tr '[:lower:]' '[:upper:]' )
-	target_date=$( date -d "${target_scene:18:8} ${target_scene:27:2}:${target_scene:29:2}:${target_scene:30:2}" '+%s'  )
+	target_date=$( date -d "${target_scene:17:8} ${target_scene:26:2}:${target_scene:28:2}:${target_scene:30:2}" '+%s'  )
 	
 	if [ "$debug" -eq 1 ]; then
 	    echo 'Target scene: ' $target_scene
 	    echo 'Target sensor: ' $target_sensor
 	    echo 'Target date: ' $target_date
+	    echo 'Target date (hr): ' date -d "${target_scene:17:8} ${target_scene:26:2}:${target_scene:28:2}:${target_scene:30:2}" 
 	fi    
 
 	prev_orbit_startdate=0
@@ -197,6 +199,19 @@ for S1_package in $( ls ); do
 	
 	echo "${swath_names[0]}:$orbit_match" >> data.in
 	
+	#case "$gmtsar_mode" in
+	#    batch)
+        #	echo "${swath_names[0]}:$orbit_match" >> data.in
+    	#    ;;    
+    	#    single-pair)
+        #	echo "${swath_names[0]}:$orbit_match" >> data.in
+    	#    ;;
+        #    
+        #    *)
+        #	echo "Unknown value for gmtsar_mode. Please check config.txt"
+        #	exit 1
+ 
+	#esac		
 		
 	((counter++))
     fi
