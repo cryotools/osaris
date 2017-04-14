@@ -57,7 +57,16 @@ do
     	echo "- - - "
     	echo "Starting p2p_S1A_TOPS.csh with options:"
     	echo "S1A${previous_scene:15:8}_${previous_scene:24:6}_F1 S1A${current_scene:15:8}_${current_scene:24:6}_F1 $GSP_directory/config.txt"
-    	p2p_S1A_TOPS.csh S1A${previous_scene:15:8}_${previous_scene:24:6}_F1 S1A${current_scene:15:8}_${current_scene:24:6}_F1 $GSP_directory/config.txt #>& log &
+    	
+    	# Process data (a) in SLURM-based parallel processing envrionment or (b) one by one.
+    	# Set the parallel_preocessing variable in config.txt
+    	if [ "$parallel_processing" -eq 1 ]; then
+    	    # Going parallel > add jobs to SLURM queue
+    	    sbatch $GSP_directory/PP-start-S1A S1A${previous_scene:15:8}_${previous_scene:24:6}_F1 S1A${current_scene:15:8}_${current_scene:24:6}_F1 $GSP_directory config.txt $dataline_count 
+    	else
+    	    # No SLURM activated > compute data one by one ...
+    	    p2p_S1A_TOPS.csh S1A${previous_scene:15:8}_${previous_scene:24:6}_F1 S1A${current_scene:15:8}_${current_scene:24:6}_F1 $GSP_directory/config.txt #>& log &
+    	fi
     fi
     
     previous_scene=$current_scene
