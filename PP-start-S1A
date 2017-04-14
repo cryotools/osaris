@@ -1,0 +1,24 @@
+#!/bin/bash
+
+#SBATCH --job-name="GMTSAR S1A processing"
+#SBATCH --qos=short
+#SBATCH --account=morsanat
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+##SBATCH --ntasks=1
+#SBATCH --workdir=$2
+#SBATCH --output=$2/PP-S1A-%j-out
+#SBATCH --error=$2/PP-S1A-%j-err
+#SBATCH --mail-type=ALL
+
+start=`date +%s`
+echo "Processing started"
+
+p2p_S1A_TOPS.csh $0 $1 $2/$3 #>& log &
+
+end=`date +%s`
+
+runtime=$((end-start))
+
+echo "Processing finished in $runtime seconds"
+

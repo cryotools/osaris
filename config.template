@@ -1,12 +1,19 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Configuration file for GSP
+#
+# Template configuration file for GSP
+#
+# Copy to "config.txt" and change to fit your system
+# Do not modify the template file itself to prevent
+# it from being overwritten by git
+#
 # - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # - - - - - GENERAL - - - - - - - - - - - - - - - - - 
 SAR_sensor="Sentinel"
 SAR_datatype="TOPS"
 swaths=(1 2 3)
-
+parallel_processing=0
+# Use SLURM-based parallel processing
 
 # - - - - - PATHES - - - - - - - - - - - - - - - - - 
 
