@@ -14,7 +14,25 @@
 start=`date +%s`
 echo "Processing started"
 
-p2p_S1A_TOPS.csh $0 $1 $2/$3 #>& log &
+cd $work_PATH/raw/
+
+# sbatch $GSP_directory/PP-start-S1A 
+# 0 - $previous_scene
+# 1 - $previous_orbit 
+# 2 - $current_scene
+# 3 - $current_orbit 
+# 4 - $swath
+# 5 - $work_PATH 
+# 6 - $GSP_directory
+# 7 - $gmtsar_config_file
+# 8 - $dataline_count 
+
+# align_tops.csh $0 $1 $2 $3 dem.grd
+echo "Starting align-tops with options: $0 $1 $2 $3 dem.grd" 
+
+# p2p_S1A_TOPS.csh S1A${0:15:8}_${0:24:6}_F$4 S1A${1:15:8}_${1:24:6}_F$4 $6/$7 
+echo "Starting p2p_S1A_TOPS with options: S1A${0:15:8}_${0:24:6}_F$4 S1A${1:15:8}_${1:24:6}_F$4 $6/$7" 
+# S1A${previous_scene:15:8}_${previous_scene:24:6}_F$swath S1A${current_scene:15:8}_${current_scene:24:6}_F$swath 
 
 end=`date +%s`
 

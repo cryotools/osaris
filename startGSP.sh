@@ -1,7 +1,5 @@
 #!/bin/bash
 
-debug=1
-
 # - - - - - - - - - - - - - - - -
 # Loading configuration          
 # - - - - - - - - - - - - - - - -
@@ -15,41 +13,31 @@ echo
 echo "Reading configuration file" 
 source config.txt
 echo "Username: $username" 
-echo "dhusget.sh path: $dhusget_path" 
+echo "dhusget.sh path: $dhusget_PATH" 
 
-if [ ! -d $input_PATH ]; then
-  mkdir -p $input_PATH;
-fi
+rm -rf $work_PATH/raw
+rm -rf $work_PATH/F*
 
-if [ ! -d $orbits_PATH ]; then
-  mkdir -p $orbits_PATH;  
-fi
-
-if [ ! -d $work_PATH ]; then
-  mkdir -p $work_PATH;
-fi
-
-if [ ! -d $work_PATH/raw ]; then
-  mkdir -p $work_PATH/raw;
-fi
-
-if [ ! -d $output_PATH ]; then
-  mkdir -p $output_PATH;
-fi
+mkdir -pv $input_PATH
+mkdir -pv $orbits_PATH
+mkdir -pv $work_PATH
+mkdir -pv $work_PATH/raw
+mkdir -pv $output_PATH
+mkdir -pv $log_PATH
 
 # ln -s $orbits_PATH/*.EOF $work_PATH/raw/ 
 ln -s $topo_PATH/dem.grd $work_PATH/raw/
 
 log_filename=GSP-log-$( date +"%Y-%m-%d_%Hh%mm" ).txt
 err_filename=GSP-errors-$( date +"%Y-%m-%d_%Hh%mm" ).txt
-logfile=$output_PATH$log_filename
-errfile=$output_PATH$err_filename
+logfile=$log_PATH/$log_filename
+errfile=$log_PATH/$err_filename
 echo "Log will be written to $logfile"
 echo "Errors will be written to $errfile"
 echo
 
 
-1>>$logfile
+1>>$logfile 
 2>>$errfile
 
 # - - - - - - - - - - - - - - - -
@@ -63,7 +51,7 @@ if [ $input_files = "download" ]; then
     echo Starting Sentinel1 file download ...
 
 
-    if [ $use_filelist = "true" ]; then
+    if [ "$use_filelist" -eq 1 ]; then
         download_config="-r $GSP_directory/$filelist"
     else
         download_config=$download_string
@@ -93,13 +81,14 @@ fi
 echo
 echo Preparing SAR data sets ... 
 
-cd $work_PATH/raw/  
-rm -f data.in
-touch data.in
+#cd $work_PATH/raw/  
+#rm -f data.in
+#touch data.in
 
 cd $input_PATH
+
 counter=1
-for S1_package in $( ls ); do
+for S1_package in $( ls -r ); do
     
     # Check if S1_package is valid S1 data directory
     if [[ $S1_package =~ ^S1.* ]]; then
@@ -114,7 +103,7 @@ for S1_package in $( ls ); do
         #echo ${S1_package:17:8}
         S1_date[$counter]=${S1_package:17:8}
         
-        echo $work_PATH/${S1_file[$counter]}.SAFE
+        echo $work_PATH/orig/${S1_file[$counter]}.SAFE
         echo
 
         cp $work_PATH/orig/${S1_file[$counter]}.SAFE/manifest.safe $work_PATH/raw/${S1_package:17:8}_manifest.safe
@@ -125,21 +114,23 @@ for S1_package in $( ls ); do
         
         cd $work_PATH/raw/      
         
-        # in order to correct for Elevation Antenna Pattern Change, cat the manifest and aux files to the xmls
+        # [FROM STACK processing -> excluded]
+        #
+        # In order to correct for Elevation Antenna Pattern Change, cat the manifest and aux files to the xmls
 	# delete the first line of the manifest file as it's not a typical xml file.
-        awk 'NR>1 {print $0}' < ${S1_package:17:8}_manifest.safe > tmp_file
-	cat $work_PATH/orig/${S1_file[$counter]}.SAFE/annotation/${swath_names[0]} tmp_file $work_PATH/orig/s1a-aux-cal.xml > ./${swath_names[0]}
+        # awk 'NR>1 {print $0}' < ${S1_package:17:8}_manifest.safe > tmp_file
+	# cat $work_PATH/orig/${S1_file[$counter]}.SAFE/annotation/${swath_names[0]} tmp_file $work_PATH/orig/s1a-aux-cal.xml > ./${swath_names[0]}
 	
-	swath_counter=0
-        for swath in ${swath_names[@]}; do
-            swath_names[$swath_counter]=${swath::-4}
+	swath_counter=1
+        for swath_name in ${swath_names[@]}; do
+            swath_names[$swath_counter]=${swath_name::-4}
             ((swath_counter++))
         done
         
-        if [ "$debug" -eq 1 ]; then
-            echo "SWATH NAME 0: ${swath_names[0]}"
-            echo "SWATH NAME 1: ${swath_names[1]}"
-            echo "SWATH NAME 2: ${swath_names[2]}"
+        if [ "$debug" -ge 1 ]; then
+            echo "SWATH NAME 0: ${swath_names[1]}"
+            echo "SWATH NAME 1: ${swath_names[2]}"
+            echo "SWATH NAME 2: ${swath_names[3]}"
         fi
                       
         ln -s $work_PATH/orig/${S1_file[$counter]}.SAFE/annotation/*.xml .
@@ -154,7 +145,7 @@ for S1_package in $( ls ); do
 	target_sensor=$( echo ${target_scene:0:3} | tr '[:lower:]' '[:upper:]' )
 	target_date=$( date -d "${target_scene:17:8} ${target_scene:26:2}:${target_scene:28:2}:${target_scene:30:2}" '+%s'  )
 	
-	if [ "$debug" -eq 1 ]; then
+	if [ "$debug" -ge 1 ]; then
 	    echo 'Target scene: ' $target_scene
 	    echo 'Target sensor: ' $target_sensor
 	    echo 'Target date: ' $target_date
@@ -169,7 +160,7 @@ for S1_package in $( ls ); do
 	    orbit_starttime=${orbit:34:6}
 	    orbit_sensor=${orbit:0:3}
 	    
-	    if [ "$debug" -eq 1 ]; then
+	    if [ "$debug" -eq 2 ]; then
 		echo "Now working on orbit #: $orbit_counter - $orbit"
 		echo 'Orbit sensor: ' $orbit_sensor
 		echo 'Orbit start date: ' $orbit_startdate
@@ -197,24 +188,17 @@ for S1_package in $( ls ); do
 	    ((orbit_counter++))
 	done
 	
-	echo "${swath_names[0]}:$orbit_match" >> data.in
-	
-	#case "$gmtsar_mode" in
-	#    batch)
-        #	echo "${swath_names[0]}:$orbit_match" >> data.in
-    	#    ;;    
-    	#    single-pair)
-        #	echo "${swath_names[0]}:$orbit_match" >> data.in
-    	#    ;;
-        #    
-        #    *)
-        #	echo "Unknown value for gmtsar_mode. Please check config.txt"
-        #	exit 1
- 
-	#esac		
+	for swath in ${swaths_to_process[@]}; do
+            echo "${swath_names[$swath]}:$orbit_match" >> data_swath$swath.tmp
+        done       
 		
 	((counter++))
     fi
+done
+
+for swath in ${swaths_to_process[@]}; do
+    sort data_swath$swath.tmp  > data_swath$swath.in  
+    rm data_swath$swath.tmp
 done
 
 counter=1
