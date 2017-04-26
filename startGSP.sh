@@ -62,7 +62,7 @@ if [ $input_files = "download" ]; then
     echo "-u $username -p $password -o $download_option -n $concurrent_downloads -O $input_PATH $download_config"
     echo
 
-    cd $dhusget_PATH 
+    cd $GSP_directory
     ./dhusget.sh -u $username -p $password -o $download_option -n $concurrent_downloads -O $input_PATH $download_config
 
 fi
