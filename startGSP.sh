@@ -28,24 +28,21 @@ mkdir -pv $log_PATH
 # ln -s $orbits_PATH/*.EOF $work_PATH/raw/ 
 ln -s $topo_PATH/dem.grd $work_PATH/raw/
 
-log_filename=GSP-log-$( date +"%Y-%m-%d_%Hh%mm" ).txt
-err_filename=GSP-errors-$( date +"%Y-%m-%d_%Hh%mm" ).txt
-logfile=$log_PATH/$log_filename
-errfile=$log_PATH/$err_filename
-echo "Log will be written to $logfile"
-echo "Errors will be written to $errfile"
-echo
+#log_filename=GSP-log-$( date +"%Y-%m-%d_%Hh%mm" ).txt
+#err_filename=GSP-errors-$( date +"%Y-%m-%d_%Hh%mm" ).txt
+#logfile=$log_PATH/$log_filename
+#errfile=$log_PATH/$err_filename
+#echo "Log will be written to $logfile"
+#echo "Errors will be written to $errfile"
+#echo
 
-
-1>>$logfile 
-2>>$errfile
+#cmd >$logfile 2>$errfile
 
 # - - - - - - - - - - - - - - - -
 # Download required files
 # - - - - - - - - - - - - - - - -
 
 if [ $input_files = "download" ]; then
-
 
     echo
     echo Starting Sentinel1 file download ...
@@ -62,7 +59,7 @@ if [ $input_files = "download" ]; then
     echo "-u $username -p $password -o $download_option -n $concurrent_downloads -O $input_PATH $download_config"
     echo
 
-    cd $GSP_directory
+    cd $GSP_directory/lib/
     ./dhusget.sh -u $username -p $password -o $download_option -n $concurrent_downloads -O $input_PATH $download_config
 
 fi
@@ -71,7 +68,7 @@ fi
 if [ "$update_orbits" -eq 1 ]; then
     echo
     echo Updating orbit data ...
-    wget --no-clobber -r -nH -nd -np -R index.html* -P $orbits_PATH http://www.unavco.org/data/imaging/sar/lts1/winsar/s1qc/aux_poeorb/ > $logfile 
+    wget --no-clobber --show-progress -r -nH -nd -np -R index.html* -P $orbits_PATH http://www.unavco.org/data/imaging/sar/lts1/winsar/s1qc/aux_poeorb/ >$logfile 
     # --wait=3 --limit-rate=1000K  
 fi	        
 
@@ -92,10 +89,16 @@ for S1_package in $( ls -r ); do
     
     # Check if S1_package is valid S1 data directory
     if [[ $S1_package =~ ^S1.* ]]; then
-            
-        echo Extracting $S1_package ... 
-        cd $input_PATH   
-        unzip $S1_package -x *-vh-* -d $work_PATH/orig/
+        
+	cd $input_PATH
+   
+	if [ $orig_files = "keep" ]; then
+	    echo "Found <keep> flag, skipping file extraction"
+	else
+            echo Extracting $S1_package ... 
+            unzip $S1_package -x *-vh-* -d $work_PATH/orig/
+	fi
+	
         #echo tar xvf $i -C $work_PATH
         
         #echo ${S1_package:0:${#S1_package}-4}
