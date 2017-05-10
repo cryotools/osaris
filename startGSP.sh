@@ -46,21 +46,37 @@ if [ $input_files = "download" ]; then
 
     echo
     echo Starting Sentinel1 file download ...
+    
+    dhusget_config="-u $username -p $password"
 
+    if [ "$import_data_type" == "meta4" ]; then
+	echo "Reading DHuS download configuration from meta4 file $meta4_file"
+	python $GSP_directory/lib/meta4-to-filelist.py $meta4_file $filelist_file
+	dhusget_config="$dhusget_config -E 2010-10-10T12:00:00.000Z -o $download_option -n $concurrent_downloads -O $input_PATH -r $filelist_file"
 
-    if [ "$use_filelist" -eq 1 ]; then
-        download_config="-r $GSP_directory/$filelist"
+    elif [ "$import_data_type" == "filelist" ]; then
+	echo "Reading DHuS download configuration from filelist $filelist_file"
+	dhusget_config="$dhusget_config -E 2010-10-10T12:00:00.000Z -o $download_option -n $concurrent_downloads -O $input_PATH -r $filelist_file"
+
+    elif [ "$import_data_type" == "search_string" ]; then
+	echo "Querying DHuS with search string"
+	echo $download_string
+	dhusget_config="$dhusget_config -l 100 $download_string -o $download_option -n $concurrent_downloads -O $input_PATH"
+
     else
-        download_config=$download_string
+        echo "Error"
+	echo "No download configuration specified!"
+	echo "Please set <input_file_type> in config.txt ..."
     fi
+
 
     echo
     echo "Starting dhusget with the following configuration:"
-    echo "-u $username -p $password -o $download_option -n $concurrent_downloads -O $input_PATH $download_config"
+    echo $dhusget_config
     echo
 
     cd $GSP_directory/lib/
-    ./dhusget.sh -u $username -p $password -o $download_option -n $concurrent_downloads -O $input_PATH $download_config
+    ./dhusget.sh $dhusget_config
 
 fi
 
@@ -68,7 +84,7 @@ fi
 if [ "$update_orbits" -eq 1 ]; then
     echo
     echo Updating orbit data ...
-    wget --no-clobber --show-progress -r -nH -nd -np -R index.html* -P $orbits_PATH http://www.unavco.org/data/imaging/sar/lts1/winsar/s1qc/aux_poeorb/ >$logfile 
+    wget --no-clobber -r -nH -nd -np -R index.html* -P $orbits_PATH http://www.unavco.org/data/imaging/sar/lts1/winsar/s1qc/aux_poeorb/  
     # --wait=3 --limit-rate=1000K  
 fi	        
 
@@ -179,7 +195,7 @@ for S1_package in $( ls -r ); do
 	       	    orbit_match=$prev_orbit
 	       	    echo "Found matching orbit file: $orbit_match"
 	       	    ln -s $orbits_PATH/$orbit_match .
-	       	    
+	       	    orbit_match="NaN"
 	       	    break
 	       	else
 	       	    # No match again, get prepared for another round
@@ -191,6 +207,14 @@ for S1_package in $( ls -r ); do
 	    ((orbit_counter++))
 	done
 	
+	if [ $orbit_match = "NaN" ]; then
+	    echo 
+	    echo "WARNING:"
+	    echo "No matching orbit found. Processing not possible!" # TODO: Skip pair
+	    echo "Please check orbit download configuration and orbit download folder."
+	    echo
+	fi
+
 	for swath in ${swaths_to_process[@]}; do
             echo "${swath_names[$swath]}:$orbit_match" >> data_swath$swath.tmp
         done       

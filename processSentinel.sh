@@ -5,10 +5,10 @@ echo "Starting Sentinel data processing ..."
 echo "- - - - - - - - - - - - - - - - - - - -"
 
 # Before going into detail, remove old stuff and create working dirs
-for swath in ${swaths_to_process[@]}; do
-    cd $work_PATH
-    rm -rf F$swath/raw; mkdir -pv F$swath/raw topo; cd topo; ln -s $topo_PATH/dem.grd .;
-done
+#for swath in ${swaths_to_process[@]}; do
+#    cd $work_PATH
+#    mkdir -pv F$swath/raw F$swath/topo; cd F$swath/topo; ln -s $topo_PATH/dem.grd .;
+#done
 
 # Process S1A data as defined in data_swath>nr<.in, line by line
 dataline_count=0
@@ -37,25 +37,33 @@ for swath in ${swaths_to_process[@]}; do
 	    	echo "The scene was not read correctly from data.in. Please check."
 	    elif  [ -z ${previous_orbit+x} ]; then
 	    	echo "The orbit was not read correctly from data.in. Please check."
-	    else 
-	    	
-	    	echo
-	    	echo "- - - "
-	    	echo "Starting align_tops.csh with options:"
-	    	echo "Scene 1: $previous_scene"
-	    	echo "Orbit 1: $previous_orbit"
-	    	echo "Scene 2: $current_scene"
-	    	echo "Orbit 2: $current_orbit"    	
+	    else 	    	
 		
-	    	align_tops.csh $previous_scene $previous_orbit $current_scene $current_orbit dem.grd 
+		scene_pair_name=${previous_scene:15:8}--${current_scene:15:8}
+		echo "Creating directory $scene_pair_name"
+		mkdir -pv $scene_pair_name-aligned; cd $scene_pair_name-aligned
+		ln -s $topo_PATH/dem.grd .
+		ln -s $work_PATH/raw/*.safe .
+		#		ln -s $work_PATH/raw/*.LED .
+		#		ln -s $work_PATH/raw/*.PRM .
+		#		ln -s $work_PATH/raw/*.SLC .
+
+		cp -P $work_PATH/raw/*.tiff .
+		cp -P $work_PATH/raw/*.xml .
+		cp -P $work_PATH/raw/*.EOF .
+
+		
+	    	# align_tops.csh $previous_scene $previous_orbit $current_scene $current_orbit dem.grd 
 
 	    	# Process data (a) in SLURM-based parallel processing envrionment or (b) one by one.
 	    	# Set the parallel_preocessing variable in config.txt
 	    	if [ "$parallel_processing" -eq 1 ]; then
 	    	    # Going parallel > add jobs to SLURM queue 
-                
-	    	    sbatch $GSP_directory/PP-start-S1A $previous_scene $previous_orbit $current_scene $current_orbit $swath $work_PATH $GSP_directory $gmtsar_config_file $output_PATH
-                # sbatch $GSP_directory/PP-start-S1A S1A${previous_scene:15:8}_${previous_scene:24:6}_F$swath S1A${current_scene:15:8}_${current_scene:24:6}_F$swath $GSP_directory $gmtsar_config_file $dataline_count
+                    echo "SLURM mode, preparing batch jobs"
+
+
+	    	    sbatch $GSP_directory/PP-start-S1A $previous_scene $previous_orbit $current_scene $current_orbit $swath $work_PATH $topo_PATH $GSP_directory/$gmtsar_config_file $output_PATH                
+
 	    	else
 	    	    # No SLURM activated > compute data one by one ...	    	    	    	   
 	    		    	    

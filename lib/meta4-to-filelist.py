@@ -1,31 +1,35 @@
+#!/usr/bin/python
+
 # Convert .meta4 XML-files to file list compatible with dhusget.sh
 
-import xml.dom.minidom
+import sys
+import xml.etree.ElementTree as ET
+# import math as math
+# from scipy.io.numpyio import fwrite, fread
+# import os
+# import numpy as np
+# import pylab as py
 
-def main():
-# use the parse() function to load and parse an XML file
-   doc = xml.dom.minidom.parse("Myxml.xml");
-  
-# print out the document node and the name of the first child tag
-   print doc.nodeName
-   print doc.firstChild.tagName
-  
-# get a list of XML tags from the document and print each one
-   expertise = doc.getElementsByTagName("expertise")
-   print "%d expertise:" % expertise.length
-   for skill in expertise:
-     print skill.getAttribute("name")
-    
-# create a new XML tag and add it into the document
-   newexpertise = doc.createElement("expertise")
-   newexpertise.setAttribute("name", "BigData")
-   doc.firstChild.appendChild(newexpertise)
-   print " "
+if (len(sys.argv) > 1):
 
-   expertise = doc.getElementsByTagName("expertise")
-   print "%d expertise:" % expertise.length
-   for skill in expertise:
-     print skill.getAttribute("name")
+    input_file = open(sys.argv[1],'rb')
+    output_file = sys.argv[2]
+
+    tree = ET.parse(input_file) # '/data/scratch/loibldav/GSP/Input/Meta4/Bishkek-Golubin-2017-03-01.meta4'
+    root = tree.getroot()
     
-if name == "__main__":
-  main();
+    # print root.tag
+    # print root.attrib
+    
+    with open(output_file, "w") as text_file:
+       for child in root:
+          # print(child.attrib['name'][:-4])
+          # print(child[1].text[53:-9])
+          text_file.write(" x {0}".format(child[1].text[53:-9]))    
+          text_file.write(" x {0}".format(child.attrib['name'][:-4]))
+          text_file.write("\n")
+         
+else:
+    print "Usage: meta4-to-filelist.py [input file (.meta4)] [output file]"
+
+
