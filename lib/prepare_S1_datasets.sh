@@ -30,8 +30,13 @@ for S1_package in $( ls -r ); do
         #echo ${S1_package:17:8}
         S1_date[$counter]=${S1_package:17:8}
         
-        echo $work_PATH/orig/${S1_file[$counter]}.SAFE
-        echo
+	if [ "$debug" -ge 1 ]; then
+            echo
+	    echo Opening SAFE file: 
+	    echo $work_PATH/orig/${S1_file[$counter]}.SAFE
+            echo
+        fi
+        
 
         cp $work_PATH/orig/${S1_file[$counter]}.SAFE/manifest.safe $work_PATH/raw/${S1_package:17:8}_manifest.safe
         
@@ -83,31 +88,33 @@ for S1_package in $( ls -r ); do
 	orbit_counter=1
 	for orbit in $orbit_list; do
 	    
-	    orbit_startdate=$( date -d "${orbit:42:8} ${orbit:51:2}:${orbit:53:2}:${orbit:55:2}" '+%s' )
-	    orbit_starttime=${orbit:34:6}
-	    orbit_sensor=${orbit:0:3}
-	    
-	    if [ "$debug" -eq 2 ]; then
-		echo "Now working on orbit #: $orbit_counter - $orbit"
-		echo 'Orbit sensor: ' $orbit_sensor
-		echo 'Orbit start date: ' $orbit_startdate
-		echo 'Orbit start time: ' $orbit_starttime
-	    fi		   
-	    
-	    
-	    if [ "$orbit_sensor" == "$target_sensor" ]; then 
-		if [ $target_date -ge $prev_orbit_startdate ]  &&  [ $target_date -lt $orbit_startdate ]; then
-	       	    # Looks like we found a matching orbit
-	       	    # TODO: perform further checks, e.g. end_date overlap
-	       	    
-	       	    orbit_match=$prev_orbit
-	       	    echo "Found matching orbit file: $orbit_match"
-	       	    ln -s $orbits_PATH/$orbit_match .	       	    
-	       	    break
-	       	else
-	       	    # No match again, get prepared for another round
-	       	    prev_orbit=$orbit
-	       	    prev_orbit_startdate=$orbit_startdate 
+	    if [ ! -z "$orbit" ]; then
+		orbit_startdate=$( date -d "${orbit:42:8} ${orbit:51:2}:${orbit:53:2}:${orbit:55:2}" '+%s' )
+		orbit_starttime=${orbit:34:6}
+		orbit_sensor=${orbit:0:3}	    		
+		
+		if [ "$debug" -eq 2 ]; then
+		    echo "Now working on orbit #: $orbit_counter - $orbit"
+		    echo 'Orbit sensor: ' $orbit_sensor
+		    echo 'Orbit start date: ' $orbit_startdate
+		    echo 'Orbit start time: ' $orbit_starttime
+		fi		   
+		
+		
+		if [ "$orbit_sensor" == "$target_sensor" ]; then 
+		    if [ $target_date -ge $prev_orbit_startdate ]  &&  [ $target_date -lt $orbit_startdate ]; then
+	       		# Looks like we found a matching orbit
+	       		# TODO: perform further checks, e.g. end_date overlap
+	       		
+	       		orbit_match=$prev_orbit
+	       		echo "Found matching orbit file: $orbit_match"
+	       		ln -s $orbits_PATH/$orbit_match .	       	    
+	       		break
+	       	    else
+	       		# No match again, get prepared for another round
+	       		prev_orbit=$orbit
+	       		prev_orbit_startdate=$orbit_startdate 
+		    fi
 		fi
 	    fi
 		        

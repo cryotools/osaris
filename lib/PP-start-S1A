@@ -1,20 +1,13 @@
 #!/bin/bash
 
-#SBATCH --job-name="GMTSAR S1A processing"
-#SBATCH --qos=short
+#SBATCH --job-name="GSPC S1A"
+#SBATCH --qos=medium
 #SBATCH --account=morsanat
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=2
-##SBATCH --ntasks=1
-#SBATCH --workdir=$6
-#SBATCH --output=$6/Output/Log/PP-S1A-%j-out
-#SBATCH --error=$6/Output/Log/PP-S1A-%j-err
 #SBATCH --mail-type=ALL
 
 start=`date +%s`
 echo "Processing started"
 
-# sbatch $GSP_directory/PP-start-S1A 
 # 1 - $previous_scene
 # 2 - $previous_orbit 
 # 3 - $current_scene
@@ -53,7 +46,7 @@ mkdir -pv $work_PATH/pairs/$job_ID/F$swath/raw
 mkdir -pv $work_PATH/pairs/$job_ID/F$swath/topo 
 cd $work_PATH/pairs/$job_ID/F$swath/topo; ln -s $topo_PATH/dem.grd .;
 
-cd $work_PATH/raw/$job_ID-aligned/
+cd $work_PATH/raw/$job_ID-aligned/F$swath
 
 echo
 echo "- - - - - - - - - - - - - - - - - - - - "
@@ -65,10 +58,8 @@ echo "Orbit 2: $current_orbit"
 
 align_tops.csh $previous_scene $previous_orbit $current_scene $current_orbit dem.grd
 
-mkdir -pv $work_PATH/pairs/$job_ID
-
 cd $work_PATH/pairs/$job_ID/F$swath/raw/
-ln -s $work_PATH/raw/$job_ID-aligned/*F$swath* .
+ln -s $work_PATH/raw/$job_ID-aligned/F$swath/*F$swath* .
     
 cd $work_PATH/pairs/$job_ID/F$swath/
 
