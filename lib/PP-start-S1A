@@ -46,7 +46,7 @@ mkdir -pv $work_PATH/pairs/$job_ID/F$swath/raw
 mkdir -pv $work_PATH/pairs/$job_ID/F$swath/topo 
 cd $work_PATH/pairs/$job_ID/F$swath/topo; ln -s $topo_PATH/dem.grd .;
 
-cd $work_PATH/raw/$job_ID-aligned/F$swath
+cd $work_PATH/raw/$job_ID-aligned/
 
 echo
 echo "- - - - - - - - - - - - - - - - - - - - "
@@ -59,7 +59,7 @@ echo "Orbit 2: $current_orbit"
 align_tops.csh $previous_scene $previous_orbit $current_scene $current_orbit dem.grd
 
 cd $work_PATH/pairs/$job_ID/F$swath/raw/
-ln -s $work_PATH/raw/$job_ID-aligned/F$swath/*F$swath* .
+ln -s $work_PATH/raw/$job_ID-aligned/*F$swath* .
     
 cd $work_PATH/pairs/$job_ID/F$swath/
 

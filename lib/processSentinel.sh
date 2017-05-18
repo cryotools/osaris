@@ -36,7 +36,7 @@ for swath in ${swaths_to_process[@]}; do
 	    
 	    scene_pair_name=${previous_scene:15:8}--${current_scene:15:8}
 	    echo "Creating directory $scene_pair_name"
-	    mkdir -pv $scene_pair_name-aligned/F$swath; cd $scene_pair_name-aligned/F$swath
+	    mkdir -pv $scene_pair_name-aligned; cd $scene_pair_name-aligned
 	    ln -s $topo_PATH/dem.grd .
 	    ln -s $work_PATH/raw/${previous_scene:15:8}_manifest.safe .
 	    ln -s $work_PATH/raw/${current_scene:15:8}_manifest.safe .
