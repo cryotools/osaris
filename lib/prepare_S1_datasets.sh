@@ -60,9 +60,9 @@ for S1_package in $( ls -r ); do
         done
         
         if [ "$debug" -ge 1 ]; then
-            echo "SWATH NAME 0: ${swath_names[1]}"
-            echo "SWATH NAME 1: ${swath_names[2]}"
-            echo "SWATH NAME 2: ${swath_names[3]}"
+            echo "SWATH NAME 1: ${swath_names[1]}"
+            echo "SWATH NAME 2: ${swath_names[2]}"
+            echo "SWATH NAME 3: ${swath_names[3]}"
         fi
                       
         ln -s $work_PATH/orig/${S1_file[$counter]}.SAFE/annotation/*.xml .
