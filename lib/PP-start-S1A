@@ -1,22 +1,7 @@
 #!/bin/bash
 
-#SBATCH --job-name="GSPC S1A"
-#SBATCH --qos=medium
-#SBATCH --account=morsanat
-#SBATCH --mail-type=ALL
-
 start=`date +%s`
 echo "Processing started"
-
-# 1 - $previous_scene
-# 2 - $previous_orbit 
-# 3 - $current_scene
-# 4 - $current_orbit 
-# 5 - $swath
-# 6 - $work_PATH 
-# 7 - $GSP_directory
-# 8 - $gmtsar_config_file
-# 9 - $output_PATH
 
 previous_scene=$1
 previous_orbit=$2

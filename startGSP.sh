@@ -78,8 +78,14 @@ else
 	echo
 	echo - - - - - - - - - - - - - - - -
 	echo Downloading Sentinel files
+	echo
 	
 	source $GSP_directory/lib/S1_file_download.sh  2>&1 >>$logfile
+	
+	echo 
+	echo Downloading finished
+	echo - - - - - - - - - - - - - - - - 
+	echo
     fi
 
     # Update orbits when requested
@@ -87,19 +93,32 @@ else
 	echo
 	echo - - - - - - - - - - - - - - - -
 	echo Updating orbit data ...
+	echo
 	
 	source $GSP_directory/lib/s1_orbit_download.sh $orbits_PATH 5  2>&1 >>$logfile
+
+	echo 
+	echo Orbit update finished
+	echo - - - - - - - - - - - - - - - - 
+	echo
     fi	        
 
     echo
     echo - - - - - - - - - - - - - - - -
     echo Preparing SAR data sets ...
+    echo
 
     source $GSP_directory/lib/prepare_S1_datasets.sh  2>&1 >>$logfile
 
     echo 
+    echo SAR data set preparation finished
+    echo - - - - - - - - - - - - - - - - 
+    echo
+
+    echo 
     echo - - - - - - - - - - - - - - - -
     echo Starting GMTSAR processing ...
+    echo 
 
 
     case "$SAR_sensor" in
@@ -113,10 +132,14 @@ else
 	    
     esac
 
+    echo 
+    echo Downloading finished
+    echo - - - - - - - - - - - - - - - - 
+    echo
 
     echo
     echo - - - - - - - - - - - - - - - -
-    echo Writing reports
+    echo Writing reports [todo]
 
     echo
     echo - - - - - - - - - - - - - - - -

@@ -61,7 +61,26 @@ for swath in ${swaths_to_process[@]}; do
                 echo "SLURM mode, preparing batch jobs"
 
 
-	    	sbatch --ntasks=$ntasks --output=$log_PATH/PP-S1A-%j-out --error=$log_PATH/PP-S1A-%j-out --workdir=$work_PATH $GSP_directory/lib/PP-start-S1A $previous_scene $previous_orbit $current_scene $current_orbit $swath $work_PATH $topo_PATH $GSP_directory/$gmtsar_config_file $output_PATH                
+	    	sbatch \
+		    --ntasks=$slurm_ntasks \
+		    --output=$log_PATH/PP-S1A-%j-out \
+		    --error=$log_PATH/PP-S1A-%j-out \
+		    --workdir=$work_PATH \
+		    --job-name=$slurm_jobname \
+		    --qos=$slurm_qos \
+		    --account=$slurm_account \
+		    --partition=$slurm_partition \
+		    --mail-type=$slurm_mailtype \
+		    $GSP_directory/lib/PP-start-S1A \
+		    $previous_scene \
+		    $previous_orbit \
+		    $current_scene \
+		    $current_orbit \
+		    $swath \
+		    $work_PATH \
+		    $topo_PATH \
+		    $GSP_directory/$gmtsar_config_file \
+		    $output_PATH                
 		
 		# --ntasks-per-node=2 --cpus-per-task=5
 
