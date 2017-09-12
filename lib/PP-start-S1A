@@ -70,7 +70,8 @@ echo "S1A${previous_scene:15:8}_${previous_scene:24:6}_F$swath"
 echo "S1A${current_scene:15:8}_${current_scene:24:6}_F$swath"
 echo "$gmtsar_config_file" 
 
-p2p_S1A_TOPS.csh S1A${previous_scene:15:8}_${previous_scene:24:6}_F$swath S1A${current_scene:15:8}_${current_scene:24:6}_F$swath $gmtsar_config_file 
+# p2p_S1A_TOPS.csh
+/home/loibldav/Scripts/gmtsar-sentinel-processing-chain/lib/GMTSAR-mods/p2p_S1PPC.csh S1A${previous_scene:15:8}_${previous_scene:24:6}_F$swath S1A${current_scene:15:8}_${current_scene:24:6}_F$swath $gmtsar_config_file 
 
 
 cd $work_PATH/pairs/$job_ID/F$swath/intf/
