@@ -6,7 +6,7 @@ echo "Starting Sentinel data processing ..."
 echo "- - - - - - - - - - - - - - - - - - - -"
 echo
 
-# Process S1A data as defined in data_swath>nr<.in, line by line
+# Process S1 data as defined in data_swath>nr<.in, line by line
 dataline_count=0
 
 cd $work_PATH/raw/
