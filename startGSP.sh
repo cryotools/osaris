@@ -134,10 +134,61 @@ else
     slurm_jobname="$slurm_jobname_prefix-pairs" 
     $GSP_directory/lib/check_queue.sh $slurm_jobname 1
 
-    echo 
-    echo  Processing 
-    echo - - - - - - - - - - - - - - - - 
-    echo
+    if [ "$process_reverse_intfs" -eq 1 ]; then
+	echo 
+	echo - - - - - - - - - - - - - - - - 
+	echo Processing unwrapping diffs
+	echo
+	
+	$GSP_directory/lib/unwrapping_differences.sh $output_PATH/Pairs-forward $output_PATH/Pairs-reverse 2>&1 >>$logfile
+    fi
+
+    if [ "$process_coherence_diff" -eq 1 ]; then
+	echo 
+	echo - - - - - - - - - - - - - - - - 
+	echo Processing coherence diffs
+	echo
+
+	mkdir -pv $output_PATH/Coherence-diffs
+
+	cd $output_PATH/Pairs-forward
+
+	folders=($( ls -r ))
+
+	for folder in "${folders[@]}"; do
+	    echo "Now working on folder: $folder"
+	    if [ ! -z ${folder_1} ]; then
+		folder_2=$folder_1
+		folder_1=$folder
+
+		coherence_diff_filename=$( echo corr_diff--${folder_2:3:8}-${folder_2:27:8}---${folder_1:3:8}-${folder_1:27:8} )
+
+		$GSP_directory/lib/difference.sh \
+		    $output_PATH/Pairs-forward/$folder_1/corr_ll.grd \
+		    $output_PATH/Pairs-forward/$folder_2/corr_ll.grd \
+		    $output_PATH/Coherence-diffs \
+		    $coherence_diff_filename
+
+		
+		cd $output_PATH/Coherence-diff
+		DX=$( gmt grdinfo $coherence_diff_filename.grd -C | cut -f8 )
+		DPI=$( gmt gmtmath -Q $DX INV RINT = )   
+		gmt grdimage $coherence_diff_filename.grd \
+		    -C$output_PATH/Pairs-forward/$folder/corr.cpt -Jx1id -P -Y2i -X2i -Q -V > $coherence_diff_filename.ps
+		gmt psconvert $coherence_diff_filename.ps \
+		    -W+k+t"$coherence_diff_filename" -E$DPI -TG -P -S -V -F$corr_diff_filename.png
+		rm -f $corr_diff_filename.ps grad.grd ps2raster* psconvert*
+
+
+
+	    else
+		folder_1=$folder
+	    fi
+	done
+	
+	# $GSP_directory/lib/coherence_differences.sh $output_PATH/Pairs-forward "corr_ll.grd" 2>&1 >>$logfile
+    fi
+
 
     echo
     echo - - - - - - - - - - - - - - - -

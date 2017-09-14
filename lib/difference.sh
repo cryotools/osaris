@@ -5,16 +5,18 @@
 #
 # Calculate difference between two GRD datasets.
 # 
-# Usage: difference.sh file1 file2 output_directory
+# Usage: difference.sh file1 file2 output_directory [output_filename]
 # 
 # Both input files must be in GRD format.
+# Output filename needs only to be set when both input files have
+# the same name (e.g. when processing multiple corr_ll.grd files).
 # 
 ################################################################
 
 
 if [ $# -lt 3 ]; then
     echo
-    echo "Usage: difference.sh file1 file2 output_directory"  
+    echo "Usage: difference.sh file1 file2 output_directory [output_filename]"  
     echo
 else
     
@@ -23,6 +25,12 @@ else
     filename_1=$(basename $file_1 .grd)
     filename_2=$(basename $file_2 .grd)
     output_PATH=$3
+
+    if [ $# -eq 4 ]; then
+	diff_filename=$4
+    else
+	diff_filename="diff-$filename_2--$filename_1"
+    fi
 
     mkdir -pv $output_PATH
     mkdir -pv $output_PATH/Temp
@@ -123,9 +131,7 @@ else
 
    
    cut_filename_1="$filename_1-cut.grd"
-   cut_filename_2="$filename_2-cut.grd"   
-
-   diff_filename="diff-$filename_2--$filename_1"
+   cut_filename_2="$filename_2-cut.grd"  
 
 
    cd $output_PATH
