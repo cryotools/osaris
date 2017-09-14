@@ -26,20 +26,18 @@ else
     echo "GSP directory: $GSP_directory" 
     echo
 
-    echo "Reading configuration file $1" 
-    source $1
 
+    config_file=$1
+    if [ ${config_file:0:2} = "./" ]; then
+	config_file=$GSP_directory/${config_file:2:${#config_file}}
+    fi
+    echo "Reading configuration file $config_file" 
+    source $config_file
 
+  
     echo
     echo "Data will be written to $base_PATH/$prefix/"
 
-    if [ ! $input_files = "download" ]; then
-	input_PATH=$input_files
-	# S1 files already exist -> read from directory specified in .config file
-    else
-	input_PATH=$base_PATH/$prefix/Input/S1-orig
-	# Create directory for S1 scene download
-    fi    
 
     work_PATH=$base_PATH/$prefix/Processing
     # Path to working directory
@@ -50,7 +48,6 @@ else
     log_PATH=$base_PATH/$prefix/Output/Log
     # Path to directory where the log files will be written    
 
-    mkdir -pv $input_PATH
     mkdir -pv $orbits_PATH
     mkdir -pv $work_PATH
     mkdir -pv $work_PATH/raw
@@ -58,7 +55,7 @@ else
     mkdir -pv $log_PATH
 
     # ln -s $orbits_PATH/*.EOF $work_PATH/raw/ 
-    ln -s $topo_PATH/dem.grd $work_PATH/raw/
+    ln -sf $topo_PATH/dem.grd $work_PATH/raw/
 
     log_filename=GSP-log-$( date +"%Y-%m-%d_%Hh%mm" ).txt
     #err_filename=GSP-errors-$( date +"%Y-%m-%d_%Hh%mm" ).txt
@@ -108,7 +105,8 @@ else
     echo Preparing SAR data sets ...
     echo
 
-    source $GSP_directory/lib/prepare_S1_datasets.sh  2>&1 >>$logfile
+    $GSP_directory/lib/prepare_data.sh $config_file 2>&1 >>$logfile
+    # source $GSP_directory/lib/prepare_S1_datasets.sh  2>&1 >>$logfile
 
     echo 
     echo SAR data set preparation finished
@@ -123,17 +121,21 @@ else
 
     case "$SAR_sensor" in
 	Sentinel)
-            source $GSP_directory/lib/processSentinel.sh  2>&1 >>$logfile
+	    $GSP_directory/lib/process_pairs.sh $config_file 2>&1 >>$logfile
+            # source $GSP_directory/lib/processSentinel.sh  2>&1 >>$logfile
 	    ;;    
 	
 	*)
             #echo $"Usage: $0 {start|stop|restart|condrestart|status}"
+	    echo "$SAR_sensor is not supported, yet. Exiting."
             exit 1
 	    
     esac
+    slurm_jobname="$slurm_jobname_prefix-pairs" 
+    $GSP_directory/lib/check_queue.sh $slurm_jobname 1
 
     echo 
-    echo Downloading finished
+    echo  Processing 
     echo - - - - - - - - - - - - - - - - 
     echo
 

@@ -52,58 +52,40 @@ for swath in ${swaths_to_process[@]}; do
 	    cp -P $work_PATH/raw/$previous_orbit .
 
 	    
-	    # align_tops.csh $previous_scene $previous_orbit $current_scene $current_orbit dem.grd 
+          
+	    echo
+	    echo - - - - - - - - - - - - - - - - 
+	    echo "Launching SLURM batch jobs"
+	    echo
+	    echo "Processing logs will be written to $log_PATH"
+	    echo "Use tail -f [logfile] to monitor the SLURM tasks"
+	    echo
 
-	    # Process data (a) in SLURM-based parallel processing envrionment or (b) one by one.
-	    # Set the parallel_preocessing variable in config.txt
-	    if [ "$parallel_processing" -eq 1 ]; then
-	    	# Going parallel > add jobs to SLURM queue 
-                echo "SLURM mode, preparing batch jobs"
+
+	    sbatch \
+		--ntasks=$slurm_ntasks \
+		--output=$log_PATH/PP-S1A-%j-out \
+		--error=$log_PATH/PP-S1A-%j-out \
+		--workdir=$work_PATH \
+		--job-name=$slurm_jobname \
+		--qos=$slurm_qos \
+		--account=$slurm_account \
+		--partition=$slurm_partition \
+		--mail-type=$slurm_mailtype \
+		$GSP_directory/lib/PP-start-S1A \
+		$previous_scene \
+		$previous_orbit \
+		$current_scene \
+		$current_orbit \
+		$swath \
+		$work_PATH \
+		$topo_PATH \
+		$GSP_directory/$gmtsar_config_file \
+		$output_PATH                
+	    
+	    # --ntasks-per-node=2 --cpus-per-task=5
 
 
-	    	sbatch \
-		    --ntasks=$slurm_ntasks \
-		    --output=$log_PATH/PP-S1A-%j-out \
-		    --error=$log_PATH/PP-S1A-%j-out \
-		    --workdir=$work_PATH \
-		    --job-name=$slurm_jobname \
-		    --qos=$slurm_qos \
-		    --account=$slurm_account \
-		    --partition=$slurm_partition \
-		    --mail-type=$slurm_mailtype \
-		    $GSP_directory/lib/PP-start-S1A \
-		    $previous_scene \
-		    $previous_orbit \
-		    $current_scene \
-		    $current_orbit \
-		    $swath \
-		    $work_PATH \
-		    $topo_PATH \
-		    $GSP_directory/$gmtsar_config_file \
-		    $output_PATH                
-		
-		# --ntasks-per-node=2 --cpus-per-task=5
-
-	    else
-	    	# No SLURM activated > compute data one by one ...	    	    	    	   
-	    	
-	    	cd $work_PATH/F$swath/raw/
-	    	ln -s ../../raw/*F$swath* .
-	    	
-	    	cd $work_PATH/F$swath/
-	    	
-	    	echo
-	    	echo "- - - "
-	    	echo "Starting p2p_S1A_TOPS.csh with options:"
-	    	echo "S1A${previous_scene:15:8}_${previous_scene:24:6}_F$swath S1A${current_scene:15:8}_${current_scene:24:6}_F$swath $GSP_directory/$gmtsar_config_file"
-	    	p2p_S1A_TOPS.csh S1A${previous_scene:15:8}_${previous_scene:24:6}_F$swath S1A${current_scene:15:8}_${current_scene:24:6}_F$swath $GSP_directory/$gmtsar_config_file 2>&1 | tee $logfile 
-	    	
-	    	cd $work_PATH/F$swath/intf/
-	    	intf_dir=($( ls )) 
-	    	
-	    	mkdir -pv $output_PATH/Interferograms/S1A${previous_scene:15:8}_${previous_scene:24:6}_F$swath"---"S1A${current_scene:15:8}_${current_scene:24:6}_F$swath
-	    	cp ./$intf_dir/* $output_PATH/Interferograms/S1A${previous_scene:15:8}_${previous_scene:24:6}_F$swath"---"S1A${current_scene:15:8}_${current_scene:24:6}_F$swath
-	    fi
 	fi
 	
 	previous_scene=$current_scene

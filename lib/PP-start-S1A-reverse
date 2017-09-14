@@ -1,32 +1,41 @@
 #!/bin/bash
 
-#SBATCH --job-name="GSPC S1A"
-#SBATCH --qos=medium
-#SBATCH --account=morsanat
-#SBATCH --mail-type=ALL
-
 start=`date +%s`
 echo "Processing started"
-
-# 1 - $previous_scene
-# 2 - $previous_orbit 
-# 3 - $current_scene
-# 4 - $current_orbit 
-# 5 - $swath
-# 6 - $work_PATH 
-# 7 - $GSP_directory
-# 8 - $gmtsar_config_file
-# 9 - $output_PATH
 
 previous_scene=$1
 previous_orbit=$2
 current_scene=$3
 current_orbit=$4
 swath=$5
-work_PATH=$6
-topo_PATH=$7
-gmtsar_config_file=$8
-output_PATH=$9
+config_file=$6
+gmtsar_config_file=$7
+GSP_directory=$8
+
+
+if [ ${config_file:0:2} = "./" ]; then
+    config_file=$GSP_directory/${config_file:2:${#config_file}}
+fi
+
+echo "Reading configuration file $config_file" 
+
+source $config_file
+
+work_PATH=$base_PATH/$prefix/Processing
+# Path to working directory
+
+output_PATH=$base_PATH/$prefix/Output
+# Path to directory where all output will be written
+
+log_PATH=$base_PATH/$prefix/Output/Log
+# Path to directory where the log files will be written    
+echo
+echo
+echo "Work path: $work_PATH"
+echo "Output path: $output_PATH"
+echo "Log path: $log_PATH"
+echo
+echo
 
 echo "Arg 0: $0"
 echo "Arg 1: $1"
@@ -39,6 +48,7 @@ echo "Arg 7: $7"
 echo "Arg 8: $8"
 echo "Arg 9: $9"
 echo "Arg 10: $10"
+
 
 job_ID=${previous_scene:15:8}--${current_scene:15:8}-reverse
 

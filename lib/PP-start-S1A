@@ -8,28 +8,37 @@ previous_orbit=$2
 current_scene=$3
 current_orbit=$4
 swath=$5
-work_PATH=$6
-topo_PATH=$7
-gmtsar_config_file=$8
-output_PATH=$9
+config_file=$6
+gmtsar_config_file=$7
+GSP_directory=$8
+direction=$9
 
-echo "Arg 0: $0"
-echo "Arg 1: $1"
-echo "Arg 2: $2"
-echo "Arg 3: $3"
-echo "Arg 4: $4"
-echo "Arg 5: $5"
-echo "Arg 6: $6"
-echo "Arg 7: $7"
-echo "Arg 8: $8"
-echo "Arg 9: $9"
-echo "Arg 10: $10"
+if [ ${config_file:0:2} = "./" ]; then
+    config_file=$GSP_directory/${config_file:2:${#config_file}}
+fi
+
+folder="Pairs-$direction"
+
+echo "Reading configuration file $config_file" 
+
+source $config_file
+
+work_PATH=$base_PATH/$prefix/Processing
+# Path to working directory
+
+output_PATH=$base_PATH/$prefix/Output
+# Path to directory where all output will be written
+
+log_PATH=$base_PATH/$prefix/Output/Log
+# Path to directory where the log files will be written    
+
+
 
 job_ID=${previous_scene:15:8}--${current_scene:15:8}
 
-mkdir -pv $work_PATH/pairs/$job_ID/F$swath/raw 
-mkdir -pv $work_PATH/pairs/$job_ID/F$swath/topo 
-cd $work_PATH/pairs/$job_ID/F$swath/topo; ln -s $topo_PATH/dem.grd .;
+mkdir -pv $work_PATH/$folder/$job_ID/F$swath/raw 
+mkdir -pv $work_PATH/$folder/$job_ID/F$swath/topo 
+cd $work_PATH/$folder/$job_ID/F$swath/topo; ln -sf $topo_PATH/dem.grd .;
 
 cd $work_PATH/raw/$job_ID-aligned/
 
@@ -40,13 +49,18 @@ echo "Scene 1: $previous_scene"
 echo "Orbit 1: $previous_orbit"
 echo "Scene 2: $current_scene"
 echo "Orbit 2: $current_orbit"    	
+echo 
+echo "Current path: $( pwd )"
+echo "align_tops.csh $previous_scene $previous_orbit $current_scene $current_orbit dem.grd"
+echo
+echo
 
 align_tops.csh $previous_scene $previous_orbit $current_scene $current_orbit dem.grd
 
-cd $work_PATH/pairs/$job_ID/F$swath/raw/
-ln -s $work_PATH/raw/$job_ID-aligned/*F$swath* .
+cd $work_PATH/$folder/$job_ID/F$swath/raw/
+ln -sf $work_PATH/raw/$job_ID-aligned/*F$swath* .
     
-cd $work_PATH/pairs/$job_ID/F$swath/
+cd $work_PATH/$folder/$job_ID/F$swath/
 
 echo 
 echo "- - - - - - - - - - - - - - - - - - - - "
@@ -56,13 +70,16 @@ echo "S1A${current_scene:15:8}_${current_scene:24:6}_F$swath"
 echo "$gmtsar_config_file" 
 
 # p2p_S1A_TOPS.csh
-/home/loibldav/Scripts/gmtsar-sentinel-processing-chain/lib/GMTSAR-mods/p2p_S1PPC.csh S1A${previous_scene:15:8}_${previous_scene:24:6}_F$swath S1A${current_scene:15:8}_${current_scene:24:6}_F$swath $gmtsar_config_file 
+$GSP_directory/lib/GMTSAR-mods/p2p_S1PPC.csh \
+    S1A${previous_scene:15:8}_${previous_scene:24:6}_F$swath \
+    S1A${current_scene:15:8}_${current_scene:24:6}_F$swath \
+    $GSP_directory/$gmtsar_config_file 
 
 
-cd $work_PATH/pairs/$job_ID/F$swath/intf/
+cd $work_PATH/$folder/$job_ID/F$swath/intf/
 intf_dir=($( ls )) 
         
-output_intf_dir=$output_PATH/Interferograms/S1A${previous_scene:15:8}_${previous_scene:24:6}_F$swath"---"S1A${current_scene:15:8}_${current_scene:24:6}_F$swath
+output_intf_dir=$output_PATH/$folder/S1A${previous_scene:15:8}_${previous_scene:24:6}_F$swath"---"S1A${current_scene:15:8}_${current_scene:24:6}_F$swath
 
 mkdir -pv $output_intf_dir
 
@@ -80,4 +97,5 @@ end=`date +%s`
 runtime=$((end-start))
 
 echo "Processing finished in $runtime seconds"
+
 
