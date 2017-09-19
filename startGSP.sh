@@ -105,7 +105,14 @@ else
     echo Preparing SAR data sets ...
     echo
 
-    $GSP_directory/lib/prepare_data.sh $config_file 2>&1 >>$logfile
+
+
+
+    #$GSP_directory/lib/prepare_data.sh $config_file 2>&1 >>$logfile
+
+
+
+
     # source $GSP_directory/lib/prepare_S1_datasets.sh  2>&1 >>$logfile
 
     echo 
@@ -121,7 +128,7 @@ else
 
     case "$SAR_sensor" in
 	Sentinel)
-	    $GSP_directory/lib/process_pairs.sh $config_file 2>&1 >>$logfile
+	    #$GSP_directory/lib/process_pairs.sh $config_file 2>&1 >>$logfile
             # source $GSP_directory/lib/processSentinel.sh  2>&1 >>$logfile
 	    ;;    
 	
@@ -140,7 +147,20 @@ else
 	echo Processing unwrapping diffs
 	echo
 	
-	$GSP_directory/lib/unwrapping_differences.sh $output_PATH/Pairs-forward $output_PATH/Pairs-reverse 2>&1 >>$logfile
+	cd $output_PATH/Pairs-forward
+	
+	folders=($( ls -r ))
+	for folder in "${folders[@]}"; do
+	    scene_id_1=${folder:0:21}
+	    scene_id_2=${folder:24:21}
+	    echo "Scene ID 1: $scene_id_1 \n Scene ID 2: $scene_id_2 "
+	    $GSP_directory/lib/unwrapping-sum.sh \
+		$output_PATH/Pairs-forward/$folder/unwrap_mask_ll.grd \
+		$output_PATH/Pairs-reverse/$scene_id_2---$scene_id_1/unwrap_mask_ll.grd \
+		$output_PATH/Unwrapping-sums \
+		$folder-fwd-rev-sum
+		2>&1 >>$logfile
+	done
     fi
 
     if [ "$process_coherence_diff" -eq 1 ]; then
@@ -157,6 +177,7 @@ else
 
 	for folder in "${folders[@]}"; do
 	    echo "Now working on folder: $folder"
+	    cd $output_PATH/Pairs-forward
 	    if [ ! -z ${folder_1} ]; then
 		folder_2=$folder_1
 		folder_1=$folder
@@ -167,17 +188,17 @@ else
 		    $output_PATH/Pairs-forward/$folder_1/corr_ll.grd \
 		    $output_PATH/Pairs-forward/$folder_2/corr_ll.grd \
 		    $output_PATH/Coherence-diffs \
-		    $coherence_diff_filename
-
+		    $coherence_diff_filename 2>&1 >>$logfile
 		
-		cd $output_PATH/Coherence-diff
+		cd $output_PATH/Coherence-diffs
 		DX=$( gmt grdinfo $coherence_diff_filename.grd -C | cut -f8 )
 		DPI=$( gmt gmtmath -Q $DX INV RINT = )   
 		gmt grdimage $coherence_diff_filename.grd \
-		    -C$output_PATH/Pairs-forward/$folder/corr.cpt -Jx1id -P -Y2i -X2i -Q -V > $coherence_diff_filename.ps
+		    -C$output_PATH/Pairs-forward/$folder/corr.cpt \
+		    -Jx1id -P -Y2i -X2i -Q -V > $coherence_diff_filename.ps
 		gmt psconvert $coherence_diff_filename.ps \
-		    -W+k+t"$coherence_diff_filename" -E$DPI -TG -P -S -V -F$corr_diff_filename.png
-		rm -f $corr_diff_filename.ps grad.grd ps2raster* psconvert*
+		    -W+k+t"$coherence_diff_filename" -E$DPI -TG -P -S -V -F$coherence_diff_filename.png
+		rm -f $coherence_diff_filename.ps grad.grd ps2raster* psconvert*
 
 
 

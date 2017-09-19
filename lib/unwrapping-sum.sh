@@ -3,20 +3,20 @@
 
 #################################################################
 #
-# Calculate difference between two GRD datasets.
+# Calculate the sum of fwd and rev unwrapped interferograms.
 # 
-# Usage: difference.sh file1 file2 output_directory [output_filename]
+# Usage: unwrapping-sum.sh file1 file2 output_directory [output_filename]
 # 
 # Both input files must be in GRD format.
 # Output filename needs only to be set when both input files have
-# the same name (e.g. when processing multiple corr_ll.grd files).
+# the same name (e.g. multiple unwrap_mask_ll.grd files).
 # 
 ################################################################
 
 
 if [ $# -lt 3 ]; then
     echo
-    echo "Usage: difference.sh file1 file2 output_directory [output_filename]"  
+    echo "Usage: unwrapping-sum.sh file1 file2 output_directory [output_filename]"  
     echo
 else
 
@@ -95,8 +95,7 @@ else
    # echo ${file_1_coord_array[1]} 
    # echo ${file_2_coord_array[1]}
 
-   remainder=$( expr $counter % 2 )
-
+   # remainder=$( expr $counter % 2 )
 
 
    counter=0
@@ -174,9 +173,9 @@ else
    gmt grdcut $file_2 -GTemp/$cut_filename_2  -R$xmin/$xmax/$ymin/$ymax -V
 
    cd Temp
-   gmt grdmath $cut_filename_2 $cut_filename_1 SUB = $output_PATH/$diff_filename.grd -V
+   gmt grdmath $cut_filename_2 $cut_filename_1 ADD = $output_PATH/$diff_filename.grd -V
 
    cd ..
-   rm -r Temp
+   # rm -r Temp
 
 fi
