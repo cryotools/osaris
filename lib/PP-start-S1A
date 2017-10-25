@@ -96,6 +96,6 @@ end=`date +%s`
 
 runtime=$((end-start))
 
-echo "Processing finished in $runtime seconds"
+printf 'Processing finished in %02dd %02dh:%02dm:%02ds\n' $(($runtime/86400)) $(($runtime%86400/3600)) $(($runtime%3600/60)) $(($runtime%60))
 
 

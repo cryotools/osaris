@@ -51,11 +51,13 @@ else
     mkdir -pv $orbits_PATH
     mkdir -pv $work_PATH
     mkdir -pv $work_PATH/raw
+    mkdir -pv $work_PATH/topo
     mkdir -pv $output_PATH
     mkdir -pv $log_PATH
 
     # ln -s $orbits_PATH/*.EOF $work_PATH/raw/ 
     ln -sf $topo_PATH/dem.grd $work_PATH/raw/
+    ln -sf $topo_PATH/dem.grd $work_PATH/topo/
 
     log_filename=GSP-log-$( date +"%Y-%m-%d_%Hh%mm" ).txt
     #err_filename=GSP-errors-$( date +"%Y-%m-%d_%Hh%mm" ).txt
@@ -106,12 +108,11 @@ else
     echo
 
 
+    #$GSP_directory/lib/prepare_pairs.sh $config_file 2>&1 >>$logfile
+    
+    #$GSP_directory/lib/prepare_pairs.sh $config_file 2>&1 >>$logfile
 
-
-    #$GSP_directory/lib/prepare_data.sh $config_file 2>&1 >>$logfile
-
-
-
+    $GSP_directory/lib/prepare_data.sh $config_file 2>&1 >>$logfile
 
     # source $GSP_directory/lib/prepare_S1_datasets.sh  2>&1 >>$logfile
 
@@ -125,11 +126,14 @@ else
     echo Starting GMTSAR processing ...
     echo 
 
-
+    
+    
     case "$SAR_sensor" in
 	Sentinel)
-	    #$GSP_directory/lib/process_pairs.sh $config_file 2>&1 >>$logfile
+	    $GSP_directory/lib/process_pairs.sh $config_file 2>&1 >>$logfile
             # source $GSP_directory/lib/processSentinel.sh  2>&1 >>$logfile
+	    slurm_jobname="$slurm_jobname_prefix-pairs" 
+	    $GSP_directory/lib/check_queue.sh $slurm_jobname 1
 	    ;;    
 	
 	*)
@@ -138,8 +142,7 @@ else
             exit 1
 	    
     esac
-    slurm_jobname="$slurm_jobname_prefix-pairs" 
-    $GSP_directory/lib/check_queue.sh $slurm_jobname 1
+    
 
     if [ "$process_reverse_intfs" -eq 1 ]; then
 	echo 
@@ -210,6 +213,14 @@ else
 	# $GSP_directory/lib/coherence_differences.sh $output_PATH/Pairs-forward "corr_ll.grd" 2>&1 >>$logfile
     fi
 
+    if [ "$process_SBAS" -eq 1 ]; then
+	echo 
+	echo - - - - - - - - - - - - - - - - 
+	echo Processing stack + SBAS
+	echo
+	
+	$GSP_directory/lib/process_stack.sh $config_file 2>&1 >>$logfile
+    fi
 
     echo
     echo - - - - - - - - - - - - - - - -
