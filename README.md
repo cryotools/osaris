@@ -1,20 +1,16 @@
-# GMTSAR Sentinel processing chain README
+# OSARIS
+### Open Source SAR Investigation System
+OSARIS provides a framework to process large stack of synthetic aperture radar (SAR) data in High Performance Computing (HPC) environments.
 
 ### REQUIREMENTS:
-1. ESA's "dhusget.sh" script (specify path in config.txt), further info at
-   https://scihub.copernicus.eu/twiki/do/view/SciHubUserGuide/5APIsAndBatchScripting#dhusget_script
-2. A working installation of GMT5SAR, further info and installation instructions at
+1. A working installation of GMT5SAR, further info and installation instructions at
    http://gmt.soest.hawaii.edu/projects/gmt5sar/wiki
-3. A working installation of GIAnT, further info and installation instructions at
-   http://earthdef.caltech.edu/projects/giant/wiki
-   [optional, required for atmospheric corrections and SBAS]
-4. A working SLURM environment, further info and installation instructions at
-   https://slurm.schedmd.com/
-   [optional, required for parallel processing]
+2. A working SLURM environment, further info and installation instructions at
+   https://slurm.schedmd.com/   
 
 ### DOWNLOAD / INSTALLATION
-Clone the S1PPC repository:
-git clone ___repository_path___
+Clone the OSARIS repository:
+git clone https://github.com/cryotools/osaris.git
 
 ### PREPARATION
 - In the S1PPC folder, copy configuration templates to config folder
