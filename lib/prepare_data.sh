@@ -35,6 +35,9 @@ else
     work_PATH=$base_PATH/$prefix/Processing
     # Path to working directory
 
+    log_PATH=$base_PATH/$prefix/Output/Log
+    # Path to directory where the log files will be written    
+
     if [ ! $input_files = "download" ]; then
 	input_PATH=$input_files       
 	# S1 files already exist -> read from directory specified in .config file
@@ -51,33 +54,31 @@ else
     if [ $orig_files = "keep" ]; then
 	echo "Found <keep> flag, skipping file extraction"
     else
+	mkdir -pv $work_PATH/orig		
+	echo
+	echo - - - - - - - - - - - - - - - - 
 
-	for S1_archive in $( ls -r ); do
-	    
+	for S1_archive in $( ls -r ); do	   	    
 	    # Check if S1_package is valid S1 data directory
 	    if [[ $S1_archive =~ ^S1.* ]]; then
-				
-		echo
-		echo - - - - - - - - - - - - - - - - 
-		echo "Starting SLURM job to extract Sentinel file $S1_archive."
-
+						
+		echo "Sending extract job for Sentinel file $S1_archive to SLURM queue."
+		# echo "$OSARIS_PATH/lib/PP-extract.sh"
+		# echo "$input_PATH/$S1_archive"
+		# echo "$work_PATH/orig"
 		
-		slurm_jobname="$slurm_jobname_prefix-extract"
+		slurm_jobname="$slurm_jobname_prefix-EXT"		
 
 		sbatch \
-		    --ntasks=3 \
 		    --output=$log_PATH/extract-%j.log \
 		    --error=$log_PATH/extract-%j.log \
-		    --workdir=$work_PATH \
+		    --workdir=$input_PATH \
 		    --job-name=$slurm_jobname \
-		    --qos=$slurm_qos \
+		    --qos=io \
 		    --account=$slurm_account \
-		    # --partition=$slurm_partition \
-		--mail-type=$slurm_mailtype \
-		    $OSARIS_directory/lib/PP-extract \
-		    $input_PATH/$S1_archive \
-		    $work_PATH/orig		
-		
+		    --partition=io \
+		    --mail-type=$slurm_mailtype \
+		    $OSARIS_PATH/lib/PP-extract.sh $input_PATH $S1_archive $work_PATH/orig
 	    fi
 	done
     fi
@@ -110,7 +111,6 @@ else
         cd $work_PATH/orig/${S1_file[$counter]}SAFE/annotation/
         swath_names=($( ls *.xml ))
         
-        
         cd $work_PATH/raw/      
         
         # [FROM STACK processing -> excluded]
@@ -132,8 +132,8 @@ else
 	    echo "SWATH NAME 3: ${swath_names[3]}"
         fi
         
-        ln -sf $work_PATH/orig/${S1_file[$counter]}.SAFE/annotation/*.xml .
-        ln -sf $work_PATH/orig/${S1_file[$counter]}.SAFE/measurement/*.tiff .
+        ln -sf $work_PATH/orig/${S1_file[$counter]}SAFE/annotation/*.xml .
+        ln -sf $work_PATH/orig/${S1_file[$counter]}SAFE/measurement/*.tiff .
         
         
         # Find adequate orbit files and add symlinks        			
@@ -198,7 +198,11 @@ else
 
 	# Check if single_master mode and  current scene is master scene
 	if [ $process_intf_mode = "single_master" ]; then
-	    if [ "$target_date" = "$master_scene_date" ]; then
+	    echo
+	    echo "Target date: ${target_scene:17:8}"
+	    echo "Master scene date: $master_scene_date"
+	    echo
+	    if [ "$master_scene_date" = "${target_scene:17:8}" ]; then
 		# master_scene=$target_scene; master_orbit=$orbit_match
 		echo "HOORAY, we have found our master!"
 		for swath in ${swaths_to_process[@]}; do
@@ -222,12 +226,13 @@ else
 
     for swath in ${swaths_to_process[@]}; do
 	if [ $process_intf_mode = "single_master" ]; then
-	    data_sm_swath$swath.master > data_sm_swath$swath.in
+	    cat data_sm_swath$swath.master > data_sm_swath$swath.in
 	    sort data_sm_swath$swath.tmp  >> data_sm_swath$swath.in  
 	    # rm data_sm_swath$swath.tmp data_sm_swath$swath.master
 	else
-	sort data_swath$swath.tmp  > data_swath$swath.in  
-	rm data_swath$swath.tmp
+	    sort data_swath$swath.tmp  > data_swath$swath.in  
+	    rm data_swath$swath.tmp
+	fi
     done
 
     counter=1

@@ -33,7 +33,7 @@ else
     source $config_file
     echo "Config file: $config_file"
 
-    OSARIS_directory=$( pwd )
+    OSARIS_PATH=$( pwd )
 
     work_PATH=$base_PATH/$prefix/Processing
     # Path to working directory
@@ -53,8 +53,10 @@ else
     for swath in ${swaths_to_process[@]}; do
 	if [ $process_intf_mode = "single_master" ]; then
 	    data_in_file=data_sm_swath$swath.in
+	    mode="SM"
 	else
 	    data_in_file=data_swath$swath.in
+	    mode="PR"
 	fi
 
 	while read -r dataline; do
@@ -99,16 +101,14 @@ else
 		fi
 	    fi
 	    
- 	    if [ "$start_processing" -eq 1]; then
+ 	    if [ "$start_processing" -eq 1 ]; then
 		
-		if [ $process_intf_mode = "single_master" ]; then
-		    mode="SM"
+		if [ $process_intf_mode = "single_master" ]; then		    
 		    scene_1=$master_scene
 		    orbit_1=$master_orbit
 		    scene_2=$current_scene
 		    orbit_2=$current_orbit
-		else
-		    mode="PR"
+		else		    
 		    scene_1=$previous_scene
 		    orbit_1=$previous_orbit
 		    scene_2=$current_scene
@@ -156,15 +156,15 @@ else
 		    --account=$slurm_account \
 		    --partition=$slurm_partition \
 		    --mail-type=$slurm_mailtype \
-		    $OSARIS_directory/lib/PP-pairs.sh \
+		    $OSARIS_PATH/lib/PP-pairs.sh \
 		    $scene_1 \
 		    $orbit_1 \
-		    $scene_1 \
+		    $scene_2 \
 		    $orbit_2 \
 		    $swath \
 		    $config_file \
-		    $OSARIS_directory/$gmtsar_config_file \
-		    $OSARIS_directory \
+		    $OSARIS_PATH/$gmtsar_config_file \
+		    $OSARIS_PATH \
 		    "forward"
 		
 		if [ "$process_reverse_intfs" -eq 1 ]; then
@@ -187,15 +187,15 @@ else
 			--account=$slurm_account \
 			--partition=$slurm_partition \
 			--mail-type=$slurm_mailtype \
-			$OSARIS_directory/lib/PP-pairs.sh \
+			$OSARIS_PATH/lib/PP-pairs.sh \
 			$scene_2 \
 			$orbit_2 \
 			$scene_1 \
 			$orbit_1 \
 			$swath \
 			$config_file \
-			$OSARIS_directory/$gmtsar_config_file \
-			$OSARIS_directory \
+			$OSARIS_PATH/$gmtsar_config_file \
+			$OSARIS_PATH \
 			"reverse"
 		fi
 
