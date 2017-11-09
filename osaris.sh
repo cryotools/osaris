@@ -2,7 +2,7 @@
 
 if [ $# -eq 0 ]; then
     echo
-    echo "Usage: startGSP.sh [config file]"  
+    echo "Usage: osaris.sh [config file]"  
     echo
 elif [ ! -f $1 ]; then
     echo
@@ -14,7 +14,8 @@ else
     echo
     echo "╔══════════════════════════════════════════╗"
     echo "║                                          ║"
-    echo "║ GMTSAR Sentinel Processing Chain v. 0.5  ║"
+    echo "║             OSARIS v. 0.5                ║"
+    echo "║   Open Source SAR Investigation System   ║"
     echo "║                                          ║"
     echo "╚══════════════════════════════════════════╝"
     echo 
@@ -22,14 +23,14 @@ else
     echo    Loading configuration          
     echo - - - - - - - - - - - - - - - - - - - - - - -
 
-    GSP_directory=$( pwd )
-    echo "GSP directory: $GSP_directory" 
+    OSARIS_directory=$( pwd )
+    echo "OSARIS directory: $OSARIS_directory" 
     echo
 
 
     config_file=$1
     if [ ${config_file:0:2} = "./" ]; then
-	config_file=$GSP_directory/${config_file:2:${#config_file}}
+	config_file=$OSARIS_directory/${config_file:2:${#config_file}}
     fi
     echo "Reading configuration file $config_file" 
     source $config_file
@@ -55,21 +56,16 @@ else
     mkdir -pv $output_PATH
     mkdir -pv $log_PATH
 
-    # ln -s $orbits_PATH/*.EOF $work_PATH/raw/ 
     ln -sf $topo_PATH/dem.grd $work_PATH/raw/
     ln -sf $topo_PATH/dem.grd $work_PATH/topo/
 
     log_filename=GSP-log-$( date +"%Y-%m-%d_%Hh%mm" ).txt
     #err_filename=GSP-errors-$( date +"%Y-%m-%d_%Hh%mm" ).txt
     logfile=$log_PATH/$log_filename
-    #errfile=$log_PATH/$err_filename
+
     echo
     echo "Log will be written to $logfile"
     echo "Use tail -f $logfile to monitor overall progress"
-    #echo "Errors will be written to $errfile"
-    #echo
-
-    #cmd >$logfile 2>$errfile
 
 
     if [ $input_files = "download" ]; then
@@ -79,7 +75,7 @@ else
 	echo Downloading Sentinel files
 	echo
 	
-	source $GSP_directory/lib/S1_file_download.sh  2>&1 >>$logfile
+	source $OSARIS_directory/lib/s1_file_download.sh  2>&1 >>$logfile
 	
 	echo 
 	echo Downloading finished
@@ -94,7 +90,7 @@ else
 	echo Updating orbit data ...
 	echo
 	
-	source $GSP_directory/lib/s1_orbit_download.sh $orbits_PATH 5  2>&1 >>$logfile
+	source $OSARIS_directory/lib/s1_orbit_download.sh $orbits_PATH 5  2>&1 >>$logfile
 
 	echo 
 	echo Orbit update finished
@@ -107,37 +103,39 @@ else
     echo Preparing SAR data sets ...
     echo
 
-
-    #$GSP_directory/lib/prepare_pairs.sh $config_file 2>&1 >>$logfile
-    
-    #$GSP_directory/lib/prepare_pairs.sh $config_file 2>&1 >>$logfile
-
-    $GSP_directory/lib/prepare_data.sh $config_file 2>&1 >>$logfile
-
-    # source $GSP_directory/lib/prepare_S1_datasets.sh  2>&1 >>$logfile
+    $OSARIS_directory/lib/prepare_data.sh $config_file 2>&1 >>$logfile
 
     echo 
     echo SAR data set preparation finished
     echo - - - - - - - - - - - - - - - - 
     echo
 
+
+
+
     echo 
     echo - - - - - - - - - - - - - - - -
     echo Starting GMTSAR processing ...
     echo 
-
-    
     
     case "$SAR_sensor" in
 	Sentinel)
-	    $GSP_directory/lib/process_pairs.sh $config_file 2>&1 >>$logfile
-            # source $GSP_directory/lib/processSentinel.sh  2>&1 >>$logfile
-	    slurm_jobname="$slurm_jobname_prefix-pairs" 
-	    $GSP_directory/lib/check_queue.sh $slurm_jobname 1
+	    if [ $process_intf_mode = "pairs" ]; then
+		$OSARIS_directory/lib/process_pairs.sh $config_file 2>&1 >>$logfile
+		slurm_jobname="$slurm_jobname_prefix-pairs" 
+
+	    elif [ $process_intf_mode = "single_master" ]; then
+		echo
+		echo "HOORAY, finally in SM mode!"
+		echo
+		$OSARIS_directory/lib/process_single_master.sh $config_file 2>&1 >>$logfile
+		slurm_jobname="$slurm_jobname_prefix-SM" 
+	    fi    
+
+	    $OSARIS_directory/lib/check_queue.sh $slurm_jobname 1
 	    ;;    
 	
 	*)
-            #echo $"Usage: $0 {start|stop|restart|condrestart|status}"
 	    echo "$SAR_sensor is not supported, yet. Exiting."
             exit 1
 	    
@@ -157,7 +155,7 @@ else
 	    scene_id_1=${folder:0:21}
 	    scene_id_2=${folder:24:21}
 	    echo "Scene ID 1: $scene_id_1 \n Scene ID 2: $scene_id_2 "
-	    $GSP_directory/lib/unwrapping-sum.sh \
+	    $OSARIS_directory/lib/unwrapping-sum.sh \
 		$output_PATH/Pairs-forward/$folder/unwrap_mask_ll.grd \
 		$output_PATH/Pairs-reverse/$scene_id_2---$scene_id_1/unwrap_mask_ll.grd \
 		$output_PATH/Unwrapping-sums \
@@ -187,7 +185,7 @@ else
 
 		coherence_diff_filename=$( echo corr_diff--${folder_2:3:8}-${folder_2:27:8}---${folder_1:3:8}-${folder_1:27:8} )
 
-		$GSP_directory/lib/difference.sh \
+		$OSARIS_directory/lib/difference.sh \
 		    $output_PATH/Pairs-forward/$folder_1/corr_ll.grd \
 		    $output_PATH/Pairs-forward/$folder_2/corr_ll.grd \
 		    $output_PATH/Coherence-diffs \
@@ -210,7 +208,7 @@ else
 	    fi
 	done
 	
-	# $GSP_directory/lib/coherence_differences.sh $output_PATH/Pairs-forward "corr_ll.grd" 2>&1 >>$logfile
+	# $OSARIS_directory/lib/coherence_differences.sh $output_PATH/Pairs-forward "corr_ll.grd" 2>&1 >>$logfile
     fi
 
     if [ "$process_SBAS" -eq 1 ]; then
@@ -219,7 +217,7 @@ else
 	echo Processing stack + SBAS
 	echo
 	
-	$GSP_directory/lib/process_stack.sh $config_file 2>&1 >>$logfile
+	$OSARIS_directory/lib/process_stack.sh $config_file 2>&1 >>$logfile
     fi
 
     echo

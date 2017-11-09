@@ -3,7 +3,7 @@
 #################################################################
 #
 # Preparation of SAR data sets.
-# Extract files, find matching orbits.
+# Extract files, find matching orbits, write data.in file.
 # 
 # Usage: prepare_data.sh config_file
 #
@@ -30,7 +30,7 @@ else
     echo "config file: $config_file"
     source $config_file
     
-    GSP_PATH=$( pwd )
+    OSARIS_PATH=$( pwd )
 
     work_PATH=$base_PATH/$prefix/Processing
     # Path to working directory
@@ -74,7 +74,7 @@ else
 		    --account=$slurm_account \
 		    # --partition=$slurm_partition \
 		--mail-type=$slurm_mailtype \
-		    $GSP_directory/lib/PP-extract \
+		    $OSARIS_directory/lib/PP-extract \
 		    $input_PATH/$S1_archive \
 		    $work_PATH/orig		
 		
@@ -83,7 +83,7 @@ else
     fi
 
 
-    $GSP_PATH/check_queue.sh $slurm_jobname 10 0
+    $OSARIS_PATH/lib/check_queue.sh $slurm_jobname 10 0
     
     cd $work_PATH/orig
 
@@ -105,9 +105,9 @@ else
         fi
         
 
-        cp $work_PATH/orig/${S1_file[$counter]}.SAFE/manifest.safe $work_PATH/raw/${S1_package:17:8}_manifest.safe
+        cp $work_PATH/orig/${S1_file[$counter]}SAFE/manifest.safe $work_PATH/raw/${S1_package:17:8}_manifest.safe
         
-        cd $work_PATH/orig/${S1_file[$counter]}.SAFE/annotation/
+        cd $work_PATH/orig/${S1_file[$counter]}SAFE/annotation/
         swath_names=($( ls *.xml ))
         
         
@@ -148,7 +148,8 @@ else
 	    echo 'Target sensor: ' $target_sensor
 	    echo 'Target date: ' $target_date
 	    echo 'Target date (hr): ' date -d "${target_scene:17:8} ${target_scene:26:2}:${target_scene:28:2}:${target_scene:30:2}" 
-	fi    
+	fi
+
 
 	prev_orbit_startdate=0
 	orbit_counter=1
@@ -195,15 +196,36 @@ else
 	#    echo
 	# fi
 
-	for swath in ${swaths_to_process[@]}; do
-	    echo "${swath_names[$swath]}:$orbit_match" >> data_swath$swath.tmp
-        done       
+	# Check if single_master mode and  current scene is master scene
+	if [ $process_intf_mode = "single_master" ]; then
+	    if [ "$target_date" = "$master_scene_date" ]; then
+		# master_scene=$target_scene; master_orbit=$orbit_match
+		echo "HOORAY, we have found our master!"
+		for swath in ${swaths_to_process[@]}; do
+		    echo "${swath_names[$swath]}:$orbit_match" >> data_sm_swath$swath.master
+		done
+	    else
+		for swath in ${swaths_to_process[@]}; do
+		    echo "${swath_names[$swath]}:$orbit_match" >> data_sm_swath$swath.tmp
+		done
+	    fi
+	else
+	    # TODO: include "both" mode -> sm + pairs
+	    for swath in ${swaths_to_process[@]}; do
+		echo "${swath_names[$swath]}:$orbit_match" >> data_swath$swath.tmp
+            done
+	fi
 	
 	((counter++))
 
     done
 
     for swath in ${swaths_to_process[@]}; do
+	if [ $process_intf_mode = "single_master" ]; then
+	    data_sm_swath$swath.master > data_sm_swath$swath.in
+	    sort data_sm_swath$swath.tmp  >> data_sm_swath$swath.in  
+	    # rm data_sm_swath$swath.tmp data_sm_swath$swath.master
+	else
 	sort data_swath$swath.tmp  > data_swath$swath.in  
 	rm data_swath$swath.tmp
     done
