@@ -104,6 +104,11 @@ else
     echo
 
     $OSARIS_PATH/lib/prepare_data.sh $config_file 2>&1 >>$logfile
+    
+    if [ ! $orig_files = "keep" ]; then
+	slurm_jobname="$slurm_jobname_prefix-EXT" 
+	$OSARIS_PATH/lib/check_queue.sh $slurm_jobname 2 0
+    fi
 
     echo 
     echo SAR data set preparation finished

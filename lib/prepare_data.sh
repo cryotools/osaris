@@ -82,9 +82,6 @@ else
 	    fi
 	done
     fi
-
-
-    $OSARIS_PATH/lib/check_queue.sh $slurm_jobname 10 0
     
     cd $work_PATH/orig
 
@@ -147,7 +144,7 @@ else
 	    echo 'Target scene: ' $target_scene
 	    echo 'Target sensor: ' $target_sensor
 	    echo 'Target date: ' $target_date
-	    echo 'Target date (hr): ' date -d "${target_scene:17:8} ${target_scene:26:2}:${target_scene:28:2}:${target_scene:30:2}" 
+	    # echo 'Target date (hr): ' date -d "${target_scene:17:8} ${target_scene:26:2} ${target_scene:28:2} ${target_scene:30:2}" 
 	fi
 
 
