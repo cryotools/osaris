@@ -46,20 +46,20 @@ else
     output_PATH=$base_PATH/$prefix/Output
     # Path to directory where all output will be written
 
-    log_PATH=$base_PATH/$prefix/Output/Log
+    log_PATH=$base_PATH/$prefix/Log
     # Path to directory where the log files will be written    
 
-    mkdir -pv $orbits_PATH
-    mkdir -pv $work_PATH
-    mkdir -pv $work_PATH/raw
-    mkdir -pv $work_PATH/topo
-    mkdir -pv $output_PATH
-    mkdir -pv $log_PATH
+    mkdir -p $orbits_PATH
+    mkdir -p $work_PATH
+    mkdir -p $work_PATH/raw
+    mkdir -p $work_PATH/topo
+    mkdir -p $output_PATH
+    mkdir -p $log_PATH
 
     ln -sf $topo_PATH/dem.grd $work_PATH/raw/
     ln -sf $topo_PATH/dem.grd $work_PATH/topo/
 
-    log_filename=GSP-log-$( date +"%Y-%m-%d_%Hh%mm" ).txt
+    log_filename=$prefix-$( date +"%Y-%m-%d_%Hh%mm" ).log
     #err_filename=GSP-errors-$( date +"%Y-%m-%d_%Hh%mm" ).txt
     logfile=$log_PATH/$log_filename
 
@@ -255,7 +255,7 @@ else
 	echo Processing coherence diffs
 	echo
 
-	mkdir -pv $output_PATH/Coherence-diffs
+	mkdir -p $output_PATH/Coherence-diffs
 
 	cd $output_PATH/Pairs-forward
 
