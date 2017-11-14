@@ -3,7 +3,7 @@
 #################################################################
 #
 # Preparation of SAR data sets.
-# Extract files, find matching orbits.
+# Find matching orbits and write data.in files for each swath.
 # 
 # Usage: prepare_data.sh config_file
 #
@@ -30,60 +30,13 @@ else
     echo "config file: $config_file"
     source $config_file
     
-    GSP_PATH=$( pwd )
+    OSARIS_PATH=$( pwd )
 
     work_PATH=$base_PATH/$prefix/Processing
     # Path to working directory
 
-    if [ ! $input_files = "download" ]; then
-	input_PATH=$input_files       
-	# S1 files already exist -> read from directory specified in .config file
-    else
-	input_PATH=$base_PATH/$prefix/Input/S1-orig
-	# Create directory for S1 scene download
-    fi    
-
-    mkdir -pv $input_PATH    
-    cd $input_PATH
-
-    echo "Input path: $input_PATH"
-
-    if [ $orig_files = "keep" ]; then
-	echo "Found <keep> flag, skipping file extraction"
-    else
-
-	for S1_archive in $( ls -r ); do
-	    
-	    # Check if S1_package is valid S1 data directory
-	    if [[ $S1_archive =~ ^S1.* ]]; then
-				
-		echo
-		echo - - - - - - - - - - - - - - - - 
-		echo "Starting SLURM job to extract Sentinel file $S1_archive."
-
-		
-		slurm_jobname="$slurm_jobname_prefix-extract"
-
-		sbatch \
-		    --ntasks=3 \
-		    --output=$log_PATH/extract-%j.log \
-		    --error=$log_PATH/extract-%j.log \
-		    --workdir=$work_PATH \
-		    --job-name=$slurm_jobname \
-		    --qos=$slurm_qos \
-		    --account=$slurm_account \
-		    # --partition=$slurm_partition \
-		--mail-type=$slurm_mailtype \
-		    $GSP_directory/lib/PP-extract \
-		    $input_PATH/$S1_archive \
-		    $work_PATH/orig		
-		
-	    fi
-	done
-    fi
-
-
-    $GSP_PATH/check_queue.sh $slurm_jobname 10 0
+    log_PATH=$base_PATH/$prefix/Output/Log
+    # Path to directory where the log files will be written    
     
     cd $work_PATH/orig
 
@@ -105,11 +58,10 @@ else
         fi
         
 
-        cp $work_PATH/orig/${S1_file[$counter]}.SAFE/manifest.safe $work_PATH/raw/${S1_package:17:8}_manifest.safe
+        cp $work_PATH/orig/${S1_file[$counter]}SAFE/manifest.safe $work_PATH/raw/${S1_package:17:8}_manifest.safe
         
-        cd $work_PATH/orig/${S1_file[$counter]}.SAFE/annotation/
+        cd $work_PATH/orig/${S1_file[$counter]}SAFE/annotation/
         swath_names=($( ls *.xml ))
-        
         
         cd $work_PATH/raw/      
         
@@ -132,8 +84,8 @@ else
 	    echo "SWATH NAME 3: ${swath_names[3]}"
         fi
         
-        ln -sf $work_PATH/orig/${S1_file[$counter]}.SAFE/annotation/*.xml .
-        ln -sf $work_PATH/orig/${S1_file[$counter]}.SAFE/measurement/*.tiff .
+        ln -sf $work_PATH/orig/${S1_file[$counter]}SAFE/annotation/*.xml .
+        ln -sf $work_PATH/orig/${S1_file[$counter]}SAFE/measurement/*.tiff .
         
         
         # Find adequate orbit files and add symlinks        			
@@ -147,8 +99,9 @@ else
 	    echo 'Target scene: ' $target_scene
 	    echo 'Target sensor: ' $target_sensor
 	    echo 'Target date: ' $target_date
-	    echo 'Target date (hr): ' date -d "${target_scene:17:8} ${target_scene:26:2}:${target_scene:28:2}:${target_scene:30:2}" 
-	fi    
+	    # echo 'Target date (hr): ' date -d "${target_scene:17:8} ${target_scene:26:2} ${target_scene:28:2} ${target_scene:30:2}" 
+	fi
+
 
 	prev_orbit_startdate=0
 	orbit_counter=1
@@ -195,17 +148,43 @@ else
 	#    echo
 	# fi
 
-	for swath in ${swaths_to_process[@]}; do
-	    echo "${swath_names[$swath]}:$orbit_match" >> data_swath$swath.tmp
-        done       
+	# Check if single_master mode and  current scene is master scene
+	if [ $process_intf_mode = "single_master" ]; then
+	    echo
+	    echo "Target date: ${target_scene:17:8}"
+	    echo "Master scene date: $master_scene_date"
+	    echo
+	    if [ "$master_scene_date" = "${target_scene:17:8}" ]; then
+		# master_scene=$target_scene; master_orbit=$orbit_match
+		echo "HOORAY, we have found our master!"
+		for swath in ${swaths_to_process[@]}; do
+		    echo "${swath_names[$swath]}:$orbit_match" >> data_sm_swath$swath.master
+		done
+	    else
+		for swath in ${swaths_to_process[@]}; do
+		    echo "${swath_names[$swath]}:$orbit_match" >> data_sm_swath$swath.tmp
+		done
+	    fi
+	else
+	    # TODO: include "both" mode -> sm + pairs
+	    for swath in ${swaths_to_process[@]}; do
+		echo "${swath_names[$swath]}:$orbit_match" >> data_swath$swath.tmp
+            done
+	fi
 	
 	((counter++))
 
     done
 
     for swath in ${swaths_to_process[@]}; do
-	sort data_swath$swath.tmp  > data_swath$swath.in  
-	rm data_swath$swath.tmp
+	if [ $process_intf_mode = "single_master" ]; then
+	    cat data_sm_swath$swath.master > data_sm_swath$swath.in
+	    sort data_sm_swath$swath.tmp  >> data_sm_swath$swath.in  
+	    # rm data_sm_swath$swath.tmp data_sm_swath$swath.master
+	else
+	    sort data_swath$swath.tmp  > data_swath$swath.in  
+	    rm data_swath$swath.tmp
+	fi
     done
 
     counter=1

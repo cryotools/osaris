@@ -8,13 +8,13 @@ echo "- - - - - - - - - - - - - - - - - -"
 echo
 
 
-if [ ! $# -eq 2 ]; then
+if [ ! $# -eq 3 ]; then
     echo
     echo "Wrong parameter count, exiting."
     echo "Usage: PP-extract file target_path"  
     echo
     exit 1
-elif [ ! -f $1 ]; then
+elif [ ! -f "$1/$2" ]; then
     echo
     echo "Cannot open $1. Please provide a valid zipped Sentinel1 file. Exiting."
     echo
@@ -23,8 +23,8 @@ else
 
 
 
-    echo Extracting $1 ... 
-    unzip $1 -x *-vh-* -d $2
+    echo Extracting file $2 from folder $1 to $3 ... 
+    unzip $1/$2 -x *-vh-* -d $3
 
     end=`date +%s`
 
