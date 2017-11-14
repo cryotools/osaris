@@ -9,13 +9,17 @@
 # ferograms are conducted in individual SLURM jobs for each 
 # scene pair.
 #
-# Usage: process_pairs.sh [config file]
+# Usage: process_pairs.sh config_file [processing_mode]
+#
+# Optional processing mode paramter may be:
+# SM - Single master mode
+# CPR - Chronologically moving pairs
 #
 ################################################################
 
 if [ $# -eq 0 ]; then
     echo
-    echo "Usage: process_pairs.sh [config file]"  
+    echo "Usage: process_pairs.sh config_file [processing_mode]"  
     echo
 elif [ ! -f $1 ]; then
     echo
@@ -49,16 +53,18 @@ else
     dataline_count=0
 
     cd $work_PATH/raw/
-
+    
     for swath in ${swaths_to_process[@]}; do
-	if [ $process_intf_mode = "single_master" ]; then
+	if [ "$2" = "SM" ]; then
 	    data_in_file=data_sm_swath$swath.in
 	    mode="SM"
-	else
+	elif [ "$2" = "CPR" ]; then
 	    data_in_file=data_swath$swath.in
-	    mode="PR"
+	    mode="CPR"
+	else
+	    echo "No processing mode specified. Processing in 'chronologically moving pairs' mode."
+	    mode="CPR"
 	fi
-
 	while read -r dataline; do
 	    cd $work_PATH/raw/
 	    
@@ -74,7 +80,7 @@ else
 	    
 	    start_processing=1
 	    
-	    if [ $process_intf_mode = "single_master" ]; then
+	    if [ $mode = "SM" ]; then
 		if [ "$dataline_count" -eq 1 ]; then		
 		    echo "First line of data_sm.in processed, setting master scene and orbit."
 		    master_scene=$current_scene
@@ -103,7 +109,7 @@ else
 	    
  	    if [ "$start_processing" -eq 1 ]; then
 		
-		if [ $process_intf_mode = "single_master" ]; then		    
+		if [ $mode = "SM" ]; then		    
 		    scene_1=$master_scene
 		    orbit_1=$master_orbit
 		    scene_2=$current_scene
@@ -167,7 +173,7 @@ else
 		    $OSARIS_PATH \
 		    "forward"
 		
-		if [ "$process_reverse_intfs" -eq 1 ]; then
+		if [ "$process_reverse_intfs" -eq 1 ] && [ "$mode" = "CPR" ]; then
 		    cd $work_PATH/raw/
 		    scene_pair_reverse=${scene_2:15:8}--${scene_1:15:8}
 		    echo "Creating reverse directory $scene_pair_name"

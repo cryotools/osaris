@@ -74,14 +74,25 @@ else
 	echo - - - - - - - - - - - - - - - -
 	echo Downloading Sentinel files
 	echo
-	
-	source $OSARIS_PATH/lib/s1_file_download.sh  2>&1 >>$logfile
+
+	input_PATH=$base_PATH/$prefix/Input/S1-orig
+
+	source $OSARIS_PATH/lib/s1-file-download.sh  2>&1 >>$logfile
 	
 	echo 
 	echo Downloading finished
 	echo - - - - - - - - - - - - - - - - 
 	echo
+    else
+	if [ ! -d $input_files ]; then
+	    echo "Please set 'input_files' param in config file either to <download> or to a valid directory path"
+	else
+	    input_PATH=$input_files       
+	    # S1 files already exist -> read from directory specified in .config file	
+	fi
     fi
+
+
 
     # Update orbits when requested
     if [ "$update_orbits" -eq 1 ]; then
@@ -90,7 +101,7 @@ else
 	echo Updating orbit data ...
 	echo
 	
-	source $OSARIS_PATH/lib/s1_orbit_download.sh $orbits_PATH 5  2>&1 >>$logfile
+	source $OSARIS_PATH/lib/s1-orbit-download.sh $orbits_PATH 5  2>&1 >>$logfile
 
 	echo 
 	echo Orbit update finished
@@ -98,17 +109,65 @@ else
 	echo
     fi	        
 
+
+
+
     echo
     echo - - - - - - - - - - - - - - - -
     echo Preparing SAR data sets ...
     echo
 
-    $OSARIS_PATH/lib/prepare_data.sh $config_file 2>&1 >>$logfile
-    
-    if [ ! $orig_files = "keep" ]; then
-	slurm_jobname="$slurm_jobname_prefix-EXT" 
-	$OSARIS_PATH/lib/check_queue.sh $slurm_jobname 2 0
+    if [ $orig_files = "keep" ]; then
+	echo "Skipping file extraction ('orig_files' param set to <keep> in config file)."
+	PS_extract=0
+    elif [ $orig_files = "extract" ]; then
+	echo "Startinng file extraction."
+	PS_extract=1
+    else
+	echo "No vaild value for 'orig_files' param found. Please check the config file. Trying to extract files..."
+	PS_extract=1
     fi
+    
+    if [ $PS_extract -eq 1 ]; then	
+	
+	mkdir -p $work_PATH/orig		
+	echo
+	echo - - - - - - - - - - - - - - - - 
+
+	cd $input_PATH
+
+	for S1_archive in $( ls -r ); do	   	    
+	    # Check if S1_package is valid S1 data directory
+	    if [[ $S1_archive =~ ^S1.* ]]; then
+		
+		# TODO: Add option to extract without slurm for systems without unzip installed.
+		
+		echo "Sending extract job for Sentinel file $S1_archive to SLURM queue."
+		# echo "$OSARIS_PATH/lib/PP-extract.sh"
+		# echo "$input_PATH/$S1_archive"
+		# echo "$work_PATH/orig"
+		
+		slurm_jobname="$slurm_jobname_prefix-EXT"		
+
+		sbatch \
+		    --output=$log_PATH/extract-%j.log \
+		    --error=$log_PATH/extract-%j.log \
+		    --workdir=$input_PATH \
+		    --job-name=$slurm_jobname \
+		    --qos=$slurm_extract_qos \
+		    --account=$slurm_account \
+		    --partition=$slurm_extract_partition \
+		    --mail-type=$slurm_mailtype \
+		    $OSARIS_PATH/lib/PP-extract.sh $input_PATH $S1_archive $work_PATH/orig
+	    fi
+	done
+
+	$OSARIS_PATH/lib/check-queue.sh $slurm_jobname 2 0
+
+	cd $OSARIS_PATH
+    fi
+
+    $OSARIS_PATH/lib/prepare-data.sh $config_file 2>&1 >>$logfile
 
     echo 
     echo SAR data set preparation finished
@@ -120,25 +179,45 @@ else
 
     echo 
     echo - - - - - - - - - - - - - - - -
-    echo Starting GMTSAR processing ...
+    echo Starting interferometric processing ...
     echo 
     
     case "$SAR_sensor" in
 	Sentinel)	    
 
 	    if [ $process_intf_mode = "pairs" ]; then
-		mode="PR"
+		echo
+		echo "Initializing processing in 'chronologically moving pairs' mode."
+		echo
+
+		$OSARIS_PATH/lib/process-pairs.sh $config_file CMP 2>&1 >>$logfile
+		slurm_jobname="$slurm_jobname_prefix-CMP" 
+		$OSARIS_PATH/lib/check-queue.sh $slurm_jobname 1
+
 	    elif [ $process_intf_mode = "single_master" ]; then
 		echo
-		echo "HOORAY, finally in SM mode!"
+		echo "Initializing processing in 'single master' mode."
 		echo
-		mode="SM"		
-	    fi  
-	    
-	    $OSARIS_PATH/lib/process_pairs.sh $config_file 2>&1 >>$logfile
 
-	    slurm_jobname="$slurm_jobname_prefix-$mode" 
-	    $OSARIS_PATH/lib/check_queue.sh $slurm_jobname 1
+		$OSARIS_PATH/lib/process-pairs.sh $config_file SM 2>&1 >>$logfile		
+		slurm_jobname="$slurm_jobname_prefix-SM" 
+		$OSARIS_PATH/lib/check-queue.sh $slurm_jobname 1
+
+	    elif [ $process_intf_mode = "both" ]; then
+		echo
+		echo "Initializing processing in both 'single master' and 'chronologically moving pairs' modes."
+		echo
+
+		$OSARIS_PATH/lib/process-pairs.sh $config_file SM 2>&1 >>$logfile
+		slurm_jobname="$slurm_jobname_prefix-SM" 
+		$OSARIS_PATH/lib/check-queue.sh $slurm_jobname 1
+
+		$OSARIS_PATH/lib/process-pairs.sh $config_file CPR 2>&1 >>$logfile
+		slurm_jobname="$slurm_jobname_prefix-CPR" 
+		$OSARIS_PATH/lib/check-queue.sh $slurm_jobname 1
+
+	    fi  	   	    	    
+	   
 	    ;;    
 	
 	*)
@@ -223,7 +302,7 @@ else
 	echo Processing stack + SBAS
 	echo
 	
-	$OSARIS_PATH/lib/process_stack.sh $config_file 2>&1 >>$logfile
+	$OSARIS_PATH/lib/process-stack.sh $config_file 2>&1 >>$logfile
     fi
 
     echo

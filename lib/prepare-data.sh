@@ -3,7 +3,7 @@
 #################################################################
 #
 # Preparation of SAR data sets.
-# Extract files, find matching orbits, write data.in file.
+# Find matching orbits and write data.in files for each swath.
 # 
 # Usage: prepare_data.sh config_file
 #
@@ -37,51 +37,6 @@ else
 
     log_PATH=$base_PATH/$prefix/Output/Log
     # Path to directory where the log files will be written    
-
-    if [ ! $input_files = "download" ]; then
-	input_PATH=$input_files       
-	# S1 files already exist -> read from directory specified in .config file
-    else
-	input_PATH=$base_PATH/$prefix/Input/S1-orig
-	# Create directory for S1 scene download
-    fi    
-
-    mkdir -pv $input_PATH    
-    cd $input_PATH
-
-    echo "Input path: $input_PATH"
-
-    if [ $orig_files = "keep" ]; then
-	echo "Found <keep> flag, skipping file extraction"
-    else
-	mkdir -pv $work_PATH/orig		
-	echo
-	echo - - - - - - - - - - - - - - - - 
-
-	for S1_archive in $( ls -r ); do	   	    
-	    # Check if S1_package is valid S1 data directory
-	    if [[ $S1_archive =~ ^S1.* ]]; then
-						
-		echo "Sending extract job for Sentinel file $S1_archive to SLURM queue."
-		# echo "$OSARIS_PATH/lib/PP-extract.sh"
-		# echo "$input_PATH/$S1_archive"
-		# echo "$work_PATH/orig"
-		
-		slurm_jobname="$slurm_jobname_prefix-EXT"		
-
-		sbatch \
-		    --output=$log_PATH/extract-%j.log \
-		    --error=$log_PATH/extract-%j.log \
-		    --workdir=$input_PATH \
-		    --job-name=$slurm_jobname \
-		    --qos=io \
-		    --account=$slurm_account \
-		    --partition=io \
-		    --mail-type=$slurm_mailtype \
-		    $OSARIS_PATH/lib/PP-extract.sh $input_PATH $S1_archive $work_PATH/orig
-	    fi
-	done
-    fi
     
     cd $work_PATH/orig
 
