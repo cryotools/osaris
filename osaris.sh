@@ -14,7 +14,7 @@ else
     echo
     echo " ╔══════════════════════════════════════════╗"
     echo " ║                                          ║"
-    echo " ║             OSARIS v. 0.2                ║"
+    echo " ║             OSARIS v. 0.2.1              ║"
     echo " ║   Open Source SAR Investigation System   ║"
     echo " ║                                          ║"
     echo " ╚══════════════════════════════════════════╝"
