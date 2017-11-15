@@ -35,7 +35,7 @@ else
     work_PATH=$base_PATH/$prefix/Processing
     # Path to working directory
 
-    log_PATH=$base_PATH/$prefix/Output/Log
+    log_PATH=$base_PATH/$prefix/Log
     # Path to directory where the log files will be written    
     
     cd $work_PATH/orig

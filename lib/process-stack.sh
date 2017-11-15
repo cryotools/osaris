@@ -42,10 +42,10 @@ else
     output_PATH=$base_PATH/$prefix/Output
     # Path to directory where all output will be written
 
-    log_PATH=$base_PATH/$prefix/Output/Log
+    log_PATH=$base_PATH/$prefix/Log
     # Path to directory where the log files will be written    
 
-    mkdir -pv $work_PATH/Stack
+    mkdir -p $work_PATH/Stack
 
     cd $work_PATH/raw
 
