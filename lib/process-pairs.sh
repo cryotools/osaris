@@ -45,7 +45,7 @@ else
     output_PATH=$base_PATH/$prefix/Output
     # Path to directory where all output will be written
 
-    log_PATH=$base_PATH/$prefix/Output/Log
+    log_PATH=$base_PATH/$prefix/Log
     # Path to directory where the log files will be written    
 
 
@@ -141,15 +141,7 @@ else
 		cp -P $work_PATH/raw/$orbit_1 .
 		cp -P $work_PATH/raw/$orbit_2 .
 
-		
-		echo
-		echo - - - - - - - - - - - - - - - - 
-		echo "Launching SLURM batch jobs"
-		echo
-		echo "Processing logs will be written to $log_PATH"
-		echo "Use tail -f [logfile] to monitor the SLURM tasks"
-		echo
-		
+				
 		slurm_jobname="$slurm_jobname_prefix-$mode"
 
 		sbatch \

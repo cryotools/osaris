@@ -56,8 +56,8 @@ else
         fi
     fi
 
-    filename_1=$(basename $file_1 .grd)    
-    filename_2=$(basename $file_2 .grd)
+    filename_1=$(basename $file_1 .grd)-1    
+    filename_2=$(basename $file_2 .grd)-2
     output_PATH=$3
 
     if [ $# -eq 4 ]; then
@@ -66,8 +66,8 @@ else
 	diff_filename="diff-$filename_2--$filename_1"
     fi
 
-    mkdir -pv $output_PATH
-    mkdir -pv $output_PATH/Temp
+    mkdir -p $output_PATH
+    mkdir -p $output_PATH/Temp
 
    file_1_extent=$( gmt grdinfo -I- $file_1 ); file_1_extent=${file_1_extent:2}
    file_2_extent=$( gmt grdinfo -I- $file_2 ); file_2_extent=${file_2_extent:2}
