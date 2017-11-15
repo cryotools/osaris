@@ -5,18 +5,17 @@
 #
 # Calculate difference between two GRD datasets.
 # 
-# Usage: difference.sh file1 file2 output_directory [output_filename]
+# Usage: difference.sh file1 file2 output_directory output_filename [create_png+kml]
 # 
 # Both input files must be in GRD format.
-# Output filename needs only to be set when both input files have
-# the same name (e.g. when processing multiple corr_ll.grd files).
+# Set create_png+kml to a .cpt file to process PNG and KML files
 # 
 ################################################################
 
 
-if [ $# -lt 3 ]; then
+if [ $# -lt 4 ]; then
     echo
-    echo "Usage: difference.sh file1 file2 output_directory [output_filename]"  
+    echo "Usage: difference.sh file1 file2 output_directory output_filename [create_png+kml]"  
     echo
 else
 
@@ -60,14 +59,13 @@ else
     filename_2=$(basename $file_2 .grd)-2
     output_PATH=$3
 
-    if [ $# -eq 4 ]; then
-	diff_filename=$4
-    else
-	diff_filename="diff-$filename_2--$filename_1"
-    fi
+    diff_filename=$4    
+    
+    supercode=$(date +%s)-$(( RANDOM % 10000 ))
+    tempdir_PATH=$output_PATH/Temp-$supercode
 
     mkdir -p $output_PATH
-    mkdir -p $output_PATH/Temp
+    mkdir -p $tempdir_PATH
 
     file_1_extent=$( gmt grdinfo -I- $file_1 ); file_1_extent=${file_1_extent:2}
     file_2_extent=$( gmt grdinfo -I- $file_2 ); file_2_extent=${file_2_extent:2}
@@ -170,13 +168,35 @@ else
 
     cd $output_PATH
 
-    gmt grdcut $file_1 -GTemp/$cut_filename_1  -R$xmin/$xmax/$ymin/$ymax -V
-    gmt grdcut $file_2 -GTemp/$cut_filename_2  -R$xmin/$xmax/$ymin/$ymax -V
+    gmt grdcut $file_1 -G$tempdir_PATH/$cut_filename_1  -R$xmin/$xmax/$ymin/$ymax -V
+    gmt grdcut $file_2 -G$tempdir_PATH/$cut_filename_2  -R$xmin/$xmax/$ymin/$ymax -V
 
-    cd Temp
-    gmt grdmath $cut_filename_2 $cut_filename_1 SUB = $output_PATH/$diff_filename.grd -V
+    cd $tempdir_PATH
+    gmt grdmath $cut_filename_2 $cut_filename_1 SUB = $diff_filename.grd -V
 
+    
+    if [ -f $5 ]; then
+	#    cd $output_PATH/Coherence-diffs
+	echo; echo "Generating PNG and KML files ..."; echo
+	mkdir -p $output_PATH/PNG+KML
+	DX=$( gmt grdinfo $diff_filename.grd -C | cut -f8 )
+	DPI=$( gmt gmtmath -Q $DX INV RINT = )   
+	gmt grdimage $diff_filename.grd \
+	    -C$5 \
+	    -Jx1id -P -Y2i -X2i -Q -V > $diff_filename.ps
+	gmt psconvert $diff_filename.ps \
+	    -W+k+t"$diff_filename" -E$DPI -TG -P -S -V -F$diff_filename.png
+	# rm -f $diff_filename.ps grad.grd ps2raster* psconvert*
+	mv *.kml $output_PATH/PNG+KML
+	mv *.png $output_PATH/PNG+KML
+    else
+	echo "Skipping generation of PNG and KML files."
+    fi
+
+    mv *.grd $output_PATH
     cd ..
-    rm -r Temp
+
+    rm -r $tempdir_PATH
+
 
 fi

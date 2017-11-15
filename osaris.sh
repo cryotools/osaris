@@ -14,7 +14,7 @@ else
     echo
     echo " ╔══════════════════════════════════════════╗"
     echo " ║                                          ║"
-    echo " ║             OSARIS v. 0.2.1              ║"
+    echo " ║             OSARIS v. 0.3                ║"
     echo " ║   Open Source SAR Investigation System   ║"
     echo " ║                                          ║"
     echo " ╚══════════════════════════════════════════╝"
@@ -262,36 +262,39 @@ else
 	folders=($( ls -r ))
 
 	for folder in "${folders[@]}"; do
-	    echo "Now working on folder: $folder"
+	    echo "Adding coherence from $folder ..."
 	    cd $output_PATH/Pairs-forward
 	    if [ ! -z ${folder_1} ]; then
 		folder_2=$folder_1
 		folder_1=$folder
 
 		coherence_diff_filename=$( echo corr_diff--${folder_2:3:8}-${folder_2:27:8}---${folder_1:3:8}-${folder_1:27:8} )
+		
+		slurm_jobname="$slurm_jobname_prefix-CD"
 
-		$OSARIS_PATH/lib/difference.sh \
+		sbatch \
+		    --ntasks=1 \
+		    --output=$log_PATH/OSS-CoD-%j-out \
+		    --error=$log_PATH/OSS-CoD-%j-out \
+		    --workdir=$work_PATH \
+		    --job-name=$slurm_jobname \
+		    --qos=$slurm_qos \
+		    --account=$slurm_account \
+		    --mail-type=$slurm_mailtype \
+		    $OSARIS_PATH/lib/difference.sh \
 		    $output_PATH/Pairs-forward/$folder_1/corr_ll.grd \
 		    $output_PATH/Pairs-forward/$folder_2/corr_ll.grd \
 		    $output_PATH/Coherence-diffs \
-		    $coherence_diff_filename 2>&1 >>$logfile
+		    $coherence_diff_filename \
+		    $OSARIS_PATH/lib/palettes/corr_diff_brown_green.cpt 2>&1 >>$logfile
+		    # TODO: Create an adequate palette for coherence differences		
 		
-		cd $output_PATH/Coherence-diffs
-		DX=$( gmt grdinfo $coherence_diff_filename.grd -C | cut -f8 )
-		DPI=$( gmt gmtmath -Q $DX INV RINT = )   
-		gmt grdimage $coherence_diff_filename.grd \
-		    -C$output_PATH/Pairs-forward/$folder/corr.cpt \
-		    -Jx1id -P -Y2i -X2i -Q -V > $coherence_diff_filename.ps
-		gmt psconvert $coherence_diff_filename.ps \
-		    -W+k+t"$coherence_diff_filename" -E$DPI -TG -P -S -V -F$coherence_diff_filename.png
-		rm -f $coherence_diff_filename.ps grad.grd ps2raster* psconvert*
-
-
-
 	    else
 		folder_1=$folder
 	    fi
 	done
+
+	$OSARIS_PATH/lib/check-queue.sh $slurm_jobname 1
 	
 	# $OSARIS_PATH/lib/coherence_differences.sh $output_PATH/Pairs-forward "corr_ll.grd" 2>&1 >>$logfile
     fi
@@ -303,6 +306,21 @@ else
 	echo
 	
 	$OSARIS_PATH/lib/process-stack.sh $config_file 2>&1 >>$logfile
+    fi
+
+    if [ $clean_up -gt 0 ]; then
+	echo
+	echo - - - - - - - - - - - - - - - -
+	echo Cleaning up a bit
+	if [ $clean_up -eq 1 ]; then
+	    echo "Deleting files used during processing, keeping extracted S1 scenes ..."
+	    rm -r $work_PATH/Pairs-forward $work_PATH/raw $work_PATH/topo $work_PATH/single_master
+	elif [ $clean_up -eq 2 ]; then
+	    echo "Deleting processing folder ..."
+	    rm -rf $work_PATH
+	else
+	    echo "Invalid value provided for 'clean_up' param, skipping. Please check your config file."
+	fi
     fi
 
     echo

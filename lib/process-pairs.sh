@@ -58,13 +58,18 @@ else
 	if [ "$2" = "SM" ]; then
 	    data_in_file=data_sm_swath$swath.in
 	    mode="SM"
-	elif [ "$2" = "CPR" ]; then
+	elif [ "$2" = "CMP" ]; then
 	    data_in_file=data_swath$swath.in
-	    mode="CPR"
+	    mode="CMP"
 	else
 	    echo "No processing mode specified. Processing in 'chronologically moving pairs' mode."
-	    mode="CPR"
+	    mode="CMP"
 	fi
+
+	if [ $debug -gt 0 ]; then
+	    echo "Data in file: $data_in_file"
+	fi
+
 	while read -r dataline; do
 	    cd $work_PATH/raw/
 	    
@@ -165,7 +170,7 @@ else
 		    $OSARIS_PATH \
 		    "forward"
 		
-		if [ "$process_reverse_intfs" -eq 1 ] && [ "$mode" = "CPR" ]; then
+		if [ "$process_reverse_intfs" -eq 1 ]; then
 		    cd $work_PATH/raw/
 		    scene_pair_reverse=${scene_2:15:8}--${scene_1:15:8}
 		    echo "Creating reverse directory $scene_pair_name"
