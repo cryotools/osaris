@@ -213,7 +213,7 @@ else
 		$OSARIS_PATH/lib/check-queue.sh $slurm_jobname 1
 
 		$OSARIS_PATH/lib/process-pairs.sh $config_file CPR 2>&1 >>$logfile
-		slurm_jobname="$slurm_jobname_prefix-CPR" 
+		slurm_jobname="$slurm_jobname_prefix-CMP" 
 		$OSARIS_PATH/lib/check-queue.sh $slurm_jobname 1
 
 	    fi  	   	    	    

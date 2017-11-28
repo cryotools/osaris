@@ -178,7 +178,7 @@ else
     if [ -f $5 ]; then
 	#    cd $output_PATH/Coherence-diffs
 	echo; echo "Generating PNG and KML files ..."; echo
-	mkdir -p $output_PATH/PNG+KML
+	mkdir -p $output_PATH/PNG; mkdir -p $output_PATH/KML
 	DX=$( gmt grdinfo $diff_filename.grd -C | cut -f8 )
 	DPI=$( gmt gmtmath -Q $DX INV RINT = )   
 	gmt grdimage $diff_filename.grd \
@@ -187,8 +187,7 @@ else
 	gmt psconvert $diff_filename.ps \
 	    -W+k+t"$diff_filename" -E$DPI -TG -P -S -V -F$diff_filename.png
 	# rm -f $diff_filename.ps grad.grd ps2raster* psconvert*
-	mv *.kml $output_PATH/PNG+KML
-	mv *.png $output_PATH/PNG+KML
+	mv *.kml $output_PATH/KML; mv *.png $output_PATH/PNG
     else
 	echo "Skipping generation of PNG and KML files."
     fi
