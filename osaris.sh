@@ -34,8 +34,7 @@ else
     fi
     echo "Reading configuration file $config_file" 
     source $config_file
-
-  
+          
     echo
     echo "Data will be written to $base_PATH/$prefix/"
 
@@ -109,8 +108,24 @@ else
 	echo
     fi	        
 
-
-
+    # HOOK 1: Post download modules
+    if [ ${#post_download_mods[@]} -gt 0 ]; then
+	for i in "${post_download_mods[@]}"; do
+	    # Check if module exists
+	    echo "Module: ${post_download_mods[$i]}"
+	    if [ -d "$OSARIS_PATH/modules/${post_download_mods[$i]}" ]; then
+		if [ -f "$OSARIS_PATH/modules/${post_download_mods[$i]}/${post_download_mods[$i]}.sh" ]; then
+		    # Everthing looks fine, include the module
+		    echo; echo "Starting module ${post_download_mods[$i]}"; echo
+		    source $OSARIS_PATH/modules/${post_download_mods[$i]}/${post_download_mods[$i]}.sh
+		else
+		    echo; echo "WARNING: File ${post_download_mods[$i]}.sh not found in module directory. Skipping."; echo
+		fi
+	    else
+		echo; echo "WARNING: Module ${post_download_mods[$i]} not found. Skipping."; echo
+	    fi	
+	done
+    fi    
 
     echo
     echo - - - - - - - - - - - - - - - -
@@ -169,18 +184,15 @@ else
 
     $OSARIS_PATH/lib/prepare-data.sh $config_file 2>&1 >>$logfile
 
-    echo 
-    echo SAR data set preparation finished
-    echo - - - - - - - - - - - - - - - - 
-    echo
+    echo; echo SAR data set preparation finished
+    echo - - - - - - - - - - - - - - - - ; echo
 
 
+    # HOOK 2: Post download modules
 
 
-    echo 
-    echo - - - - - - - - - - - - - - - -
-    echo Starting interferometric processing ...
-    echo 
+    echo; echo - - - - - - - - - - - - - - - -
+    echo Starting interferometric processing ...; echo 
     
     case "$SAR_sensor" in
 	Sentinel)	    
@@ -227,6 +239,26 @@ else
     esac
     
 
+    # HOOK 3: Post processing modules
+    if [ ${#post_processing_mods[@]} -gt 0 ]; then
+	for i in "${post_processing_mods[@]}"; do
+	    # Check if module exists
+	    echo "Module: $OSARIS_PATH/modules/${post_processing_mods[$i]}"
+	    if [ -d "$OSARIS_PATH/modules/${post_processing_mods[$i]}" ]; then
+		if [ -f "$OSARIS_PATH/modules/${post_processing_mods[$i]}/${post_processing_mods[$i]}.sh" ]; then
+		    # Everthing looks fine, include the module
+		    echo; echo "Starting module ${post_processing_mods[$i]}"; echo
+		    source $OSARIS_PATH/modules/${post_processing_mods[$i]}/${post_processing_mods[$i]}.sh
+		else
+		    echo; echo "WARNING: File ${post_processing_mods[$i]}.sh not found in module directory. Skipping."; echo
+		fi
+	    else
+		echo; echo "WARNING: Module ${post_processing_mods[$i]} not found. Skipping."; echo
+	    fi	
+	done
+    fi    
+
+
     if [ "$process_reverse_intfs" -eq 1 ]; then
 	echo 
 	echo - - - - - - - - - - - - - - - - 
@@ -249,55 +281,6 @@ else
 	done
     fi
 
-    if [ "$process_coherence_diff" -eq 1 ]; then
-	echo 
-	echo - - - - - - - - - - - - - - - - 
-	echo Processing coherence diffs
-	echo
-
-	mkdir -p $output_PATH/Coherence-diffs
-
-	cd $output_PATH/Pairs-forward
-
-	folders=($( ls -r ))
-
-	for folder in "${folders[@]}"; do
-	    echo "Adding coherence from $folder ..."
-	    cd $output_PATH/Pairs-forward
-	    if [ ! -z ${folder_1} ]; then
-		folder_2=$folder_1
-		folder_1=$folder
-
-		coherence_diff_filename=$( echo corr_diff--${folder_2:3:8}-${folder_2:27:8}---${folder_1:3:8}-${folder_1:27:8} )
-		
-		slurm_jobname="$slurm_jobname_prefix-CD"
-
-		sbatch \
-		    --ntasks=1 \
-		    --output=$log_PATH/OSS-CoD-%j-out \
-		    --error=$log_PATH/OSS-CoD-%j-out \
-		    --workdir=$work_PATH \
-		    --job-name=$slurm_jobname \
-		    --qos=$slurm_qos \
-		    --account=$slurm_account \
-		    --mail-type=$slurm_mailtype \
-		    $OSARIS_PATH/lib/difference.sh \
-		    $output_PATH/Pairs-forward/$folder_1/corr_ll.grd \
-		    $output_PATH/Pairs-forward/$folder_2/corr_ll.grd \
-		    $output_PATH/Coherence-diffs \
-		    $coherence_diff_filename \
-		    $OSARIS_PATH/lib/palettes/corr_diff_brown_green.cpt 2>&1 >>$logfile
-		    # TODO: Create an adequate palette for coherence differences		
-		
-	    else
-		folder_1=$folder
-	    fi
-	done
-
-	$OSARIS_PATH/lib/check-queue.sh $slurm_jobname 1
-	
-	# $OSARIS_PATH/lib/coherence_differences.sh $output_PATH/Pairs-forward "corr_ll.grd" 2>&1 >>$logfile
-    fi
 
     if [ "$process_SBAS" -eq 1 ]; then
 	echo 
@@ -326,6 +309,10 @@ else
     echo
     echo - - - - - - - - - - - - - - - -
     echo Writing reports [todo]
+
+
+    # HOOK 4: Post post-postprocessing modules
+
 
     echo
     echo - - - - - - - - - - - - - - - -
