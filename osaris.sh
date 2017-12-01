@@ -23,7 +23,32 @@ else
     echo    Loading configuration          
     echo - - - - - - - - - - - - - - - - - - - - - - -
 
-    OSARIS_PATH=$( pwd )
+
+    function include_modules {
+	module_array=$1
+	if [ ${#module_array[@]} -gt 0 ]; then
+	    for i in "${module_array[@]}"; do
+		# Check if module exists
+		echo "Module: ${module_array[$i]}"
+		if [ -d "$OSARIS_PATH/modules/${module_array[$i]}" ]; then
+		    if [ -f "$OSARIS_PATH/modules/${module_array[$i]}/${module_array[$i]}.sh" ]; then
+			# Everthing looks fine, include the module
+			echo; echo "Starting module ${module_array[$i]}"; echo
+			source $OSARIS_PATH/modules/${module_array[$i]}/${module_array[$i]}.sh
+		    else
+			echo; echo "WARNING: File ${module_array[$i]}.sh not found in module directory. Skipping."; echo
+		    fi
+		else
+		    echo; echo "WARNING: Module ${module_array[$i]} not found. Skipping."; echo
+		fi	
+	    done
+	else
+	    echo "No modules to implement, Skipping ..."
+	fi    
+    }
+
+
+    export OSARIS_PATH=$( pwd )
     echo "OSARIS directory: $OSARIS_PATH" 
     echo
 
@@ -39,13 +64,13 @@ else
     echo "Data will be written to $base_PATH/$prefix/"
 
 
-    work_PATH=$base_PATH/$prefix/Processing
+    export work_PATH=$base_PATH/$prefix/Processing
     # Path to working directory
 
-    output_PATH=$base_PATH/$prefix/Output
+    export output_PATH=$base_PATH/$prefix/Output
     # Path to directory where all output will be written
 
-    log_PATH=$base_PATH/$prefix/Log
+    export log_PATH=$base_PATH/$prefix/Log
     # Path to directory where the log files will be written    
 
     mkdir -p $orbits_PATH
@@ -109,23 +134,7 @@ else
     fi	        
 
     # HOOK 1: Post download modules
-    if [ ${#post_download_mods[@]} -gt 0 ]; then
-	for i in "${post_download_mods[@]}"; do
-	    # Check if module exists
-	    echo "Module: ${post_download_mods[$i]}"
-	    if [ -d "$OSARIS_PATH/modules/${post_download_mods[$i]}" ]; then
-		if [ -f "$OSARIS_PATH/modules/${post_download_mods[$i]}/${post_download_mods[$i]}.sh" ]; then
-		    # Everthing looks fine, include the module
-		    echo; echo "Starting module ${post_download_mods[$i]}"; echo
-		    source $OSARIS_PATH/modules/${post_download_mods[$i]}/${post_download_mods[$i]}.sh
-		else
-		    echo; echo "WARNING: File ${post_download_mods[$i]}.sh not found in module directory. Skipping."; echo
-		fi
-	    else
-		echo; echo "WARNING: Module ${post_download_mods[$i]} not found. Skipping."; echo
-	    fi	
-	done
-    fi    
+    include_modules $post_download_mods
 
     echo
     echo - - - - - - - - - - - - - - - -
@@ -188,8 +197,8 @@ else
     echo - - - - - - - - - - - - - - - - ; echo
 
 
-    # HOOK 2: Post download modules
-
+    # HOOK 2: Post extract modules
+    include_modules $post_extract_mods
 
     echo; echo - - - - - - - - - - - - - - - -
     echo Starting interferometric processing ...; echo 
@@ -240,23 +249,7 @@ else
     
 
     # HOOK 3: Post processing modules
-    if [ ${#post_processing_mods[@]} -gt 0 ]; then
-	for i in "${post_processing_mods[@]}"; do
-	    # Check if module exists
-	    echo "Module: $OSARIS_PATH/modules/${post_processing_mods[$i]}"
-	    if [ -d "$OSARIS_PATH/modules/${post_processing_mods[$i]}" ]; then
-		if [ -f "$OSARIS_PATH/modules/${post_processing_mods[$i]}/${post_processing_mods[$i]}.sh" ]; then
-		    # Everthing looks fine, include the module
-		    echo; echo "Starting module ${post_processing_mods[$i]}"; echo
-		    source $OSARIS_PATH/modules/${post_processing_mods[$i]}/${post_processing_mods[$i]}.sh
-		else
-		    echo; echo "WARNING: File ${post_processing_mods[$i]}.sh not found in module directory. Skipping."; echo
-		fi
-	    else
-		echo; echo "WARNING: Module ${post_processing_mods[$i]} not found. Skipping."; echo
-	    fi	
-	done
-    fi    
+    include_modules $post_processing_mods
 
 
     if [ "$process_reverse_intfs" -eq 1 ]; then
@@ -312,6 +305,7 @@ else
 
 
     # HOOK 4: Post post-postprocessing modules
+    include_modules $post_postprocessing_mods
 
 
     echo

@@ -18,7 +18,7 @@ for folder in "${folders[@]}"; do
 	folder_2=$folder_1
 	folder_1=$folder
 
-	coherence_diff_filename=$( echo corr_diff--${folder_2:3:8}-${folder_2:27:8}---${folder_1:3:8}-${folder_1:27:8} )
+	coherence_diff_filename=$( echo corr_diff--${folder_2:2:8}-${folder_2:25:8}---${folder_1:2:8}-${folder_1:25:8} )
 	
 	slurm_jobname="$slurm_jobname_prefix-CD"
 
