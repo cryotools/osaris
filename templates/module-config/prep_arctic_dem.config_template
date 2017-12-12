@@ -1,0 +1,33 @@
+######################################################################
+#
+# Configuration of the prep_arctic_dem module for OSARIS
+#
+# Activate the module in the main config file using the preprocessing
+# hook. Alternatively, run in standalone mode from the module folder.
+#
+# Further information on ArcticDEM and a shapefile with tile numbers
+# are available at https://www.pgc.umn.edu/data/arcticdem/
+#
+######################################################################
+
+# Arctic DEM tiles to process.
+# Make sure to define a rectangle without missing tiles!
+row_min=1
+row_max=2
+
+col_min=1
+col_max=2
+
+# Optional: additional single cols to be added to the DEM
+single_col=3_1	  # Referring to the second and third character of name string
+
+
+
+# Output grid resolution in meters (original ArcticDEM is 5 m)
+scale_factor=50
+
+# Path to folder where ArcticDEM tiles are located
+input_mosaic_PATH=/path/to/ArcticDEM/mosaic/v2.0
+
+# Output folder. Will be created if not exists.
+dem_output_PATH=/your/output_folder
