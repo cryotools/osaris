@@ -6,7 +6,10 @@
 # user should follow the naming of each parameter.
 # the parameter name, "=" sign, parameter value should be separated by space " ". 
 # leave the parameter value blank if using default value. 
-#
+
+# the namestem of the master image 
+# REQUIRED FOR STACK PROCESSING
+# master_image = S1A20160124_ALL_F3
   
 #####################
 # processing stage  #
@@ -66,14 +69,14 @@ switch_master = 0
 # set the filter wavelength in meters (default is 200m)
 # this is the wavelength where the filter has a gain of 0.5
 # the images will be sampled at 1/4 wavelength or smaller
-filter_wavelength = 300
+filter_wavelength = 200
 
 # decimation of images 
 # decimation control the size of the amplitude and phase images. It is either 1 or 2.
 # Set the decimation to be 1 if you want higher resolution images.
 # Set the decimation to be 2 if you want images with smaller file size.
 # 
-dec_factor = 2
+dec_factor = 1
 #
 # 
 #####################################
@@ -82,10 +85,11 @@ dec_factor = 2
 #####################################
 # correlation threshold for snaphu.csh (0~1)
 # set it to be 0 to skip unwrapping.
-threshold_snaphu = .1
+threshold_snaphu = 0.2
+# Default 0.1
 
 # region to unwrap in radar coordinates (leave it blank if unwrap the whole region)
-# example 300/5900/0/25000
+# example 300/5900/0/25000 (xmin/xmax/ymin/ymax)
 region_cut = 
 
 # mask the wet region (Lakes/Oceans) before unwrapping (1 -- yes; else -- no)
@@ -96,7 +100,7 @@ switch_land = 1
 # defo_max = 0 - used for smooth unwrapped phase such as interseismic deformation
 # defo_max = 65 - will allow a phase jump of 65 cycles or 1.82 m of deformation at C-band
 #
-defomax = 0
+defomax = 50
 
 #####################################
 #   parameters for geocode          #

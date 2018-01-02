@@ -14,7 +14,7 @@ else
     echo
     echo " ╔══════════════════════════════════════════╗"
     echo " ║                                          ║"
-    echo " ║             OSARIS v. 0.3                ║"
+    echo " ║             OSARIS v. 0.4                ║"
     echo " ║   Open Source SAR Investigation System   ║"
     echo " ║                                          ║"
     echo " ╚══════════════════════════════════════════╝"
@@ -23,7 +23,35 @@ else
     echo    Loading configuration          
     echo - - - - - - - - - - - - - - - - - - - - - - -
 
-    OSARIS_PATH=$( pwd )
+
+    function include_modules {
+	module_array=$1
+	if [ ${#module_array[@]} -gt 0 ]; then
+	    module_count=${#module_array[@]}
+	    # while [ $i -lt "$module_count" ]; do      
+	    for module in "${module_array[@]}"; do	   
+		# Check if module exists
+		echo "Module: $module"
+		if [ -d "$OSARIS_PATH/modules/$module" ]; then
+		    if [ -f "$OSARIS_PATH/modules/$module/$module.sh" ]; then
+			# Everthing looks fine, include the module
+			echo; echo "Starting module $module"; echo
+			source $OSARIS_PATH/modules/$module/$module.sh
+		    else
+			echo; echo "WARNING: File $module.sh not found in module directory. Skipping."; echo
+		    fi
+		else
+		    echo; echo "WARNING: Module $module not found. Skipping."; echo
+		fi	
+		# ((i++))
+	    done
+	else
+	    echo "No modules to implement, Skipping ..."
+	fi    
+    }
+
+
+    export OSARIS_PATH=$( pwd )
     echo "OSARIS directory: $OSARIS_PATH" 
     echo
 
@@ -34,19 +62,18 @@ else
     fi
     echo "Reading configuration file $config_file" 
     source $config_file
-
-  
+          
     echo
     echo "Data will be written to $base_PATH/$prefix/"
 
 
-    work_PATH=$base_PATH/$prefix/Processing
+    export work_PATH=$base_PATH/$prefix/Processing
     # Path to working directory
 
-    output_PATH=$base_PATH/$prefix/Output
+    export output_PATH=$base_PATH/$prefix/Output
     # Path to directory where all output will be written
 
-    log_PATH=$base_PATH/$prefix/Log
+    export log_PATH=$base_PATH/$prefix/Log
     # Path to directory where the log files will be written    
 
     mkdir -p $orbits_PATH
@@ -68,24 +95,22 @@ else
     echo "Use tail -f $logfile to monitor overall progress"
 
 
+    #### STEP 1: DOWNLOADS
+
     if [ $input_files = "download" ]; then
 
-	echo
-	echo - - - - - - - - - - - - - - - -
-	echo Downloading Sentinel files
-	echo
+	echo; echo - - - - - - - - - - - - - - - -; echo Downloading Sentinel files; echo
 
 	input_PATH=$base_PATH/$prefix/Input/S1-orig
 
 	source $OSARIS_PATH/lib/s1-file-download.sh  2>&1 >>$logfile
 	
-	echo 
-	echo Downloading finished
-	echo - - - - - - - - - - - - - - - - 
-	echo
+	echo; echo Downloading finished; echo - - - - - - - - - - - - - - - -; echo
     else
 	if [ ! -d $input_files ]; then
-	    echo "Please set 'input_files' param in config file either to <download> or to a valid directory path"
+	    echo "CRITICAL CONFIGURAION ERROR:"
+	    echo "Parameter 'input_files' in config file must either be set to <download> or to a valid directory. Exiting."
+	    exit 1
 	else
 	    input_PATH=$input_files       
 	    # S1 files already exist -> read from directory specified in .config file	
@@ -96,26 +121,21 @@ else
 
     # Update orbits when requested
     if [ "$update_orbits" -eq 1 ]; then
-	echo
-	echo - - - - - - - - - - - - - - - -
-	echo Updating orbit data ...
-	echo
+	echo; echo - - - - - - - - - - - - - - - -; echo "Updating orbit data ..."; echo
 	
-	source $OSARIS_PATH/lib/s1-orbit-download.sh $orbits_PATH 5  2>&1 >>$logfile
+	source $OSARIS_PATH/lib/s1-orbit-download.sh $orbits_PATH 5 &>>$logfile
 
-	echo 
-	echo Orbit update finished
-	echo - - - - - - - - - - - - - - - - 
-	echo
+	echo; echo "Orbit update finished"; echo - - - - - - - - - - - - - - - - ; echo
     fi	        
 
 
+    #### HOOK 1: Post download modules
+    include_modules $post_download_mods
 
 
-    echo
-    echo - - - - - - - - - - - - - - - -
-    echo Preparing SAR data sets ...
-    echo
+    #### STEP 2: PREPARE DATA
+
+    echo;  echo - - - - - - - - - - - - - - - -; echo "Preparing SAR data sets ..."; echo
 
     if [ $orig_files = "keep" ]; then
 	echo "Skipping file extraction ('orig_files' param set to <keep> in config file)."
@@ -169,44 +189,36 @@ else
 
     $OSARIS_PATH/lib/prepare-data.sh $config_file 2>&1 >>$logfile
 
-    echo 
-    echo SAR data set preparation finished
-    echo - - - - - - - - - - - - - - - - 
-    echo
+    echo; echo "SAR data set preparation finished"; echo - - - - - - - - - - - - - - - - ; echo
 
 
+    #### HOOK 2: Post extract modules
+    include_modules $post_extract_mods
 
 
-    echo 
-    echo - - - - - - - - - - - - - - - -
-    echo Starting interferometric processing ...
-    echo 
+    #### STEP 3: INTERFEROMETRIC PROCESSING
+
+    echo; echo - - - - - - - - - - - - - - - -; echo "Starting interferometric processing ..."; echo 
     
     case "$SAR_sensor" in
 	Sentinel)	    
 
 	    if [ $process_intf_mode = "pairs" ]; then
-		echo
-		echo "Initializing processing in 'chronologically moving pairs' mode."
-		echo
+		echo; echo "Initializing processing in 'chronologically moving pairs' mode."; echo
 
 		$OSARIS_PATH/lib/process-pairs.sh $config_file CMP 2>&1 >>$logfile
 		slurm_jobname="$slurm_jobname_prefix-CMP" 
 		$OSARIS_PATH/lib/check-queue.sh $slurm_jobname 1
 
 	    elif [ $process_intf_mode = "single_master" ]; then
-		echo
-		echo "Initializing processing in 'single master' mode."
-		echo
+		echo; echo "Initializing processing in 'single master' mode."; echo
 
 		$OSARIS_PATH/lib/process-pairs.sh $config_file SM 2>&1 >>$logfile		
 		slurm_jobname="$slurm_jobname_prefix-SM" 
 		$OSARIS_PATH/lib/check-queue.sh $slurm_jobname 1
 
 	    elif [ $process_intf_mode = "both" ]; then
-		echo
-		echo "Initializing processing in both 'single master' and 'chronologically moving pairs' modes."
-		echo
+		echo; echo "Initializing processing in both 'single master' and 'chronologically moving pairs' modes.";	echo
 
 		$OSARIS_PATH/lib/process-pairs.sh $config_file SM 2>&1 >>$logfile
 		slurm_jobname="$slurm_jobname_prefix-SM" 
@@ -227,11 +239,15 @@ else
     esac
     
 
+    #### HOOK 3: Post processing modules
+    include_modules $post_processing_mods
+
+
+    #### STEP 4: POSTPROCESSING
+
+    # TODO: Make module
     if [ "$process_reverse_intfs" -eq 1 ]; then
-	echo 
-	echo - - - - - - - - - - - - - - - - 
-	echo Processing unwrapping diffs
-	echo
+	echo; echo - - - - - - - - - - - - - - - -; echo "Processing unwrapping diffs";	echo
 	
 	cd $output_PATH/Pairs-forward
 	
@@ -249,56 +265,7 @@ else
 	done
     fi
 
-    if [ "$process_coherence_diff" -eq 1 ]; then
-	echo 
-	echo - - - - - - - - - - - - - - - - 
-	echo Processing coherence diffs
-	echo
-
-	mkdir -p $output_PATH/Coherence-diffs
-
-	cd $output_PATH/Pairs-forward
-
-	folders=($( ls -r ))
-
-	for folder in "${folders[@]}"; do
-	    echo "Adding coherence from $folder ..."
-	    cd $output_PATH/Pairs-forward
-	    if [ ! -z ${folder_1} ]; then
-		folder_2=$folder_1
-		folder_1=$folder
-
-		coherence_diff_filename=$( echo corr_diff--${folder_2:3:8}-${folder_2:27:8}---${folder_1:3:8}-${folder_1:27:8} )
-		
-		slurm_jobname="$slurm_jobname_prefix-CD"
-
-		sbatch \
-		    --ntasks=1 \
-		    --output=$log_PATH/OSS-CoD-%j-out \
-		    --error=$log_PATH/OSS-CoD-%j-out \
-		    --workdir=$work_PATH \
-		    --job-name=$slurm_jobname \
-		    --qos=$slurm_qos \
-		    --account=$slurm_account \
-		    --mail-type=$slurm_mailtype \
-		    $OSARIS_PATH/lib/difference.sh \
-		    $output_PATH/Pairs-forward/$folder_1/corr_ll.grd \
-		    $output_PATH/Pairs-forward/$folder_2/corr_ll.grd \
-		    $output_PATH/Coherence-diffs \
-		    $coherence_diff_filename \
-		    $OSARIS_PATH/lib/palettes/corr_diff_brown_green.cpt 2>&1 >>$logfile
-		    # TODO: Create an adequate palette for coherence differences		
-		
-	    else
-		folder_1=$folder
-	    fi
-	done
-
-	$OSARIS_PATH/lib/check-queue.sh $slurm_jobname 1
-	
-	# $OSARIS_PATH/lib/coherence_differences.sh $output_PATH/Pairs-forward "corr_ll.grd" 2>&1 >>$logfile
-    fi
-
+    # TODO: Make module
     if [ "$process_SBAS" -eq 1 ]; then
 	echo 
 	echo - - - - - - - - - - - - - - - - 
@@ -323,9 +290,11 @@ else
 	fi
     fi
 
-    echo
-    echo - - - - - - - - - - - - - - - -
-    echo Writing reports [todo]
+    #### HOOK 4: Post post-postprocessing modules
+    include_modules $post_postprocessing_mods
+
+    #### STEP 5: CALCULATE STATS AND WRITE REPORTS
+    echo; echo - - - - - - - - - - - - - - - -; echo Writing reports [todo]; echo
 
     echo
     echo - - - - - - - - - - - - - - - -
