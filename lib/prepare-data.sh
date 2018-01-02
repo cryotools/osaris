@@ -182,6 +182,7 @@ else
 	    sort data_sm_swath$swath.tmp  >> data_sm_swath$swath.in  
 	    # rm data_sm_swath$swath.tmp data_sm_swath$swath.master
 	else
+	    echo "Adding data_swath$swath.tmp to data_swath$swath.in"
 	    sort data_swath$swath.tmp  > data_swath$swath.in  
 	    rm data_swath$swath.tmp
 	fi

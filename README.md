@@ -13,12 +13,12 @@ Clone the OSARIS repository:
 git clone https://github.com/cryotools/osaris.git
 
 ### PREPARATION
-- In the S1PPC folder, copy configuration templates to config folder
-> cp ./templates/config.template ./config/_my_study_.cfg
-> cp ./templates/GMTSAR.template ./config/GMTSAR_my_study_.cfg
+- In the OSARIS folder, copy configuration templates to config folder
+> cp ./templates/config.template ./config/_my_study_.config
+> cp ./templates/GMTSAR.template ./config/GMTSAR_my_study_.config
 
 - Edit new config files to fit your needs and local configuration.
-  See comments for details.
+  See comments in template files for details.
 
 - Make sure .sh files are executable (chmod +x <filename>)
 
@@ -26,4 +26,5 @@ git clone https://github.com/cryotools/osaris.git
 
 
 ### LAUNCH
-
+Go to the OSARIS folder. Launch your run with
+./osaris.sh ./config/_my_config_.config

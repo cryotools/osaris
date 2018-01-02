@@ -79,7 +79,7 @@ $OSARIS_directory/lib/GMTSAR-mods/p2p_S1PPC.csh \
 cd $work_PATH/$folder/$job_ID/F$swath/intf/
 intf_dir=($( ls )) 
         
-output_intf_dir=$output_PATH/$folder/S1${previous_scene:15:8}_${previous_scene:24:6}_F$swath"---"S1${current_scene:15:8}_${current_scene:24:6}_F$swath
+output_intf_dir=$output_PATH/$folder/F$swath/S1${previous_scene:15:8}_${previous_scene:24:6}_F$swath"---"S1${current_scene:15:8}_${current_scene:24:6}_F$swath
 
 mkdir -pv $output_intf_dir
 

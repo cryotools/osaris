@@ -187,8 +187,7 @@ else
 	gmt psconvert $diff_filename.ps \
 	    -W+k+t"$diff_filename" -E$DPI -TG -P -S -V -F$diff_filename.png
 	# rm -f $diff_filename.ps grad.grd ps2raster* psconvert*
-	mv *.kml $output_PATH/PNG+KML
-	mv *.png $output_PATH/PNG+KML
+	mv *.kml $output_PATH/PNG+KML; mv *.png $output_PATH/PNG+KML
     else
 	echo "Skipping generation of PNG and KML files."
     fi

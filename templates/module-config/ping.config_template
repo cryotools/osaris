@@ -1,0 +1,24 @@
+##################################################################
+#
+# Template configuration for the ping module
+#
+# Copy to 'config' folder, rename to 'ping.config' and fit to 
+# your machine's configuration.
+#
+#################################################################
+
+
+slurm_account=morsanat
+# SLURM account name
+
+slurm_ntasks=40   
+# Number of cores used for parallel processing. 
+# Make this large enough to avoid uneccessarily many ping jobs.
+
+slurm_qos=medium
+# Job type
+
+slurm_partition=computehm
+# Partition used for computing.
+# Optional in most cases, comment out when not needed
+

@@ -1,178 +1,168 @@
-# - - - - - - - - - - - - - - - - - - - - - - - - - -
+#####################################################
 #
-# Template configuration file for GSP
+# OSARIS configuration template
 #
-# Copy to "config.txt" and change to fit your system
-# Do not modify the template file itself to prevent
-# it from being overwritten by git
-#
-# - - - - - - - - - - - - - - - - - - - - - - - - - -
+####################################################
+
 
 # - - - - - GENERAL - - - - - - - - - - - - - - - - - 
+
+debug=1
+# Debug level
+# 0 - none, 1 - moderate, 2 - maximum output
+
+prefix="my_prefix"
+# Used to group all data of the run.
+# Typically use the name of the study region, e.g. "central-alps"
+
 SAR_sensor="Sentinel"
 SAR_datatype="TOPS"
-swaths=(1 2 3)
-parallel_processing=0
-# Use SLURM-based parallel processing
+swaths_to_process=(1 3)
 
-# - - - - - PATHES - - - - - - - - - - - - - - - - - 
 
-input_PATH="/home/loibldav/Temp/DHuS"
-# Path to Sentinel scenes (existing files or download target)
+# - - - - - BASE DATA PATHES - - - - - - - - - - - - - - -
 
-work_PATH="/home/loibldav/Temp/GSP-Processing"
-# Path to working directory
+base_PATH="/my/path/OSARIS-results/"
+# Path to directory where OSARIS will put all files
 
-output_PATH="/home/loibldav/Temp/GSP-Output"
-# Path to directory where all output will be written
+input_files="/my/path/S1-scenes/"
+# Options:
+# download - use the DHuS script to obtain data, configure, below
+# full path to a directory containing the S1 scene to process, e.g. /data/S1-scenes 
 
-orbits_PATH="/home/loibldav/Processing/S1-orbits"
-# Path to directory containing S1 orbit data
-
-topo_PATH="/home/loibldav/Processing/GMT-topodata/Bishkek"
+topo_PATH="/my/path/DEM/"
 # Path to directory containing topo data (dem.grd file)
 # Generate at http://topex.ucsd.edu/gmtsar/demgen/
 
-### DHuS-specific configuration
-### Only required when downloading is activated
-dhusget_PATH="../../Tools/"
+orbits_PATH="/path/to/orbits_folder"
+# Path to S1 orbit data
+# Existing orbits will be used
+# If folder does not exist or is empty, orbits will be downloaded here
+# --> make sure to set $update_orbits to "1"
+
+
+# - - - - - PROCESSING CONFIGURATION - - - - - - - - - - - - - - - - 
+
+process_intf_mode=pairs
+# Mode to process interferograms.
+# pairs -> Chronologicallay moving pairs (A-B, B-C, C-D, ...)
+# single_master -> Fixed master (A-B, A-C, A-D, ...)
+# both -> process in both modes
+
+# master_scene_date=20160217
+# Optionally specify the scene to use as Master in single_master mode
+
+process_pdf_overview=1
+# Create an overview pdf of the processing results (0 = no,1 = yes)
+# The PDF will be located in the output folder
+
+
+# - - - - - MODULES - - - - - - - - - - - - - - - - 
+# Make sure that for each acitvated module a configuration file 
+# 'module_name.config' is located in the config folder. Copy the 
+# template file from the module folder and fit it to your needs.
+
+# post_download_mods=( ping )
+# Modules to be run after downloading the S1 datasets
+
+# post_extract_mods=( )
+# Modules to be run after extracting the data S1 scenes
+
+# post_processing_mods=( coherence_diff )
+# Modules to be run after extracting the data
+
+# post_postprocessing_mods=( )
+# Modules to be run after calculating statistics and preparing summary reports
+
+
+
+# - - - - - SLURM CONFIGURATION - - - - - - - - - - - - - -
+
+slurm_account=your_account
+# SLURM account name
+
+slurm_ntasks=5
+# Number of cores used for parallel processing. 
+# Fit this number to make sure sufficient RAM (~15 GB for full S1 swath) is available for processing.
+# For example, when 3 GB of RAM are allocated for each core, use 5 or more ntasks.
+
+slurm_jobname_prefix="Prefix"
+# Choose a name to identify your jobs in the SLURM queue
+
+slurm_qos=your_qos
+# Job type
+
+slurm_partition=your_partition
+# Partition used for computing.
+# Optional in most cases, comment out when not needed
+
+# slurm_extract_qos=your_extract_qos
+# Job type for extract jobs
+# Optional, only required if different from other processing, 
+# e.g. because of unzip is not installed on processing nodes
+
+# slurm_extract_partition=your_extract_partition
+# Partition used for computing.
+# Optional, only required by Slurm config and when different from partition defined with 'slurm_partition'
+
+slurm_mailtype=ALL
+# SLURM mail setup. 
+# Optional in most cases, comment out when not needed
+
 
 
 # - - - - - DOWNLOADS AND DATA - - - - - - - - - - - - 
 
-update_orbits=0
-# Activate (1) or deactivate (2) automatic orbit retrieval
+update_orbits=1
+# Activate (1) or deactivate (0) automatic orbit retrieval
 
-input_files="folder"
+orig_files="extract"
 # Options:
-# folder - specify a folder containing input files
-# download - use the DHuS script to obtain data, configure, below
+# extract - Unizp files from input folder
+# keep - recommended when files were already extracted in a previous run
 
-username="slingshot"
-password="esa@ADALbertSTEINweg80AC!"
+# username="your_dhus_username"
+# password="your_dhus_password"
+# Login credentials for your ESA DHuS account
+# Only required when $input_files is set to "download"
 
-use_filelist="true"
-filelist="filelist.txt"
+# import_data_type="search_string"
+# Configuration for DHuS download 
+# (only relevant when 'input_files' is set to 'download')
+# Options:
+# meta4 - use meta4 file obtained from the DHuS website
+# filelist - use a list file generated according to DHuS rules (e.g. from a previous GSP run)
+# search_string - use a dhus-comapatible search string
 
-# If not using a file list, specifiy the DHuSget search configuration manually 
-download_string="-F 'UUID:95f9a36f-cf54-4119-a725-a801a5162013"
+# meta4_file="/path/to/meta4_data/yourfile.meta4"
+# Path and file name of meta4 file
+# (only relevant when 'input_files' is set to 'download' and 'import_data' to 'meta4')
+# (a) Path and file name of a .meta4 file
 
-download_option="manifest"
+# filelist_file="/path/to/filelists/your_filelist.txt"
+# Path and file name of filelist file
+# (only relevant when 'input_files' is set to 'download')
+# Either generated from meta4 file or allready existing
+
+# If not using meta4 or file list, specifiy the DHuSget search configuration manually 
+# download_string="-m Sentinel-1 -i SAR -S 2015-10-01T06:00:00.000Z -c 74.330,42.420:74.620,46.600 -T SLC"
+# download_string="-F '( footprint:\"Intersects(POLYGON((74.10939131201312 42.27639698758162,74.81882318407474 42.27639698758162,74.81882318407474 42.635216267951876,74.10939131201312 42.635216267951876,74.10939131201312 42.27639698758162)))\" ) AND ( beginPosition:[2015-05-01T00:00:00.000Z TO NOW] AND endPosition:[2015-05-01T00:00:00.000Z TO NOW] ) AND (platformname:Sentinel-1 AND producttype:SLC AND sensoroperationalmode:IW AND relativeorbitnumber:27 AND slicenumber:11 )'" 
+
+# download_option="product"
 # Options: product - manifest - all
 
-concurrent_downloads="8"
+# concurrent_downloads=2
+
+clean_up=0
+# Delete files used for processing after finishing the job
+# 0 or not set -> Keep all files
+# 1 -> Delete files solely used for this run (will keep extracted S1 files for subsequent jobs
+# 2 -> Delete the whole processing folder
 
 
-# - - - - - GMTSAR BASIC CONFIG - - - - - - - - - - 
+# - - - - - GMTSAR CONFIG FILE - - - - - - - - - - 
 
-# Options: 'batch' or 'single-pair mode
-gmtsar_mode="single-pair"
-
-#
-# This is an example configuration file for p2p_S1A_TOPS.csh
-#
-# all the comments or explanations are marked by "#" 
-# The parameters in this configuration file is distinguished by their first word so 
-# user should follow the naming of each parameter.
-# the parameter name, "=" sign, parameter value should be separated by space " ". 
-# leave the parameter value blank if using default value. 
-#
-  
-#####################
-# processing stage  #
-#####################
-# 1 - start from preprocess
-# 2 - start from align SLC images
-# 3 - start from make topo_ra 
-# 4 - start from make and filter interferograms 
-# 5 - start from unwrap phase
-# 6 - start from geocode  
-proc_stage = 1
-
-##################################
-#   parameters for preprocess    #
-#   - pre_proc.csh               #
-##################################
-# num of patches
-num_patches = 
-
-# earth radius 
-earth_radius =
-
-# near_range
-near_range = 
-
-# Doppler centroid 
-fd1 = 
-
-################################################
-#   parameters for focus and align SLC images  #
-#   - align.csh                                #
-################################################
-#
-#####################################
-#   parameters for make topo_ra     #
-#   - dem2topo_ra.csh               #
-#####################################
-# subtract topo_ra from the phase
-#  (1 -- yes; 0 -- no)
-topo_phase = 1
-# if above parameter = 1 then one should have put dem.grd in topo/
-
-# topo_ra shift (1 -- yes; 0 -- no)
-shift_topo = 0
-
-####################################################
-#   parameters for make and filter interferograms  #
-#   - intf.csh                                     #
-#   - filter.csh                                   #
-####################################################
-# switch the master and slave when doing intf. 
-# put "1" if assume master as repeat and slave as reference 
-# put "0" if assume master as reference and slave as repeat [Default]
-# phase = repeat phase - reference phase
-switch_master = 0
-
-# set the filter wavelength in meters (default is 200m)
-# this is the wavelength where the filter has a gain of 0.5
-# the images will be sampled at 1/4 wavelength or smaller
-filter_wavelength = 300
-
-# decimation of images 
-# decimation control the size of the amplitude and phase images. It is either 1 or 2.
-# Set the decimation to be 1 if you want higher resolution images.
-# Set the decimation to be 2 if you want images with smaller file size.
-# 
-dec_factor = 2
-#
-# 
-#####################################
-#   parameters for unwrap phase     #
-#   - snaphu.csh                    #
-#####################################
-# correlation threshold for snaphu.csh (0~1)
-# set it to be 0 to skip unwrapping.
-threshold_snaphu = .1
-
-# region to unwrap in radar coordinates (leave it blank if unwrap the whole region)
-# example 300/5900/0/25000
-region_cut = "300/600/0/500"
-
-# mask the wet region (Lakes/Oceans) before unwrapping (1 -- yes; else -- no)
-switch_land = 1
-
-#
-# Allow phase discontinuity in unrapped phase. This is needed for interferograms having sharp phase jumps.
-# defo_max = 0 - used for smooth unwrapped phase such as interseismic deformation
-# defo_max = 65 - will allow a phase jump of 65 cycles or 1.82 m of deformation at C-band
-#
-defomax = 0
-
-#####################################
-#   parameters for geocode          #
-#   - geocode.csh                   #
-#####################################
-# correlation threshold for geocode.csh (0~1)
-threshold_geocode = .10
-
+# File name of GMTSAR congif file. Specify full path if the file is
+# not located in the program directory (along with this config file)
+gmtsar_config_file="config/GMTSAR-default.config"
 
