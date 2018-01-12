@@ -46,6 +46,10 @@ for swath in ${swaths_to_process[@]}; do
     done
 done
 
+# TODO: Calculate Damage Proxy Map
+# for corr_diff_file in $( ls *.grd ); do gmt grdmath $corr_diff_file SQR SQRT = DPM_$corr_diff_file.grd; done
+
+
 $OSARIS_PATH/lib/check-queue.sh $slurm_jobname 1
 
 # $OSARIS_PATH/lib/coherence_differences.sh $output_PATH/Pairs-forward "corr_ll.grd" 2>&1 >>$logfile
