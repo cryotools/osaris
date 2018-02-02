@@ -2,24 +2,20 @@
 
 ######################################################################
 #
-# OSARIS module to identify persitant scatterers (simple)
+# OSARIS module to identify persitent scatterers (simple)
 #
+# Requires processed GMTSAR coherence files (corr_ll.grd) as input.
+# Output:
+#   - ps_coords.xy     -> Coordinates of max. coherence the stack
+#                         Input file for homogenize_intfs
+#   - corr_sum.grd     -> Sum of coherences from stack (grid)
+#   - corr_arithmean   -> Arith. mean of coherences (grid)
 #
-#
-# David Loibl, 2017
+# David Loibl, 2018
 #
 #####################################################################
 
 start=`date +%s`
-
-
-#if [ ! -f "$OSARIS_PATH/config/homogenize_intfs.sh" ]; then
-#    echo
-#    echo "$OSARIS_PATH/config/homogenize_intfs.config is not a valid configuration file"  
-#    echo
-#    exit 2
-#else
-#    source $OSARIS_PATH/config/homogenize_intfs.config
 
 
 echo; echo "Simple Persistent Scatterer Identification"
@@ -49,7 +45,6 @@ for folder in "${folders[@]}"; do
 	    echo "First folder $folder"
 	elif [ "$psi_count" -eq 2 ]; then
 	    # echo "grdxtremes=($(grdminmax $psi_base_PATH/$prev_folder/corr_ll.grd $psi_base_PATH/$folder/corr_ll.grd))"
-
 
 
 	    # Find min and max x and y values for a grd file.
@@ -117,7 +112,7 @@ for folder in "${folders[@]}"; do
 
 		counter=$((counter+1))
 	    done
-	    echo "Initial coord set: $xmin/$xmax/$ymin/$ymax"
+	    if [ $debug -gt 0 ]; then echo "Initial coord set: $xmin/$xmax/$ymin/$ymax"; fi
 
 	else
 
@@ -186,12 +181,24 @@ for folder in "${folders[@]}"; do
 		counter=$((counter+1))
 	    done
 	    
-	    if (( $(echo "$xmin < $xmin_local" | bc -l) ))  && (( $(echo "$xmin_local != 0" | bc -l) )); then echo "New xmin value found: $xmin_local"; xmin=$xmin_local; fi
-	    if (( $(echo "$xmax > $xmax_local" | bc -l) ))  && (( $(echo "$xmax_local != 0" | bc -l) )); then echo "New xmax value found: $xmax_local"; xmax=$xmax_local; fi
-	    if (( $(echo "$ymin < $ymin_local" | bc -l) ))  && (( $(echo "$ymin_local != 0" | bc -l) )); then echo "New ymin value found: $ymin_local"; ymin=$ymin_local; fi
-	    if (( $(echo "$ymax > $ymax_local" | bc -l) ))  && (( $(echo "$ymax_local != 0" | bc -l) )); then echo "New ymax value found: $ymax_local"; ymax=$ymax_local; fi
+	    if (( $(echo "$xmin < $xmin_local" | bc -l) ))  && (( $(echo "$xmin_local != 0" | bc -l) )); then 
+		if [ $debug -gt 0 ]; then echo "New xmin value found: $xmin_local"; fi
+		xmin=$xmin_local 
+	    fi
+	    if (( $(echo "$xmax > $xmax_local" | bc -l) ))  && (( $(echo "$xmax_local != 0" | bc -l) )); then 
+		if [ $debug -gt 0 ]; then echo "New xmax value found: $xmax_local"; fi
+		xmax=$xmax_local 
+	    fi
+	    if (( $(echo "$ymin < $ymin_local" | bc -l) ))  && (( $(echo "$ymin_local != 0" | bc -l) )); then 
+		if [ $debug -gt 0 ]; then echo "New ymin value found: $ymin_local"; fi
+		ymin=$ymin_local 
+	    fi
+	    if (( $(echo "$ymax > $ymax_local" | bc -l) ))  && (( $(echo "$ymax_local != 0" | bc -l) )); then 
+		if [ $debug -gt 0 ]; then echo "New ymax value found: $ymax_local"; fi
+		ymax=$ymax_local
+	    fi
 
-	    echo "Updated coord set: $xmin/$xmax/$ymin/$ymax"
+	    if [ $debug -gt 0 ]; then echo "Updated coord set: $xmin/$xmax/$ymin/$ymax"; fi
 	fi
 	
 	
@@ -203,7 +210,7 @@ for folder in "${folders[@]}"; do
     fi
 done
 
-echo; echo "Final coord set: $xmin/$xmax/$ymin/$ymax"
+if [ $debug -gt 0 ]; then echo; echo "Common coverage boundary box: $xmin/$xmax/$ymin/$ymax"; fi
 
 for folder in "${folders[@]}"; do           
     if [ -f "${folder::-1}/corr_ll.grd" ]; then
@@ -222,12 +229,12 @@ cut_files=($(ls *.grd))
 cut_files_count=1
 for cut_file in "${cut_files[@]}"; do
     if [ "$cut_files_count" -eq 1 ]; then
-	echo "First file $cut_file"
+	if [ $debug -gt 1 ]; then echo "First file $cut_file"; fi
     elif [ "$cut_files_count" -eq 2 ]; then	
-	echo "Addition of coherence from $cut_file and $prev_cut_file ..."
+	if [ $debug -gt 0 ]; then echo "Addition of coherence from $cut_file and $prev_cut_file ..."; fi
 	gmt grdmath $cut_file $prev_cut_file ADD -V = $psi_output_PATH/corr_sum.grd
     else
-	echo "Adding coherence from $cut_file ..."
+	if [ $debug -gt 0 ]; then echo "Adding coherence from $cut_file ..."; fi
 	gmt grdmath $cut_file $psi_output_PATH/corr_sum.grd ADD -V = $psi_output_PATH/corr_sum.grd
     fi
 
@@ -254,8 +261,5 @@ runtime=$((end-start))
 printf 'Processing finished in %02dd %02dh:%02dm:%02ds\n' $(($runtime/86400)) $(($runtime%86400/3600)) $(($runtime%3600/60)) $(($runtime%60))
 echo
 
-
-
-# fi
 
 

@@ -2,11 +2,20 @@
 
 ######################################################################
 #
-# OSARIS module to homgenize unwrapped intfs
+# OSARIS module to homgenize unwrapped intfs and LoS displacement
 #
-# Input table provides coordinates of 'stable ground point' which will
-# be set to zero in all intfs. The rest of each unwrapped intf will be
-# shifted according to the offset of the 'stable ground point' to zero.
+# Shift all unwrapped intereferograms and LoS displacement file by 
+# their offset to a 'stable ground point' as identified by the
+# simplePSI module. 
+#
+# Input: 
+#    - unwrap_mask_ll.grd files from 'Pairs forward' output folder
+#    - los_ll.grd files from 'Pairs forward' output folder
+#    - ps_coords.xy from 'PSI' output folder
+#
+# Output:
+#    - homogenized unwrapped interferograms (grd)
+#    - homogenized LoS displacements (grd) 
 #
 #
 # David Loibl, 2018
@@ -15,14 +24,6 @@
 
 start=`date +%s`
 
-
-# if [ ! -f "$OSARIS_PATH/config/homogenize_intfs.sh" ]; then
-#     echo
-#     echo "$OSARIS_PATH/config/homogenize_intfs.config is not a valid configuration file"  
-#     echo
-#     exit 2
-# else
-# source $OSARIS_PATH/config/homogenize_intfs.config
 
 echo; echo "Homogenizing interferograms ..."
 mkdir -p $output_PATH/homogenized_intfs
@@ -47,11 +48,10 @@ if [ -f $output_PATH/PSI/ps_coords.xy ]; then
 			sg_unwrap_val=$( echo "$sg_unwrap_trk" | awk '{ print $3 }')
 			#sg_unwrap_diff=$(echo "scale=10; 0-$sg_unwrap_val" | bc -l)
 
-			echo "stable ground diff unwrap: $sg_unwrap_val"
+			if [ $debug -gt 1 ]; then echo "stable ground diff unwrap: $sg_unwrap_val"; fi
 		    else
 			echo "GMT grdtrack for stable ground yielded no result. Skipping"
 		    fi
-
 		    
 		    if [ ! -z ${sg_unwrap_val+x} ]; then
 			# Shift input grid (unwrapped intf) so that the 'stable ground value' is zero
@@ -65,20 +65,14 @@ if [ -f $output_PATH/PSI/ps_coords.xy ]; then
 
 
 		if [ -f "$folder/los_ll.grd" ]; then
-		    # Get xy coordinates of 'stable ground point' from file and check the value the raster set has at this location 
-		    echo "Getting track"
+		    # Get xy coordinates of 'stable ground point' from file and check the value the raster set has at this location. 
 		    sg_losdsp_trk=$( gmt grdtrack $output_PATH/PSI/ps_coords.xy -G$folder/los_ll.grd )
 		    if [ ! -z ${sg_losdsp_trk+x} ]; then
-			echo "Getting sg val"
 			sg_losdsp_val=$( echo "$sg_losdsp_trk" | awk '{ print $3 }')
-			echo "Calculating  difference"
-			#sg_losdsp_diff=$( echo "scale=10; 0-$sg_losdsp_val" | bc -l )
-
-			echo "stable ground diff losdsp: $sg_losdsp_val"
+			if [ $debug -gt 1 ]; then echo "stable ground diff losdsp: $sg_losdsp_val"; fi
 		    else
 			echo "GMT grdtrack for LOS stable ground yielded no result. Skipping"
-		    fi
-	    
+		    fi	    
 
 		    if [ ! -z ${sg_losdsp_val+x} ]; then
 			# Shift input grid (los displacement) so that the 'stable ground value' is zero
@@ -98,12 +92,6 @@ if [ -f $output_PATH/PSI/ps_coords.xy ]; then
 else 
     echo "Module ERROR: Required file ps_coords.xy not found. Please check conifg of 'simple_PSI' module. Exiting interferogram homogenization."
 fi
-
-# echo; echo
-# echo "Cleaning up"
-# rm -r temp
-# rm merged_dem.grd
-# echo; echo
 
 end=`date +%s`
 
