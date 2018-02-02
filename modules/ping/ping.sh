@@ -19,14 +19,18 @@ if [ ! -f "$OSARIS_PATH/config/ping.config" ]; then
 else
     # Ping it on!
     source $OSARIS_PATH/config/ping.config
-    sbatch \
-	--output=/dev/null \
-	--error=/dev/null \
-	--workdir=$input_PATH \
-	--job-name=ping \
-	--qos=$slurm_qos \
-	--account=$slurm_account \
-	--partition=$slurm_partition \
-	--mail-type=NONE \
-	$OSARIS_PATH/modules/ping/ping_batch.sh
+    i=0
+    while [ $i -lt $ping_count ]; do
+	sbatch \
+	    --output=/dev/null \
+	    --error=/dev/null \
+	    --workdir=$input_PATH \
+	    --job-name=ping \
+	    --qos=$slurm_qos \
+	    --account=$slurm_account \
+	    --partition=$slurm_partition \
+	    --mail-type=NONE \
+	    $OSARIS_PATH/modules/ping/ping_batch.sh
+	((i++))
+    done
 fi

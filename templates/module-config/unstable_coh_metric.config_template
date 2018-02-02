@@ -1,0 +1,15 @@
+##################################################################
+#
+# Template configuration for the Unstable Coherence Metric module
+#
+# Copy to 'config' folder, rename to 'unstable_coh_metric.config' 
+# and fit to your setup and needs.
+#
+#################################################################
+
+high_corr_threshold=0.4
+# Threshold value for high coherence
+# A value > 0.8 may be adequate when focusing on buildings 
+# (e.g. earthquake damages), 0.4 is reasonable to detect 
+# general land surface changes.
+

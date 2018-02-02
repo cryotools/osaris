@@ -9,87 +9,107 @@
 # shifted according to the offset of the 'stable ground point' to zero.
 #
 #
-# David Loibl, 2017
+# David Loibl, 2018
 #
 #####################################################################
 
 start=`date +%s`
 
 
-if [ ! -f "$OSARIS_PATH/config/homogenize_intfs.sh" ]; then
-    echo
-    echo "$OSARIS_PATH/config/homogenize_intfs.config is not a valid configuration file"  
-    echo
-    exit 2
-else
-    source $OSARIS_PATH/config/homogenize_intfs.config
+# if [ ! -f "$OSARIS_PATH/config/homogenize_intfs.sh" ]; then
+#     echo
+#     echo "$OSARIS_PATH/config/homogenize_intfs.config is not a valid configuration file"  
+#     echo
+#     exit 2
+# else
+# source $OSARIS_PATH/config/homogenize_intfs.config
 
-    echo; echo "Homogenizing interferograms"
+echo; echo "Homogenizing interferograms ..."
+mkdir -p $output_PATH/homogenized_intfs
 
-    for swath in ${swaths_to_process[@]}; do
-	cd $output_PATH/Pairs-forward/F$swath
-
-	folders=($( ls -r ))
-
-	for folder in "${folders[@]}"; do
-	    echo "Adding coherence from $folder ..."
+if [ -f $output_PATH/PSI/ps_coords.xy ]; then
+    sg_lat=($( cat $output_PATH/PSI/ps_coords.xy | awk '{ print $1 }' ))
+    sg_lon=($( cat $output_PATH/PSI/ps_coords.xy | awk '{ print $2 }' ))
+    if [ -n $ps_lat ] && [ -n $ps_lon ]; then
+	for swath in ${swaths_to_process[@]}; do
 	    cd $output_PATH/Pairs-forward/F$swath
-	    if [ ! -z ${folder_1} ]; then
-		folder_2=$folder_1
-		folder_1=$folder
+	    
+	    folders=($( ls -d */ ))
 
-		coherence_diff_filename=$( echo corr_diff--${folder_2:2:8}-${folder_2:25:8}-F$swath---${folder_1:2:8}-${folder_1:25:8}-F$swath )
-		
-		slurm_jobname="$slurm_jobname_prefix-CD"
+	    for folder in "${folders[@]}"; do
+		folder=${folder::-1}
+		echo; echo "Processing data from $folder"
+		if [ -f "$folder/unwrap_mask_ll.grd" ]; then
+		    # Get xy coordinates of 'stable ground point' from file and check the value the raster set has at this location.
+		    gmt grdtrack $output_PATH/PSI/ps_coords.xy -G$folder/unwrap_mask_ll.grd >> $output_PATH/homogenized_intfs/sg_vals.xyz
+		    sg_unwrap_trk=$( gmt grdtrack $output_PATH/PSI/ps_coords.xy -G$folder/unwrap_mask_ll.grd )
+		    if [ ! -z ${sg_unwrap_trk+x} ]; then
+			sg_unwrap_val=$( echo "$sg_unwrap_trk" | awk '{ print $3 }')
+			#sg_unwrap_diff=$(echo "scale=10; 0-$sg_unwrap_val" | bc -l)
 
-		sbatch \
-		    --ntasks=1 \
-		    --output=$log_PATH/OSS-CoD-%j-out \
-		    --error=$log_PATH/OSS-CoD-%j-out \
-		    --workdir=$work_PATH \
-		    --job-name=$slurm_jobname \
-		    --qos=$slurm_qos \
-		    --account=$slurm_account \
-		    --mail-type=$slurm_mailtype \
-		    $OSARIS_PATH/lib/difference.sh \
-		    $output_PATH/Pairs-forward/F$swath/$folder_1/corr_ll.grd \
-		    $output_PATH/Pairs-forward/F$swath/$folder_2/corr_ll.grd \
-		    $output_PATH/Coherence-diffs \
-		    $coherence_diff_filename \
-		    $OSARIS_PATH/lib/palettes/corr_diff_brown_green.cpt 2>&1 >>$logfile
-		# TODO: Create an adequate palette for coherence differences		
-		
-	    else
-		folder_1=$folder
-	    fi
+			echo "stable ground diff unwrap: $sg_unwrap_val"
+		    else
+			echo "GMT grdtrack for stable ground yielded no result. Skipping"
+		    fi
+
+		    
+		    if [ ! -z ${sg_unwrap_val+x} ]; then
+			# Shift input grid (unwrapped intf) so that the 'stable ground value' is zero
+			gmt grdmath $folder/unwrap_mask_ll.grd $sg_unwrap_val SUB = $output_PATH/homogenized_intfs/hintf_${folder}.grd -V
+		    else 
+			echo "Unwrap difference calculation for stable ground point failed in ${folder}. Skipping ..."
+		    fi		    
+		else 
+		    echo "No unwrapped interferogram found in ${folder}. Skipping ..."
+		fi
+
+
+		if [ -f "$folder/los_ll.grd" ]; then
+		    # Get xy coordinates of 'stable ground point' from file and check the value the raster set has at this location 
+		    echo "Getting track"
+		    sg_losdsp_trk=$( gmt grdtrack $output_PATH/PSI/ps_coords.xy -G$folder/los_ll.grd )
+		    if [ ! -z ${sg_losdsp_trk+x} ]; then
+			echo "Getting sg val"
+			sg_losdsp_val=$( echo "$sg_losdsp_trk" | awk '{ print $3 }')
+			echo "Calculating  difference"
+			#sg_losdsp_diff=$( echo "scale=10; 0-$sg_losdsp_val" | bc -l )
+
+			echo "stable ground diff losdsp: $sg_losdsp_val"
+		    else
+			echo "GMT grdtrack for LOS stable ground yielded no result. Skipping"
+		    fi
+	    
+
+		    if [ ! -z ${sg_losdsp_val+x} ]; then
+			# Shift input grid (los displacement) so that the 'stable ground value' is zero
+			gmt grdmath $folder/los_ll.grd $sg_losdsp_val SUB = $output_PATH/homogenized_intfs/hlosdsp_${folder}.grd -V
+		    else 
+			echo "LOS difference calculation for stable ground point failed in ${folder}. Skipping ..."
+		    fi
+		else 
+		    echo "No LOS file found in ${folder}. Skipping ..."
+		fi
+
+	    done
 	done
-    done
-
-$OSARIS_PATH/lib/check-queue.sh $slurm_jobname 1
-    
-    # Get xy coordinates of 'stable ground point' from file and check the value the raster set has at this location.
-    stable_ground_val=$(gmt grdtrack track_4.xyg -Ghawaii_topo.nc)
-
-    stable_ground_diff=$(echo "scale=10; 0-$stable_ground_val" | bc -l)
-
-    # Shift input grid (unwrapped intf) so that the 'stable ground value' is zero
-    gmt grdmath $input_grid $stable_ground_diff SUB = $output_grid
-
-    echo; echo
-    echo "Cleaning up"
-    rm -r temp
-    rm merged_dem.grd
-    echo; echo
-
-    end=`date +%s`
-
-    runtime=$((end-start))
-
-    printf 'Processing finished in %02dd %02dh:%02dm:%02ds\n' $(($runtime/86400)) $(($runtime%86400/3600)) $(($runtime%3600/60)) $(($runtime%60))
-    echo
-
-
-
+    else
+	echo "Module ERROR: Persistent scatterer coordinates are not set. Exiting interferogram homogenization."
+    fi
+else 
+    echo "Module ERROR: Required file ps_coords.xy not found. Please check conifg of 'simple_PSI' module. Exiting interferogram homogenization."
 fi
+
+# echo; echo
+# echo "Cleaning up"
+# rm -r temp
+# rm merged_dem.grd
+# echo; echo
+
+end=`date +%s`
+
+runtime=$((end-start))
+
+printf 'Processing finished in %02dd %02dh:%02dm:%02ds\n' $(($runtime/86400)) $(($runtime%86400/3600)) $(($runtime%3600/60)) $(($runtime%60))
+echo
 
 
