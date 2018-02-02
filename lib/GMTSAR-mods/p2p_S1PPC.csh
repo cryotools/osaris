@@ -197,8 +197,10 @@ unset noclobber
       cd topo
       cp ../SLC/$master.PRM master.PRM 
       ln -s ../raw/$master.LED . 
-      if (-f dem.grd) then 
+      if (-f dem.grd) then
+        echo " Executing dem2topo_ra.csh "
         dem2topo_ra.csh master.PRM dem.grd 
+	echo " Finished dem2topo_ra.csh "
       else 
         echo "no DEM file found: " dem.grd 
         exit 1
@@ -217,11 +219,15 @@ unset noclobber
         set rng = `grdinfo topo/topo_ra.grd | grep x_inc | awk '{print $7}'`
         cd SLC 
         echo " range decimation is:  " $rng
+	echo " Executing slc2amp.csh $master.PRM $rng amp-$master.grd"
         slc2amp.csh $master.PRM $rng amp-$master.grd
+	echo " Finished slc2amp.csh "
         cd ..
         cd topo
         ln -s ../SLC/amp-$master.grd . 
+	echo " Executing offset_topo "
         offset_topo amp-$master.grd topo_ra.grd 0 0 7 topo_shift.grd 
+	echo " Finished offset_topo "
         cd ..
         echo "OFFSET_TOPO - END"
       else if ($shift_topo == 0) then 

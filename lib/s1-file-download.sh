@@ -8,25 +8,24 @@ echo
 
 dhusget_config="-u $username -p $password"
 
-if [ "$import_data_type" == "meta4" ]; then
-    echo "Reading DHuS download configuration from meta4 file $meta4_file"
-    python $GSP_directory/lib/meta4-to-filelist.py $meta4_file $filelist_file
-    dhusget_config="$dhusget_config -E 2010-10-10T12:00:00.000Z -o $download_option -n $concurrent_downloads -O $input_PATH -r $filelist_file"
 
-elif [ "$import_data_type" == "filelist" ]; then
-    echo "Reading DHuS download configuration from filelist $filelist_file"
-    dhusget_config="$dhusget_config -E 2010-10-10T12:00:00.000Z -o $download_option -n $concurrent_downloads -O $input_PATH -r $filelist_file"
+if [ ! -z "$download_option" ]; then dhusget_config="$dhusget_config -o $download_option"; fi
+if [ ! -z "$mission" ]; then dhusget_config="$dhusget_config -m $mission"; fi
+if [ ! -z "$instrument" ]; then dhusget_config="$dhusget_config -i $instrument"; fi
+if [ ! -z "$sensing_period_start" ]; then dhusget_config="$dhusget_config -S $sensing_period_start"; fi
+if [ ! -z "$sensing_period_end" ]; then dhusget_config="$dhusget_config -E $sensing_period_end"; fi
+if [ ! -z "$ingestion_period_start" ]; then dhusget_config="$dhusget_config -s $ingestion_period_start"; fi
+if [ ! -z "$ingestion_period_end" ]; then dhusget_config="$dhusget_config -e $ingestion_period_end"; fi
+if [ ! -z "$area_of_interest" ]; then dhusget_config="$dhusget_config -c $area_of_interest"; fi
+if [ ! -z "$search_string" ]; then dhusget_config="$dhusget_config -F $search_string"; fi
+if [ ! -z "$product_type" ]; then dhusget_config="$dhusget_config -T $product_type"; fi
+#if [ ! -z "$info_file_destination" ]; then dhusget_config="$dhusget_config -q $info_file_destination -C $info_file_destination" ; fi
+if [ ! -z "$max_results_per_page" ]; then dhusget_config="$dhusget_config -l $max_results_per_page"; fi
+if [ ! -z "$concurrent_downloads" ]; then dhusget_config="$dhusget_config -n $concurrent_downloads"; fi
 
-elif [ "$import_data_type" == "search_string" ]; then
-    echo "Querying DHuS with search string"
-    echo $download_string
-    dhusget_config="$dhusget_config -l 100 $download_string -o $download_option -n $concurrent_downloads -O $input_PATH"
+# dhusget_config="$dhusget_config -q $input_PATH -C $input_PATH"
+dhusget_config="$dhusget_config -O $input_PATH"
 
-else
-    echo "Error"
-    echo "No download configuration specified!"
-    echo "Please set <input_file_type> in config.txt ..."
-fi
 
 
 echo
@@ -34,5 +33,5 @@ echo "DHuSget configuration:"
 echo $dhusget_config
 echo
 
-cd $GSP_directory/lib/ext/dhusget/
+cd $OSARIS_PATH/lib/ext/dhusget/
 ./dhusget.sh $dhusget_config

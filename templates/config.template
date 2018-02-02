@@ -17,7 +17,7 @@ prefix="my_prefix"
 
 SAR_sensor="Sentinel"
 SAR_datatype="TOPS"
-swaths_to_process=(1 3)
+swaths_to_process=(1 2 3)
 
 
 # - - - - - BASE DATA PATHES - - - - - - - - - - - - - - -
@@ -25,7 +25,7 @@ swaths_to_process=(1 3)
 base_PATH="/my/path/OSARIS-results/"
 # Path to directory where OSARIS will put all files
 
-input_files="/my/path/S1-scenes/"
+input_files="download"
 # Options:
 # download - use the DHuS script to obtain data, configure, below
 # full path to a directory containing the S1 scene to process, e.g. /data/S1-scenes 
@@ -52,28 +52,77 @@ process_intf_mode=pairs
 # master_scene_date=20160217
 # Optionally specify the scene to use as Master in single_master mode
 
-process_pdf_overview=1
+process_pdf_overview=0
 # Create an overview pdf of the processing results (0 = no,1 = yes)
 # The PDF will be located in the output folder
+# ToDo: not yet implemented
 
 
-# - - - - - MODULES - - - - - - - - - - - - - - - - 
-# Make sure that for each acitvated module a configuration file 
+# - - - - - GMTSAR CONFIG FILE - - - - - - - - - - - - - 
+
+# File name of GMTSAR config file. Specify full path if the file is
+# not located in the program directory (along with this config file)
+gmtsar_config_file="config/GMTSAR-golubin.config"
+
+
+
+# - - - - - MODULES - - - - - - - - - - - - - - - - - - -
+
+# Note that some modules may require a separate configuration file.
+# For these, make sure that for each acitvated module a configuration file 
 # 'module_name.config' is located in the config folder. Copy the 
 # template file from the module folder and fit it to your needs.
 
-# post_download_mods=( ping )
+post_download_mods=( )
 # Modules to be run after downloading the S1 datasets
+# Recommended for:
+#   - ping
 
-# post_extract_mods=( )
+post_extract_mods=( )
 # Modules to be run after extracting the data S1 scenes
 
-# post_processing_mods=( coherence_diff )
-# Modules to be run after extracting the data
+post_processing_mods=( )
+# Modules to be run after GMTSAR processing
+# Recommended for:
+#   - unstable_coherence_metric
+#   - simple_PSI
+#   - homogenize_intfs
 
-# post_postprocessing_mods=( )
+post_postprocessing_mods=( )
 # Modules to be run after calculating statistics and preparing summary reports
 
+
+
+# - - - - - CUTTING AND MERGING - - - - - - - - - - - - - 
+
+# Activate cutting of scenes to the extent of an area of interest
+# (0 = no, 1 = yes).
+cut_to_aoi=1
+
+# Coordinates and elevation of upper-left and lower-right corner 
+# points of area of interest. In case the area of interest crosses
+# the edge of two scenes along the flight path, make sure you have
+# pairs with equal dates in the input folder. Scenes with equal dates
+# will be matched and merged automatically.
+# Only needed when cut_to_aoi=1
+lon_1=11.11 
+lat_1=22.22
+elev_1=1234
+
+lon_2=33.33
+lat_2=44.44
+elev_2=1234
+
+# Merge swathes (0 = no, 1 = yes)
+# merge_swathes=1
+# TODO, not yet implemented
+
+
+# - - - - - GMTSAR CONFIG FILE - - - - - - - - - - 
+
+# File name of GMTSAR congif file. Specify full path if the file is
+# not located in the program directory (along with this config file)
+gmtsar_config_file="config/GMTSAR-default.config"
 
 
 # - - - - - SLURM CONFIGURATION - - - - - - - - - - - - - -
@@ -110,7 +159,6 @@ slurm_mailtype=ALL
 # Optional in most cases, comment out when not needed
 
 
-
 # - - - - - DOWNLOADS AND DATA - - - - - - - - - - - - 
 
 update_orbits=1
@@ -121,38 +169,6 @@ orig_files="extract"
 # extract - Unizp files from input folder
 # keep - recommended when files were already extracted in a previous run
 
-# username="your_dhus_username"
-# password="your_dhus_password"
-# Login credentials for your ESA DHuS account
-# Only required when $input_files is set to "download"
-
-# import_data_type="search_string"
-# Configuration for DHuS download 
-# (only relevant when 'input_files' is set to 'download')
-# Options:
-# meta4 - use meta4 file obtained from the DHuS website
-# filelist - use a list file generated according to DHuS rules (e.g. from a previous GSP run)
-# search_string - use a dhus-comapatible search string
-
-# meta4_file="/path/to/meta4_data/yourfile.meta4"
-# Path and file name of meta4 file
-# (only relevant when 'input_files' is set to 'download' and 'import_data' to 'meta4')
-# (a) Path and file name of a .meta4 file
-
-# filelist_file="/path/to/filelists/your_filelist.txt"
-# Path and file name of filelist file
-# (only relevant when 'input_files' is set to 'download')
-# Either generated from meta4 file or allready existing
-
-# If not using meta4 or file list, specifiy the DHuSget search configuration manually 
-# download_string="-m Sentinel-1 -i SAR -S 2015-10-01T06:00:00.000Z -c 74.330,42.420:74.620,46.600 -T SLC"
-# download_string="-F '( footprint:\"Intersects(POLYGON((74.10939131201312 42.27639698758162,74.81882318407474 42.27639698758162,74.81882318407474 42.635216267951876,74.10939131201312 42.635216267951876,74.10939131201312 42.27639698758162)))\" ) AND ( beginPosition:[2015-05-01T00:00:00.000Z TO NOW] AND endPosition:[2015-05-01T00:00:00.000Z TO NOW] ) AND (platformname:Sentinel-1 AND producttype:SLC AND sensoroperationalmode:IW AND relativeorbitnumber:27 AND slicenumber:11 )'" 
-
-# download_option="product"
-# Options: product - manifest - all
-
-# concurrent_downloads=2
-
 clean_up=0
 # Delete files used for processing after finishing the job
 # 0 or not set -> Keep all files
@@ -160,9 +176,42 @@ clean_up=0
 # 2 -> Delete the whole processing folder
 
 
-# - - - - - GMTSAR CONFIG FILE - - - - - - - - - - 
+### DHUS download configuration
+### Only required when $input_files is set to 'download'
 
-# File name of GMTSAR congif file. Specify full path if the file is
-# not located in the program directory (along with this config file)
-gmtsar_config_file="config/GMTSAR-default.config"
+# Login credentials for your ESA DHuS account
+username="my_DHUS_user"
+password="my_DHUS_pass"
 
+# Coordinates of area of interest 
+# Provide coords of a bounding box in decimal degree using the following syntax:
+# lon1,lat1:lon2,lat2
+area_of_interest="74.1,42.92:74.83,42.27"
+
+# Timing configuration
+# Date format is ISO 8601, YYYY-MM-DDThh:mm:ss.cccZ (e.g. -s 2016-10-02T06:00:00.000Z)
+sensing_period_start="2015-01-01T00:00:00.000Z"
+sensing_period_end="NOW"
+
+ingestion_period_start="2015-01-01T00:00:00.000Z"
+ingestion_period_end="NOW"
+
+search_string=""
+# Additional configuration (see DHUS for documentation and examples).
+# Use e.g., use "relativeorbitnumber:27" to limit results to orbit 27.
+
+mission="Sentinel-1"
+
+#instrument="SAR"
+
+product_type="SLC"
+
+info_file_destination=""
+
+max_results_per_page=100
+# Values > 100 will lead to an error
+
+download_option="product"
+# Options: product - manifest - all
+
+concurrent_downloads=2
