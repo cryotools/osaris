@@ -8,17 +8,22 @@
 #################################################################
 
 
-slurm_account=morsanat
-# SLURM account name
+ping_count=10
+# Number of ping jobs to send to the queue.
+# Number of jobs times ntasks should amount ~ to the number of cores 
+# required in subsequent processing steps.
 
-slurm_ntasks=40   
+slurm_ntasks=30   
 # Number of cores used for parallel processing. 
 # Make this large enough to avoid uneccessarily many ping jobs.
 
-slurm_qos=medium
+slurm_account=my_account
+# SLURM account name
+
+slurm_qos=my_jobtype
 # Job type
 
-slurm_partition=computehm
+slurm_partition=partition_name
 # Partition used for computing.
 # Optional in most cases, comment out when not needed
 

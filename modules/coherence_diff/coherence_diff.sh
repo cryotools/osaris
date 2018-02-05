@@ -48,5 +48,5 @@ done
 
 $OSARIS_PATH/lib/check-queue.sh $slurm_jobname 1
 
-# $OSARIS_PATH/lib/coherence_differences.sh $output_PATH/Pairs-forward "corr_ll.grd" 2>&1 >>$logfile
+
 

@@ -55,7 +55,11 @@ echo "align_tops.csh $previous_scene $previous_orbit $current_scene $current_orb
 echo
 echo
 
-align_tops.csh $previous_scene $previous_orbit $current_scene $current_orbit dem.grd
+if [ "$cut_to_aoi" -eq 1 ]; then
+    $OSARIS_PATH/lib/GMTSAR-mods/align_cut_tops.csh $previous_scene $previous_orbit $current_scene $current_orbit dem.grd
+else
+    align_tops.csh $previous_scene $previous_orbit $current_scene $current_orbit dem.grd
+fi
 
 cd $work_PATH/$folder/$job_ID/F$swath/raw/
 ln -sf $work_PATH/raw/$job_ID-aligned/*F$swath* .

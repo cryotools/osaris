@@ -9,12 +9,12 @@ elif [ ! -f $1 ]; then
     echo "Cannot open $1. Please provide a valid config file."
     echo
 else
-
+    OSARIS_start_time=`date +%s`
     echo
     echo
     echo " ╔══════════════════════════════════════════╗"
     echo " ║                                          ║"
-    echo " ║             OSARIS v. 0.4                ║"
+    echo " ║             OSARIS v. 0.5                ║"
     echo " ║   Open Source SAR Investigation System   ║"
     echo " ║                                          ║"
     echo " ╚══════════════════════════════════════════╝"
@@ -25,13 +25,11 @@ else
 
 
     function include_modules {
-	module_array=$1
-	if [ ${#module_array[@]} -gt 0 ]; then
-	    module_count=${#module_array[@]}
-	    # while [ $i -lt "$module_count" ]; do      
+	module_array=("${@}")
+	module_count=${#module_array[@]}
+	if [ $module_count -gt 0 ]; then
 	    for module in "${module_array[@]}"; do	   
-		# Check if module exists
-		echo "Module: $module"
+		# Check if module exists		
 		if [ -d "$OSARIS_PATH/modules/$module" ]; then
 		    if [ -f "$OSARIS_PATH/modules/$module/$module.sh" ]; then
 			# Everthing looks fine, include the module
@@ -43,13 +41,11 @@ else
 		else
 		    echo; echo "WARNING: Module $module not found. Skipping."; echo
 		fi	
-		# ((i++))
 	    done
-	else
-	    echo "No modules to implement, Skipping ..."
+	# else
+	#    echo "No modules to implement, Skipping ..."
 	fi    
     }
-
 
     export OSARIS_PATH=$( pwd )
     echo "OSARIS directory: $OSARIS_PATH" 
@@ -85,9 +81,12 @@ else
 
     ln -sf $topo_PATH/dem.grd $work_PATH/raw/
     ln -sf $topo_PATH/dem.grd $work_PATH/topo/
+    
+    run_identifier=$( date +"%Y-%m-%d_%Hh%mm" )
 
-    log_filename=$prefix-$( date +"%Y-%m-%d_%Hh%mm" ).log
-    #err_filename=GSP-errors-$( date +"%Y-%m-%d_%Hh%mm" ).txt
+    log_filename=$prefix-$run_identifier.log
+    report_filename=$prefix-$run_identifier.report
+    
     logfile=$log_PATH/$log_filename
 
     echo
@@ -101,7 +100,8 @@ else
 
 	echo; echo - - - - - - - - - - - - - - - -; echo Downloading Sentinel files; echo
 
-	input_PATH=$base_PATH/$prefix/Input/S1-orig
+	input_PATH=$base_PATH/$prefix/Input/
+	mkdir -p $input_PATH
 
 	source $OSARIS_PATH/lib/s1-file-download.sh  2>&1 >>$logfile
 	
@@ -130,7 +130,7 @@ else
 
 
     #### HOOK 1: Post download modules
-    include_modules $post_download_mods
+    include_modules "${post_download_mods[@]}"
 
 
     #### STEP 2: PREPARE DATA
@@ -163,9 +163,6 @@ else
 		# TODO: Add option to extract without slurm for systems without unzip installed.
 		
 		echo "Sending extract job for Sentinel file $S1_archive to SLURM queue."
-		# echo "$OSARIS_PATH/lib/PP-extract.sh"
-		# echo "$input_PATH/$S1_archive"
-		# echo "$work_PATH/orig"
 		
 		slurm_jobname="$slurm_jobname_prefix-EXT"		
 
@@ -193,7 +190,7 @@ else
 
 
     #### HOOK 2: Post extract modules
-    include_modules $post_extract_mods
+    include_modules "${post_extract_mods[@]}"
 
 
     #### STEP 3: INTERFEROMETRIC PROCESSING
@@ -240,7 +237,7 @@ else
     
 
     #### HOOK 3: Post processing modules
-    include_modules $post_processing_mods
+    include_modules "${post_processing_mods[@]}"
 
 
     #### STEP 4: POSTPROCESSING
@@ -266,7 +263,7 @@ else
     fi
 
     # TODO: Make module
-    if [ "$process_SBAS" -eq 1 ]; then
+    if [ ! -z $process_SBAS ] && [ "$process_SBAS" -eq 1 ]; then
 	echo 
 	echo - - - - - - - - - - - - - - - - 
 	echo Processing stack + SBAS
@@ -278,10 +275,10 @@ else
     if [ $clean_up -gt 0 ]; then
 	echo
 	echo - - - - - - - - - - - - - - - -
-	echo Cleaning up a bit
+	echo Cleaning up a bit ...
 	if [ $clean_up -eq 1 ]; then
 	    echo "Deleting files used during processing, keeping extracted S1 scenes ..."
-	    rm -r $work_PATH/Pairs-forward $work_PATH/raw $work_PATH/topo $work_PATH/single_master
+	    rm -rf $work_PATH/Pairs-forward $work_PATH/raw $work_PATH/topo $work_PATH/single_master $work_PATH/orig_cut $work_PATH/UCM
 	elif [ $clean_up -eq 2 ]; then
 	    echo "Deleting processing folder ..."
 	    rm -rf $work_PATH
@@ -291,14 +288,23 @@ else
     fi
 
     #### HOOK 4: Post post-postprocessing modules
-    include_modules $post_postprocessing_mods
+    include_modules "${post_postprocessing_mods[@]}"
 
     #### STEP 5: CALCULATE STATS AND WRITE REPORTS
-    echo; echo - - - - - - - - - - - - - - - -; echo Writing reports [todo]; echo
+    echo; echo - - - - - - - - - - - - - - - -; echo Writing report; echo
+
+    OSARIS_end_time=`date +%s`
+    OSARIS_runtime=$((OSARIS_end_time-OSARIS_start_time))
+
+    echo "\n OSARIS Report \n" > $output_PATH/$report_filename
+    printf 'Elapsed wall time: %02dd %02dh:%02dm:%02ds\n' $(($OSARIS_runtime/86400)) $(($OSARIS_runtime%86400/3600)) $(($OSARIS_runtime%3600/60)) $(($OSARIS_runtime%60)) >> $output_PATH/$report_filename
 
     echo
     echo - - - - - - - - - - - - - - - -
     echo Finished
+    echo
+    echo "Elapsed wall time:"
+    printf '%02dd %02dh:%02dm:%02ds\n' $(($OSARIS_runtime/86400)) $(($OSARIS_runtime%86400/3600)) $(($OSARIS_runtime%3600/60)) $(($OSARIS_runtime%60))
     echo - - - - - - - - - - - - - - - -
     echo
 
