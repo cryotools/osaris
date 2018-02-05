@@ -248,11 +248,12 @@ gmt grdmath $psi_output_PATH/corr_sum.grd $psi_count DIV -V = $psi_output_PATH/c
 gmt grdinfo -M -V $psi_output_PATH/corr_sum.grd | grep z_max | awk '{ print $16,$19 }' > $psi_output_PATH/ps_coords.xy
 
 
-echo; echo
-echo "Cleaning up"
-rm -r temp
-rm merged_dem.grd
-echo; echo
+if [ $clean_up -gt 0 ]; then
+    echo; echo
+    echo "Cleaning up"
+    rm -r $psi_output_PATH/cut
+    echo; echo
+fi
 
 end=`date +%s`
 

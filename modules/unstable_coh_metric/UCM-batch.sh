@@ -99,7 +99,7 @@ cut2same_extent $corr_file HC_$high_corr_file $UCM_work_PATH/cut_files
 
 echo; echo "Processing Unstable Coherence Metric ..."
 cd $UCM_work_PATH/cut_files
-UCM_file="UCM_${high_corr_file:10:8}-${high_corr_file:33:8}---${corr_file:7:8}-${corr_file:30:8}_F${swath}.grd"
+UCM_file="UCM_${high_corr_file:7:8}-${high_corr_file:30:8}---${corr_file:7:8}-${corr_file:30:8}_F${swath}.grd"
 echo "gmt grdmath $high_corr_file $corr_file SUB -V1 = $work_PATH/UCM/temp/$UCM_file"
 gmt grdmath HC_$high_corr_file $corr_file SUB -V1 = $UCM_work_PATH/temp/$UCM_file
 

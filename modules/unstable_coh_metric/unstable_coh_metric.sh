@@ -81,7 +81,11 @@ else
 
 
     $OSARIS_PATH/lib/check-queue.sh $slurm_jobname 2 0
-
-    rm -rf temp/ HC_*
+    
+    if [ $clean_up -gt 0 ]; then
+	echo; echo "Cleaning up ..."
+	rm -rf $work_PATH/UCM/temp/ $work_PATH/UCM/HC_*
+	echo
+    fi
 
 fi

@@ -9,7 +9,7 @@ elif [ ! -f $1 ]; then
     echo "Cannot open $1. Please provide a valid config file."
     echo
 else
-
+    OSARIS_start_time=`date +%s`
     echo
     echo
     echo " ╔══════════════════════════════════════════╗"
@@ -81,9 +81,12 @@ else
 
     ln -sf $topo_PATH/dem.grd $work_PATH/raw/
     ln -sf $topo_PATH/dem.grd $work_PATH/topo/
+    
+    run_identifier=$( date +"%Y-%m-%d_%Hh%mm" )
 
-    log_filename=$prefix-$( date +"%Y-%m-%d_%Hh%mm" ).log
-    #err_filename=GSP-errors-$( date +"%Y-%m-%d_%Hh%mm" ).txt
+    log_filename=$prefix-$run_identifier.log
+    report_filename=$prefix-$run_identifier.report
+    
     logfile=$log_PATH/$log_filename
 
     echo
@@ -260,7 +263,7 @@ else
     fi
 
     # TODO: Make module
-    if [ "$process_SBAS" -eq 1 ]; then
+    if [ ! -z $process_SBAS ] && [ "$process_SBAS" -eq 1 ]; then
 	echo 
 	echo - - - - - - - - - - - - - - - - 
 	echo Processing stack + SBAS
@@ -272,10 +275,10 @@ else
     if [ $clean_up -gt 0 ]; then
 	echo
 	echo - - - - - - - - - - - - - - - -
-	echo Cleaning up a bit
+	echo Cleaning up a bit ...
 	if [ $clean_up -eq 1 ]; then
 	    echo "Deleting files used during processing, keeping extracted S1 scenes ..."
-	    rm -r $work_PATH/Pairs-forward $work_PATH/raw $work_PATH/topo $work_PATH/single_master
+	    rm -rf $work_PATH/Pairs-forward $work_PATH/raw $work_PATH/topo $work_PATH/single_master $work_PATH/orig_cut $work_PATH/UCM
 	elif [ $clean_up -eq 2 ]; then
 	    echo "Deleting processing folder ..."
 	    rm -rf $work_PATH
@@ -288,11 +291,20 @@ else
     include_modules "${post_postprocessing_mods[@]}"
 
     #### STEP 5: CALCULATE STATS AND WRITE REPORTS
-    echo; echo - - - - - - - - - - - - - - - -; echo Writing reports [todo]; echo
+    echo; echo - - - - - - - - - - - - - - - -; echo Writing report; echo
+
+    OSARIS_end_time=`date +%s`
+    OSARIS_runtime=$((OSARIS_end_time-OSARIS_start_time))
+
+    echo "\n OSARIS Report \n" > $output_PATH/$report_filename
+    printf 'Elapsed wall time: %02dd %02dh:%02dm:%02ds\n' $(($OSARIS_runtime/86400)) $(($OSARIS_runtime%86400/3600)) $(($OSARIS_runtime%3600/60)) $(($OSARIS_runtime%60)) >> $output_PATH/$report_filename
 
     echo
     echo - - - - - - - - - - - - - - - -
     echo Finished
+    echo
+    echo "Elapsed wall time:"
+    printf '%02dd %02dh:%02dm:%02ds\n' $(($OSARIS_runtime/86400)) $(($OSARIS_runtime%86400/3600)) $(($OSARIS_runtime%3600/60)) $(($OSARIS_runtime%60))
     echo - - - - - - - - - - - - - - - -
     echo
 
