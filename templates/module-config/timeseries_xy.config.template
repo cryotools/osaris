@@ -1,0 +1,21 @@
+##################################################################
+#
+# Template configuration for the 'Timeseries xy' module
+#
+# Copy to 'config' folder, rename to 'ping.config' and fit to 
+# your machine's configuration.
+#
+#################################################################
+
+TS_coordinates=( 11.11,22.22 )
+# Provide sampling locations as a series of lat,lon pairs 
+# in decimal degrees seqparated by spaces, e.g.
+# 73.98989,42.1707 74.48420,42.85183
+
+TS_gridfiles=( corr_ll.grd )
+# Name of grid files to sample
+
+TS_input_PATH="$output_PATH/Pairs-forward/F3"
+# Path to directory which contains the directories in which the 
+# grid files are located. Typically, this will be sth. like
+# "$output_PATH/Pairs-forward/F3"

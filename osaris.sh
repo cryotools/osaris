@@ -14,7 +14,7 @@ else
     echo
     echo " ╔══════════════════════════════════════════╗"
     echo " ║                                          ║"
-    echo " ║             OSARIS v. 0.5                ║"
+    echo " ║             OSARIS v. 0.5.1              ║"
     echo " ║   Open Source SAR Investigation System   ║"
     echo " ║                                          ║"
     echo " ╚══════════════════════════════════════════╝"
@@ -34,7 +34,8 @@ else
 		    if [ -f "$OSARIS_PATH/modules/$module/$module.sh" ]; then
 			# Everthing looks fine, include the module
 			echo; echo "Starting module $module"; echo
-			source $OSARIS_PATH/modules/$module/$module.sh
+			source $OSARIS_PATH/modules/$module/$module.sh &>>$log_PATH/$module.log
+			echo "Log file will be written to $log_PATH/$module.log"
 		    else
 			echo; echo "WARNING: File $module.sh not found in module directory. Skipping."; echo
 		    fi
@@ -73,10 +74,9 @@ else
     # Path to directory where the log files will be written    
 
     mkdir -p $orbits_PATH
-    mkdir -p $work_PATH
     mkdir -p $work_PATH/raw
     mkdir -p $work_PATH/topo
-    mkdir -p $output_PATH
+    mkdir -p $output_PATH/Reports
     mkdir -p $log_PATH
 
     ln -sf $topo_PATH/dem.grd $work_PATH/raw/
@@ -141,7 +141,7 @@ else
 	echo "Skipping file extraction ('orig_files' param set to <keep> in config file)."
 	PS_extract=0
     elif [ $orig_files = "extract" ]; then
-	echo "Startinng file extraction."
+	echo "Starting file extraction."
 	PS_extract=1
     else
 	echo "No vaild value for 'orig_files' param found. Please check the config file. Trying to extract files..."
@@ -175,7 +175,7 @@ else
 		    --account=$slurm_account \
 		    --partition=$slurm_extract_partition \
 		    --mail-type=$slurm_mailtype \
-		    $OSARIS_PATH/lib/PP-extract.sh $input_PATH $S1_archive $work_PATH/orig
+		    $OSARIS_PATH/lib/PP-extract.sh $input_PATH $S1_archive $work_PATH/orig $output_PATH
 	    fi
 	done
 
@@ -291,20 +291,31 @@ else
     include_modules "${post_postprocessing_mods[@]}"
 
     #### STEP 5: CALCULATE STATS AND WRITE REPORTS
-    echo; echo - - - - - - - - - - - - - - - -; echo Writing report; echo
 
     OSARIS_end_time=`date +%s`
     OSARIS_runtime=$((OSARIS_end_time-OSARIS_start_time))
+      
 
-    echo "\n OSARIS Report \n" > $output_PATH/$report_filename
-    printf 'Elapsed wall time: %02dd %02dh:%02dm:%02ds\n' $(($OSARIS_runtime/86400)) $(($OSARIS_runtime%86400/3600)) $(($OSARIS_runtime%3600/60)) $(($OSARIS_runtime%60)) >> $output_PATH/$report_filename
+    echo; echo - - - - - - - - - - - - - - - -; 
+    echo Processing finished; echo
+    echo Writing reports ... ; echo
 
+    source $OSARIS_PATH/lib/reporting.sh &>>$logfile
+
+    total_runtime=$((OSARIS_runtime + PP_total_runtime + PP_extract_total_runtime))
+    # TODO: Add module runtimes
+
+    echo; echo "Elapsed total processing time (estimate):"
+    printf '%02dd %02dh:%02dm:%02ds\n' $(($total_runtime/86400)) $(($total_runtime%86400/3600)) $(($total_runtime%3600/60)) $(($total_runtime%60))
+    echo
+    echo "Elapsed wall clock time:"
+    printf '%02dd %02dh:%02dm:%02ds\n' $(($OSARIS_runtime/86400)) $(($OSARIS_runtime%86400/3600)) $(($OSARIS_runtime%3600/60)) $(($OSARIS_runtime%60))
+    echo
+
+   
     echo
     echo - - - - - - - - - - - - - - - -
     echo Finished
-    echo
-    echo "Elapsed wall time:"
-    printf '%02dd %02dh:%02dm:%02ds\n' $(($OSARIS_runtime/86400)) $(($OSARIS_runtime%86400/3600)) $(($OSARIS_runtime%3600/60)) $(($OSARIS_runtime%60))
     echo - - - - - - - - - - - - - - - -
     echo
 

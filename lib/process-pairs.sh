@@ -125,51 +125,69 @@ else
 		    orbit_2=$current_orbit
 		fi
 		
-		scene_pair_name=${scene_1:15:8}--${scene_2:15:8}
-		
-		echo "Creating directory $scene_pair_name"
-		mkdir -pv $scene_pair_name-aligned; cd $scene_pair_name-aligned
-		ln -sf $topo_PATH/dem.grd .
-		ln -sf $work_PATH/raw/${scene_1:15:8}_manifest.safe .
-		ln -sf $work_PATH/raw/${scene_2:15:8}_manifest.safe .
-		#		ln -s $work_PATH/raw/*.LED .
-		#		ln -s $work_PATH/raw/*.PRM .
-		#		ln -s $work_PATH/raw/*.SLC .
-		
-		ln -sf $work_PATH/raw/$scene_1.tiff .
-		ln -sf $work_PATH/raw/$scene_2.tiff .
-		# cp -P $work_PATH/raw/$scene_1.tiff .
-		# cp -P $work_PATH/raw/$scene_2.tiff .
-		cp -P $work_PATH/raw/$scene_1.xml .
-		cp -P $work_PATH/raw/$scene_2.xml .
-		cp -P $work_PATH/raw/$orbit_1 .
-		cp -P $work_PATH/raw/$orbit_2 .
+		if [ "${scene_1:15:8}" -gt "${scene_2:15:8}" ]; then
+		    echo "Scenes ${scene_1:15:8} and ${scene_2:15:8} seem not to make a senseful pair. Skipping ..."
+		else
+		    scene_pair_name=${scene_1:15:8}--${scene_2:15:8}
+		    
+		    echo "Creating directory $scene_pair_name"
+		    mkdir -pv $scene_pair_name-aligned; cd $scene_pair_name-aligned
+		    ln -sf $topo_PATH/dem.grd .
+		    ln -sf $work_PATH/raw/${scene_1:15:8}_manifest.safe .
+		    ln -sf $work_PATH/raw/${scene_2:15:8}_manifest.safe .
+		    #		ln -s $work_PATH/raw/*.LED .
+		    #		ln -s $work_PATH/raw/*.PRM .
+		    #		ln -s $work_PATH/raw/*.SLC .
+		    
+		    ln -sf $work_PATH/raw/$scene_1.tiff .
+		    ln -sf $work_PATH/raw/$scene_2.tiff .
+		    # cp -P $work_PATH/raw/$scene_1.tiff .
+		    # cp -P $work_PATH/raw/$scene_2.tiff .
+		    cp -P $work_PATH/raw/$scene_1.xml .
+		    cp -P $work_PATH/raw/$scene_2.xml .
+		    cp -P $work_PATH/raw/$orbit_1 .
+		    cp -P $work_PATH/raw/$orbit_2 .
 
-				
-		slurm_jobname="$slurm_jobname_prefix-$mode"
+		    
+		    slurm_jobname="$slurm_jobname_prefix-$mode"
+		    
+		    # Setup preferred and alternative partition configuration
+		    slurm_partition_pref=$slurm_partition
+		    slurm_ntasks_pref=$slurm_ntasks
 
-		sbatch \
-		    --ntasks=$slurm_ntasks \
-		    --output=$log_PATH/PP-$mode-%j-out \
-		    --error=$log_PATH/PP-$mode-%j-out \
-		    --workdir=$work_PATH \
-		    --job-name=$slurm_jobname \
-		    --qos=$slurm_qos \
-		    --account=$slurm_account \
-		    --partition=$slurm_partition \
-		    --mail-type=$slurm_mailtype \
-		    $OSARIS_PATH/lib/PP-pairs.sh \
-		    $scene_1 \
-		    $orbit_1 \
-		    $scene_2 \
-		    $orbit_2 \
-		    $swath \
-		    $config_file \
-		    $OSARIS_PATH/$gmtsar_config_file \
-		    $OSARIS_PATH \
-		    "forward"
-		
-		
+		    if [ ! -z $slurm_partition_alt ] && [ ! -z $slurm_ntasks_alt ]; then
+			# Check for available cores on the preferred slurm partition.
+			sleep 2
+			cores_available=$( sinfo -o "%P %C" | grep $slurm_partition | awk '{ print $2 }' | awk 'BEGIN { FS="/?[ \t]*"; } { print $2 }' )
+			echo "Cores available on partition ${slurm_partition}: $cores_available"
+			if [ "$cores_available" -lt "$slurm_ntasks" ]; then
+			    slurm_partition_pref=$slurm_partition_alt
+			    slurm_ntasks_pref=$slurm_ntasks_alt
+			fi
+		    fi
+
+		    sbatch \
+			--ntasks=$slurm_ntasks_pref \
+			--output=$log_PATH/PP-$mode-%j-out \
+			--error=$log_PATH/PP-$mode-%j-out \
+			--workdir=$work_PATH \
+			--job-name=$slurm_jobname \
+			--qos=$slurm_qos \
+			--account=$slurm_account \
+			--partition=$slurm_partition_pref \
+			--mail-type=$slurm_mailtype \
+			$OSARIS_PATH/lib/PP-pairs.sh \
+			$scene_1 \
+			$orbit_1 \
+			$scene_2 \
+			$orbit_2 \
+			$swath \
+			$config_file \
+			$OSARIS_PATH/$gmtsar_config_file \
+			$OSARIS_PATH \
+			"forward"
+		    
+		fi    
 	    fi
 	    
 	    previous_scene=$current_scene

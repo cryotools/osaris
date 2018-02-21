@@ -4,6 +4,9 @@
 #
 # OSARIS module to identify persitent scatterers (simple)
 #
+# Provide a valid config file named 'simple_psi.config' in the config
+# directory; a template is provided in templates/module_config/
+#
 # Requires processed GMTSAR coherence files (corr_ll.grd) as input.
 # Output:
 #   - ps_coords.xy     -> Coordinates of max. coherence the stack
@@ -15,252 +18,81 @@
 #
 #####################################################################
 
-start=`date +%s`
+
+if [ ! -f "$OSARIS_PATH/config/simple_psi.config" ]; then
+    echo
+    echo "Cannot open simple_psi.config in the OSARIS config folder. Please provide a valid config file."
+    echo
+else
+    SPSI_start_time=`date +%s`
+
+    source $OSARIS_PATH/config/simple_psi.config   
 
 
-echo; echo "Simple Persistent Scatterer Identification"
+    echo; echo "Simple Persistent Scatterer Identification"
 
-psi_input_PATH="$output_PATH/Pairs-forward/F3"
-echo "PSI input path: $psi_input_PATH"
-# "/data/scratch/loibldav/GSP/Golubin_107_4/Output/Pairs-forward"
+    mkdir -p $psi_output_PATH/cut
 
-psi_output_PATH="$output_PATH/PSI"
-echo "PSI ouput path: $psi_output_PATH"
-psi_threshold="0.2"
-
-mkdir -p $psi_output_PATH/cut
-
-cd $psi_input_PATH
-
-psi_base_PATH=$( pwd )
-folders=($( ls -d */ ))
-
-psi_count=1
+    cd $psi_input_PATH
 
 
-for folder in "${folders[@]}"; do   
-    folder=${folder::-1}
-    if [ -f "$folder/corr_ll.grd" ]; then
-	if [ "$psi_count" -eq 1 ]; then
-	    echo "First folder $folder"
-	elif [ "$psi_count" -eq 2 ]; then
-	    # echo "grdxtremes=($(grdminmax $psi_base_PATH/$prev_folder/corr_ll.grd $psi_base_PATH/$folder/corr_ll.grd))"
+    # Obtain minimum boundary box for corr_ll.grd files
+    min_grd_extent_file=corr_ll.grd
+    source $OSARIS_PATH/lib/include/min_grd_extent.sh
 
 
-	    # Find min and max x and y values for a grd file.
-	    # Input parameters: the two grd files to evaluate.
-	    # Output: xmin xmax ymin ymax
-
-	    file_1=$psi_base_PATH/$prev_folder/corr_ll.grd
-	    file_2=$psi_base_PATH/$folder/corr_ll.grd
-
-	    file_1_extent=$( gmt grdinfo -I- $file_1 ); file_1_extent=${file_1_extent:2}
-	    file_2_extent=$( gmt grdinfo -I- $file_2 ); file_2_extent=${file_2_extent:2}
-
-	    file_1_coord_string=$( echo $file_1_extent | tr "/" "\n")
-	    file_2_coord_string=$( echo $file_2_extent | tr "/" "\n")
-
-	    # Create arrays of coordinates for each dataset
-	    counter=0
-	    for coord in $file_1_coord_string; do
-		file_1_coord_array[$counter]=$coord
-		counter=$((counter+1))
-	    done
-
-	    counter=0
-	    for coord in $file_2_coord_string; do
-		file_2_coord_array[$counter]=$coord
-		counter=$((counter+1))
-	    done
-            
-
-	    # Determine overal max and min values for both datasets
-
-	    remainder=$( expr $counter % 2 )
-
-	    counter=0
-	    while [ $counter -lt 4 ]; do    
-		if [ $counter -eq 0 ]; then
-		    # Determining xmin
-		    if [ $( echo "${file_1_coord_array[$counter]} > ${file_2_coord_array[$counter]}" | bc -l ) -eq 0 ]; then
-			xmin=${file_2_coord_array[$counter]}
-		    else
-			xmin=${file_1_coord_array[$counter]}
-		    fi
-		elif [ $counter -eq 1 ]; then
-		    # Determining xmax
-		    if [ $( echo "${file_1_coord_array[$counter]} < ${file_2_coord_array[$counter]}" | bc -l ) -eq 0 ]; then
-			xmax=${file_2_coord_array[$counter]}
-		    else
-			xmax=${file_1_coord_array[$counter]}
-		    fi
-		elif [ $counter -eq 2 ]; then
-		    # Determining ymin 
-		    if [ $( echo "${file_1_coord_array[$counter]} > ${file_2_coord_array[$counter]}" | bc -l ) -eq 0 ]; then
-			ymin=${file_2_coord_array[$counter]}
-		    else
-			ymin=${file_1_coord_array[$counter]}
-		    fi
-		elif [ $counter -eq 3 ]; then
-		    # Determining ymax 
-		    if [ $( echo "${file_1_coord_array[$counter]} < ${file_2_coord_array[$counter]}" | bc -l ) -eq 0 ]; then
-			ymax=${file_2_coord_array[$counter]}
-		    else
-			ymax=${file_1_coord_array[$counter]}
-		    fi
-		fi
-
-		counter=$((counter+1))
-	    done
-	    if [ $debug -gt 0 ]; then echo "Initial coord set: $xmin/$xmax/$ymin/$ymax"; fi
-
+    folders=($( ls -d */ ))
+    psi_count=0
+    for folder in "${folders[@]}"; do           
+	folder=${folder::-1}
+	if [ -f "$folder/corr_ll.grd" ]; then
+	    gmt grdcut $folder/corr_ll.grd -G$psi_output_PATH/cut/corr_cut_$folder.grd  -R$xmin/$xmax/$ymin/$ymax -V
+	    gmt grdclip $psi_output_PATH/cut/corr_cut_$folder.grd -G$psi_output_PATH/cut/corr_thres_$folder.grd -Sb${psi_threshold}/NaN -V
+	    psi_count=$((psi_count+1))
 	else
-
-	    # Find min and max x and y values for a grd file.
-	    # Input parameters: the two grd files to evaluate.
-	    # Output: xmin xmax ymin ymax
-
-	    file_1=$psi_base_PATH/$prev_folder/corr_ll.grd
-	    file_2=$psi_base_PATH/$folder/corr_ll.grd
-
-	    file_1_extent=$( gmt grdinfo -I- $file_1 ); file_1_extent=${file_1_extent:2}
-	    file_2_extent=$( gmt grdinfo -I- $file_2 ); file_2_extent=${file_2_extent:2}
-
-	    file_1_coord_string=$( echo $file_1_extent | tr "/" "\n")
-	    file_2_coord_string=$( echo $file_2_extent | tr "/" "\n")
-
-	    # Create arrays of coordinates for each dataset
-	    counter=0
-	    for coord in $file_1_coord_string; do
-		file_1_coord_array[$counter]=$coord
-		counter=$((counter+1))
-	    done
-
-	    counter=0
-	    for coord in $file_2_coord_string; do
-		file_2_coord_array[$counter]=$coord
-		counter=$((counter+1))
-	    done
-            	  
-	    # Determine overal max and min values for both datasets
-
-	    remainder=$( expr $counter % 2 )
-
-	    counter=0
-	    while [ $counter -lt 4 ]; do    
-		if [ $counter -eq 0 ]; then
-		    # Determining xmin
-		    if [ $( echo "${file_1_coord_array[$counter]} > ${file_2_coord_array[$counter]}" | bc -l ) -eq 0 ]; then
-			xmin_local=${file_2_coord_array[$counter]}
-		    else
-			xmin_local=${file_1_coord_array[$counter]}
-		    fi
-		elif [ $counter -eq 1 ]; then
-		    # Determining xmax
-		    if [ $( echo "${file_1_coord_array[$counter]} < ${file_2_coord_array[$counter]}" | bc -l ) -eq 0 ]; then
-			xmax_local=${file_2_coord_array[$counter]}
-		    else
-			xmax_local=${file_1_coord_array[$counter]}
-		    fi
-		elif [ $counter -eq 2 ]; then
-		    # Determining ymin 
-		    if [ $( bc <<< "${file_1_coord_array[$counter]} > ${file_2_coord_array[$counter]}" ) -eq 0 ]; then
-			ymin_local=${file_2_coord_array[$counter]}
-		    else
-			ymin_local=${file_1_coord_array[$counter]}
-		    fi
-		elif [ $counter -eq 3 ]; then
-		    # Determining ymax 
-		    if [ $( bc <<< "${file_1_coord_array[$counter]} < ${file_2_coord_array[$counter]}" ) -eq 0 ]; then
-			ymax_local=${file_2_coord_array[$counter]}
-		    else
-			ymax_local=${file_1_coord_array[$counter]}
-		    fi
-		fi
-
-		counter=$((counter+1))
-	    done
-	    
-	    if (( $(echo "$xmin < $xmin_local" | bc -l) ))  && (( $(echo "$xmin_local != 0" | bc -l) )); then 
-		if [ $debug -gt 0 ]; then echo "New xmin value found: $xmin_local"; fi
-		xmin=$xmin_local 
-	    fi
-	    if (( $(echo "$xmax > $xmax_local" | bc -l) ))  && (( $(echo "$xmax_local != 0" | bc -l) )); then 
-		if [ $debug -gt 0 ]; then echo "New xmax value found: $xmax_local"; fi
-		xmax=$xmax_local 
-	    fi
-	    if (( $(echo "$ymin < $ymin_local" | bc -l) ))  && (( $(echo "$ymin_local != 0" | bc -l) )); then 
-		if [ $debug -gt 0 ]; then echo "New ymin value found: $ymin_local"; fi
-		ymin=$ymin_local 
-	    fi
-	    if (( $(echo "$ymax > $ymax_local" | bc -l) ))  && (( $(echo "$ymax_local != 0" | bc -l) )); then 
-		if [ $debug -gt 0 ]; then echo "New ymax value found: $ymax_local"; fi
-		ymax=$ymax_local
-	    fi
-
-	    if [ $debug -gt 0 ]; then echo "Updated coord set: $xmin/$xmax/$ymin/$ymax"; fi
+	    echo "No coherence file in folder $folder - skipping ..."
 	fi
-	
-	
-
-	prev_folder=$folder
-	psi_count=$((psi_count+1))
-    else
-	echo "No coherence file in folder $folder - skipping ..."
-    fi
-done
-
-if [ $debug -gt 0 ]; then echo; echo "Common coverage boundary box: $xmin/$xmax/$ymin/$ymax"; fi
-
-for folder in "${folders[@]}"; do           
-    if [ -f "${folder::-1}/corr_ll.grd" ]; then
-	gmt grdcut $folder/corr_ll.grd -G$psi_output_PATH/cut/corr_cut_${folder::-1}.grd  -R$xmin/$xmax/$ymin/$ymax -V
-	gmt grdclip $psi_output_PATH/cut/corr_cut_${folder::-1}.grd -G$psi_output_PATH/cut/corr_thres_${folder::-1}.grd -Sb${psi_threshold}/NaN -V
-
-    else
-	echo "No coherence file in folder $folder - skipping ..."
-    fi
-done
+    done
 
 
-cd $psi_output_PATH/cut
-rm corr_cut*
-cut_files=($(ls *.grd))
-cut_files_count=1
-for cut_file in "${cut_files[@]}"; do
-    if [ "$cut_files_count" -eq 1 ]; then
-	if [ $debug -gt 1 ]; then echo "First file $cut_file"; fi
-    elif [ "$cut_files_count" -eq 2 ]; then	
-	if [ $debug -gt 0 ]; then echo "Addition of coherence from $cut_file and $prev_cut_file ..."; fi
-	gmt grdmath $cut_file $prev_cut_file ADD -V = $psi_output_PATH/corr_sum.grd
-    else
-	if [ $debug -gt 0 ]; then echo "Adding coherence from $cut_file ..."; fi
-	gmt grdmath $cut_file $psi_output_PATH/corr_sum.grd ADD -V = $psi_output_PATH/corr_sum.grd
+    cd $psi_output_PATH/cut
+    rm corr_cut*
+    cut_files=($(ls *.grd))
+    cut_files_count=1
+    for cut_file in "${cut_files[@]}"; do
+	if [ "$cut_files_count" -eq 1 ]; then
+	    if [ $debug -gt 1 ]; then echo "First file $cut_file"; fi
+	elif [ "$cut_files_count" -eq 2 ]; then	
+	    if [ $debug -gt 0 ]; then echo "Addition of coherence from $cut_file and $prev_cut_file ..."; fi
+	    gmt grdmath $cut_file $prev_cut_file ADD -V = $psi_output_PATH/corr_sum.grd
+	else
+	    if [ $debug -gt 0 ]; then echo "Adding coherence from $cut_file ..."; fi
+	    gmt grdmath $cut_file $psi_output_PATH/corr_sum.grd ADD -V = $psi_output_PATH/corr_sum.grd
+	fi
+
+	prev_cut_file=$cut_file
+	cut_files_count=$((cut_files_count+1))
+    done
+
+    gmt grdmath $psi_output_PATH/corr_sum.grd $psi_count DIV -V = $psi_output_PATH/corr_arithmean.grd 
+
+    # Write coords of max coherence points to file for further processing ..
+    gmt grdinfo -M -V $psi_output_PATH/corr_sum.grd | grep z_max | awk '{ print $16,$19 }' > $psi_output_PATH/ps_coords.xy
+
+
+    if [ $clean_up -gt 0 ]; then
+	echo; echo
+	echo "Cleaning up"
+	rm -r $psi_output_PATH/cut
+	echo; echo
     fi
 
-    prev_cut_file=$cut_file
-    cut_files_count=$((cut_files_count+1))
-done
+    SPSI_end_time=`date +%s`
 
-gmt grdmath $psi_output_PATH/corr_sum.grd $psi_count DIV -V = $psi_output_PATH/corr_arithmean.grd 
+    SPSI_runtime=$((SPSI_end_time - SPSI_start_time))
 
-# Write coords of max coherence points to file for further processing ..
-gmt grdinfo -M -V $psi_output_PATH/corr_sum.grd | grep z_max | awk '{ print $16,$19 }' > $psi_output_PATH/ps_coords.xy
+    printf 'Processing finished in %02dd %02dh:%02dm:%02ds\n' $(($SPSI_runtime/86400)) $(($SPSI_runtime%86400/3600)) $(($SPSI_runtime%3600/60)) $(($SPSI_runtime%60))
+    echo
 
 
-if [ $clean_up -gt 0 ]; then
-    echo; echo
-    echo "Cleaning up"
-    rm -r $psi_output_PATH/cut
-    echo; echo
 fi
-
-end=`date +%s`
-
-runtime=$((end-start))
-
-printf 'Processing finished in %02dd %02dh:%02dm:%02ds\n' $(($runtime/86400)) $(($runtime%86400/3600)) $(($runtime%3600/60)) $(($runtime%60))
-echo
-
-
-

@@ -161,7 +161,7 @@ else
 		if [ "${current_file:17:8}" -eq "${prev_file:17:8}" ]; then
 		    
 		    # Find matching orbit
-		    orbit_match=$( find_matching_orbit $current_file $orbit_list )
+		    # orbit_match=$( find_matching_orbit $current_file $orbit_list )
 
 		    # if [ "$debug" -ge 1 ]; then 
 		    #     echo; echo "Found two scenes for ${current_file:17:8}"
@@ -174,8 +174,8 @@ else
 		    if [ -z $target_scene ]; then
 			echo "Skipping scene $target_scene ..."
 		    else
-			echo "$( date -d "${target_scene:17:8} ${target_scene:26:2}:${target_scene:28:2}:${target_scene:30:2}" '+%s'  )"
-			target_date=$( date -d "${target_scene:17:8} ${target_scene:26:2}:${target_scene:28:2}:${target_scene:30:2}" '+%s'  )
+			echo "$( date -d "${target_scene:17:8} ${target_scene:26:2}:${target_scene:28:2}:${target_scene:30:2}" '+%s'  )" 
+			target_date=$( date -d "${target_scene:17:8} ${target_scene:26:2}:${target_scene:28:2}:${target_scene:30:2}" '+%s'  ) 
 		    fi
 		    
 		    orbit_counter=1
@@ -310,7 +310,7 @@ else
 				echo
 				if [ "$master_scene_date" = "${target_scene:17:8}" ]; then
 				    # master_scene=$target_scene; master_orbit=$orbit_match
-				    echo "HOORAY, we have found our master!"
+				    # echo "HOORAY, we have found our master!"
 				    echo "${stem_2}:$orbit_match" >> $work_PATH/raw/data_sm_swath$swath.master	    
 				else	 
 				    echo "${stem_2}:$orbit_match" >> $work_PATH/raw/data_sm_swath$swath.tmp		
@@ -338,6 +338,8 @@ else
 	if [ "$clean_up" -ge 1 ]; then
 	    rm -r $work_PATH/orig_cut/temp/
 	fi
+
+
     else
 	
 	# Process full swaths without cutting ...
@@ -347,6 +349,18 @@ else
 	for S1_package in $( ls -r ); do
             S1_file[$counter]=${S1_package:0:${#S1_package}-4}
             S1_date[$counter]=${S1_package:17:8}
+
+	    
+	    #S1_file=$current_file
+	    target_scene=${S1_package:0:${#S1_package}}
+	    target_sensor=$( echo ${target_scene:0:3} | tr '[:lower:]' '[:upper:]' )	    
+
+	    if [ -z $target_scene ]; then
+		echo "Skipping scene $target_scene ..."
+	    else
+		echo "$( date -d "${target_scene:17:8} ${target_scene:26:2}:${target_scene:28:2}:${target_scene:30:2}" '+%s'  )" 
+		target_date=$( date -d "${target_scene:17:8} ${target_scene:26:2}:${target_scene:28:2}:${target_scene:30:2}" '+%s'  ) 
+	    fi
             
 	    if [ "$debug" -ge 1 ]; then
 		echo
@@ -384,19 +398,91 @@ else
             ln -sf $work_PATH/orig/${S1_file[$counter]}SAFE/annotation/*.xml .
             ln -sf $work_PATH/orig/${S1_file[$counter]}SAFE/measurement/*.tiff .
             
-	    orbit_list=$( ls $orbits_PATH )
 
-	    orbit_match=$( find_matching_orbit ${S1_file[$counter]} $orbit_list )
-	    
-	    echo "Orbit match: $orbit_match"
+	    # orbit_match=$( find_matching_orbit ${S1_file[$counter]} $orbit_list )
 
 
-	    for swath in ${swaths_to_process[@]}; do
-		write_data_in_tmp $target_scene $orbit_match ${swath_names[$swath]} $swath
+
+
+	    orbit_counter=1
+	    orbit_match="none"
+
+	    for orbit in $orbit_list; do
+		if [ ! -z "$orbit" ] && [ "${orbit:42:8}" != " " ]; then		
+		    date_string="${orbit:42:8} ${orbit:51:2}:${orbit:53:2}:${orbit:55:2}"
+		    orbit_startdate=$( date -d "$date_string" '+%s' )
+		    orbit_starttime=${orbit:34:6}
+		    orbit_sensor=${orbit:0:3}	    		
+		    
+		    if [ "$debug" -eq 2 ]; then
+			echo "Now working on orbit #: $orbit_counter - $orbit"
+			echo 'Orbit sensor: ' $orbit_sensor
+			echo 'Orbit start date: ' $orbit_startdate
+			echo 'Orbit start time: ' $orbit_starttime
+		    fi		   			
+		    
+		    if [ "$orbit_sensor" == "$target_sensor" ]; then 
+			if [ -z ${prev_orbit_startdate} ] || [ -z ${orbit_startdate} ]; then
+			    echo "Orbit date not configured properly ($prev_orbit_startdate - $orbit_startdate)... Skipping."
+			    prev_orbit=$orbit
+			    prev_orbit_startdate=$orbit_startdate 
+			else
+			    if [ "$target_date" -ge "$prev_orbit_startdate" ]  &&  [ "$target_date" -lt "$orbit_startdate" ]; then
+	       			# Looks like we found a matching orbit
+	       			# TODO: perform further checks, e.g. end_date overlap
+	       			
+	       			orbit_match=$prev_orbit
+	       			echo "Found matching orbit file: $orbit_match"
+	       			ln -sf $orbits_PATH/$orbit_match $work_PATH/raw/
+				echo $orbit_match
+	       			break
+	       		    else
+	       			# No match again, get prepared for another round
+	       			prev_orbit=$orbit
+	       			prev_orbit_startdate=$orbit_startdate 
+			    fi 
+			    
+			fi
+
+		    fi
+
+		fi
+		
+		
+		((orbit_counter++))
 	    done
 	    
-	    ((counter++))
 
+
+
+	    if [ ! "$orbit_match" == "none" ]; then
+		for swath in ${swaths_to_process[@]}; do
+		        # Check if single_master mode and  current scene is master scene
+		    if [ $process_intf_mode = "single_master" ]; then
+			echo
+			echo "Target date: ${target_scene:17:8}"
+			echo "Master scene date: $master_scene_date"
+			echo
+			if [ "$master_scene_date" = "${target_scene:17:8}" ]; then
+			    # master_scene=$target_scene; master_orbit=$orbit_match
+			    echo "HOORAY, we have found our master!"
+			    echo "${target_sense}:$orbit_match" >> data_sm_swath$swath.master	    
+			else	 
+			    echo "${target_scene:name_stem}:$orbit_match" >> data_sm_swath$swath.tmp		
+			fi
+		    else			
+			echo "${swath_names[$swath]}:$orbit_match" >> data_swath$swath.tmp			
+		    fi
+
+		echo; printf " Name stem: ${swath_names[$swath]} \n Orbit match: $orbit_match \n Swath name: ${swath_names[$swath]} \n swath: $swath"
+
+		done
+	    else
+		echo; echo "WARNING: No matching orbit found for scene $target_scene; Scene will be skipped."; echo
+	    fi   
+	    
+	    ((counter++))
+	 
 	done
 
     fi

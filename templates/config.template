@@ -62,7 +62,7 @@ process_pdf_overview=0
 
 # File name of GMTSAR config file. Specify full path if the file is
 # not located in the program directory (along with this config file)
-gmtsar_config_file="config/GMTSAR-golubin.config"
+gmtsar_config_file="config/GMTSAR.config"
 
 
 
@@ -97,7 +97,7 @@ post_postprocessing_mods=( )
 
 # Activate cutting of scenes to the extent of an area of interest
 # (0 = no, 1 = yes).
-cut_to_aoi=1
+cut_to_aoi=0
 
 # Coordinates and elevation of upper-left and lower-right corner 
 # points of area of interest. In case the area of interest crosses
@@ -105,24 +105,18 @@ cut_to_aoi=1
 # pairs with equal dates in the input folder. Scenes with equal dates
 # will be matched and merged automatically.
 # Only needed when cut_to_aoi=1
-lon_1=11.11 
-lat_1=22.22
-elev_1=1234
 
-lon_2=33.33
-lat_2=44.44
-elev_2=1234
+# lon_1=11.11 
+# lat_1=22.22
+# elev_1=1234
+
+# lon_2=33.33
+# lat_2=44.44
+# elev_2=1234
 
 # Merge swathes (0 = no, 1 = yes)
 # merge_swathes=1
 # TODO, not yet implemented
-
-
-# - - - - - GMTSAR CONFIG FILE - - - - - - - - - - 
-
-# File name of GMTSAR congif file. Specify full path if the file is
-# not located in the program directory (along with this config file)
-gmtsar_config_file="config/GMTSAR-default.config"
 
 
 # - - - - - SLURM CONFIGURATION - - - - - - - - - - - - - -
@@ -130,20 +124,28 @@ gmtsar_config_file="config/GMTSAR-default.config"
 slurm_account=your_account
 # SLURM account name
 
-slurm_ntasks=5
-# Number of cores used for parallel processing. 
-# Fit this number to make sure sufficient RAM (~15 GB for full S1 swath) is available for processing.
-# For example, when 3 GB of RAM are allocated for each core, use 5 or more ntasks.
-
-slurm_jobname_prefix="Prefix"
-# Choose a name to identify your jobs in the SLURM queue
-
 slurm_qos=your_qos
 # Job type
 
 slurm_partition=your_partition
 # Partition used for computing.
 # Optional in most cases, comment out when not needed
+
+slurm_ntasks=5
+# Number of cores used for parallel processing. 
+# Fit this number to make sure sufficient RAM (~15 GB for full S1 swath) is available for processing.
+# For example, when 3 GB of RAM are allocated for each core, use 5 or more ntasks.
+
+# slurm_partition_alt=your_alt_partition
+# Alternative partition (optional)
+# If activated, jobs will be send to this partition when no free cores are available in slurm_partition.
+
+# slurm_ntasks_alt=10
+# Number of cores to be used per job on the alternative partition 
+# (only used in combination with slurm_partition_alt).
+
+slurm_jobname_prefix="Prefix"
+# Choose a name to identify your jobs in the SLURM queue
 
 # slurm_extract_qos=your_extract_qos
 # Job type for extract jobs
