@@ -31,8 +31,12 @@ if [ -z $min_grd_extent_file ]; then
 else
 
     mge_base_PATH=$(pwd)
-
-    mge_folders=($( ls -d */ ))
+    
+    if [ -z $swath ]; then
+	mge_folders=($( ls -d */ ))
+    else
+	mge_folders=($( ls -d *-F$swath/ ))
+    fi
 
     mge_count=1
 
