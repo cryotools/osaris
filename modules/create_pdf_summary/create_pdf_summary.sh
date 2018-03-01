@@ -148,14 +148,17 @@ else
     	OVERVIEW_YSTEPS=1
     	TITLE="Overview map"
     	CPT="$work_PATH/Summary/dem2_overview_color.cpt"
-    	gmt grdimage $OVERVIEW_DEM2 -I$OVERVIEW_DEM2_HS -C$CPT -R$OVERVIEW_REGION -JM$OVERVIEW_SCALE -B+t"$TITLE" -Xc -Yc -Bx$OVERVIEW_XSTEPS -By$OVERVIEW_YSTEPS -V -K -P > $POSTSCRIPT1
+    	gmt grdimage $OVERVIEW_DEM2 -I$OVERVIEW_DEM2_HS \
+	    -C$CPT -R$OVERVIEW_REGION -JM$OVERVIEW_SCALE -B+t"$TITLE" \
+	    -Xc -Yc -Bx$OVERVIEW_XSTEPS -By$OVERVIEW_YSTEPS -V -K -P > $POSTSCRIPT1
 
 	for vector_file in ${vector_files[@]}; do
 	    style_name=${vector_file}_style
 	    vector_style=$( echo "${!style_name}" | tr -d "'" )
 	    gmt psxy $vector_style -JM$SCALE -R$REGION ${!vector_file::-4}.gmt -O -K -V >> $POSTSCRIPT1
 	done
-    	gmt psscale -R$OVERVIEW_REGION -JM$OVERVIEW_SCALE -DjBC+o0/-1.5c+w6.5c/0.5c+h -C$CPT -I -F+gwhite+r1p+pthin,black -B1000:Elevation:/:m: -O -K -P -V >> $POSTSCRIPT1
+    	gmt psscale -R$OVERVIEW_REGION -JM$OVERVIEW_SCALE \
+	    -DjBC+o0/-1.5c+w6.5c/0.5c+h -C$CPT -I -F+gwhite+r1p+pthin,black -B1000:Elevation:/:m: -O -K -P -V >> $POSTSCRIPT1
     	convert -quality 100 -density 300 $POSTSCRIPT1 $output_PATH/Summary/overview-map.pdf 
     else
 	echo "Skipping Overview Map Processing ..."
@@ -232,7 +235,8 @@ else
 		    TITLE="Amplitude ${master_date}"
 		    if [ -f "$AMPLITUDE_GRD_HISTEQ" ]; then
 			CPT="$work_PATH/Summary/amp_grayscale.cpt"
-			gmt grdimage $AMPLITUDE_GRD_HISTEQ -I$CPDFS_dem_HS -C$CPT -R$REGION -JM$SCALE -B+t"$TITLE" -Q -Bx$XSTEPS -By$YSTEPS -V -K -Yc -Xc > $POSTSCRIPT2
+			gmt grdimage $AMPLITUDE_GRD_HISTEQ -I$CPDFS_dem_HS \
+			    -C$CPT -R$REGION -JM$SCALE -B+t"$TITLE" -Q -Bx$XSTEPS -By$YSTEPS -V -K -Yc -Xc > $POSTSCRIPT2
 			for vector_file in ${vector_files[@]}; do
 			    style_name=${vector_file}_style
 			    vector_style=$( echo "${!style_name}" | tr -d "'" )
@@ -243,6 +247,7 @@ else
 		    else
 			gmt grdimage $CPDFS_dem_HS -C#ffffff,#eeeeee -R$REGION -JM$SCALE -B+t"$TITLE" -Q -V -K -Yc -Xc > $POSTSCRIPT2
 		    fi
+		    convert $POSTSCRIPT2 -trim -verbose > $POSTSCRIPT2
 		else
 		    echo; echo "Amplitude in ${POSTSCRIPT2} exists, skipping ..."
     		fi
@@ -252,12 +257,14 @@ else
 		    TITLE="Coherence ${master_date}-${slave_date}"
 		    if [ -f $COHERENCE_PHASE_GRD ]; then
 			CPT="$work_PATH/Summary/coherence_color.cpt"
-			gmt grdimage $COHERENCE_PHASE_GRD -I$CPDFS_dem_HS -C$CPT -R$REGION -JM$SCALE -B+t"$TITLE" -Q -Bx$XSTEPS -By$YSTEPS -V -K -Yc -Xc > $POSTSCRIPT3
-			gmt psxy -Wthinnest,lightblue -R$REGION -Glightblue -JM$SCALE $aux_polygon_1 -O -K -V >> $POSTSCRIPT3
-			gmt psscale -R$REGION -JM$SCALE -DjBC+o0/-1.5c+w6.5c/0.5c+h -C$CPT -I -F+gwhite+r1p+pthin,black -B0.2:"Coherence (0-1)":/:/: -O -K -V >> $POSTSCRIPT3
+			gmt grdimage $COHERENCE_PHASE_GRD -I$CPDFS_dem_HS \
+			    -C$CPT -R$REGION -JM$SCALE -B+t"$TITLE" -Q -Bx$XSTEPS -By$YSTEPS -V -K -Yc -Xc > $POSTSCRIPT3			
+			gmt psscale -R$REGION -JM$SCALE -DjBC+o0/-1.5c+w6.5c/0.5c+h \
+			    -C$CPT -I -F+gwhite+r1p+pthin,black -B0.2:"Coherence (0-1)":/:/: -O -K -V >> $POSTSCRIPT3
 		    else
 			gmt grdimage $CPDFS_dem_HS -C#ffffff,#eeeeee -R$REGION -JM$SCALE -B+t"$TITLE" -Q -V -K -Yc -Xc > $POSTSCRIPT3
 		    fi
+		    convert $POSTSCRIPT3 -trim -verbose > $POSTSCRIPT3
 		else
 		    echo; echo "Coherence in ${POSTSCRIPT3} exists, skipping ..."
     		fi
@@ -273,6 +280,7 @@ else
 		    else
 			gmt grdimage $CPDFS_dem_HS -C#ffffff,#eeeeee -R$REGION -JM$SCALE -B+t"$TITLE" -Q -V -K -Yc -Xc > $POSTSCRIPT4
 		    fi
+		    convert $POSTSCRIPT4 -trim -verbose > $POSTSCRIPT4
 
 		else
 		    echo; echo "Unwrapped phase in ${POSTSCRIPT4} exists, skipping ..."
@@ -291,10 +299,12 @@ else
 		    else
 			gmt grdimage $CPDFS_dem_HS -C#ffffff,#eeeeee -R$REGION -JM$SCALE -B+t"$TITLE" -Q -V -K -Yc -Xc > $POSTSCRIPT5
 		    fi
+		    convert $POSTSCRIPT5 -trim -verbose > $POSTSCRIPT5
 		else
 		    echo; echo "LOS in ${POSTSCRIPT5} exists, skipping ..."
     		fi
 
+		
     		# echo; echo "Merging PS into $PDF_MERGED"				
     		#montage ${POSTSCRIPT2} ${POSTSCRIPT3} ${POSTSCRIPT4} ${POSTSCRIPT5} -resize 2480x3508 -title "Sentinel1: ${master_date}-${slave_date}" -quality 100 -density 300 -tile 2x2 -geometry +50+10 -mode concatenate -extent 2480x3508 -page 2480x3508 ${PDF_MERGED}
     		echo "Merging PS into $PDF_MERGED_ROT90"
@@ -310,10 +320,25 @@ else
     done
     
     cd $work_PATH/Summary
+
     png_tiles=$( ls *rot90.png )
+    png_tile_count=$( ls -l *rot90.png | wc -l )
     
     echo; echo "Merging files to $output_PATH/Summary/${prefix}-summary.pdf"
-    montage -label '%f [%wx%h]' -page 2480x3508 -density 300 -units pixelsperinch $png_tiles -title "Summary $prefix" -quality 90 -tile 1x$CPDFS_count -mode concatenate -verbose -geometry +50+100 "$output_PATH/Summary/${prefix}-summary.pdf"
+    if [ -z $images_per_page ]; then
+	echo "No value set for images_per_page, using default value '5'"
+	images_per_page=5
+    fi
+
+    montage -page 2480x3508 -density 300 -units pixelsperinch -quality 90 -tile 1x$images_per_page \
+	-mode concatenate -verbose -geometry +50+100 \
+	$png_tiles \
+	"$output_PATH/Summary/Summary-${prefix}.pdf"
+
+
+    
+    # echo; echo "Merging files to $output_PATH/Summary/${prefix}-summary.pdf"
+    # montage -label '%f [%wx%h]' -page 2480x3508 -density 300 -units pixelsperinch $png_tiles -title "Summary $prefix" -quality 90 -tile 1x$CPDFS_count -mode concatenate -verbose -geometry +50+100 "$output_PATH/Summary/${prefix}-summary.pdf"
 
     # -resize 2480x -page 2480x -extent 2480x -geometry +100+1  -extent 2480x3508
     # if [ $clean_up -gt 0 ]; then
