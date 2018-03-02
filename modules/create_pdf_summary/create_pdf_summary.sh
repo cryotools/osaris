@@ -27,6 +27,9 @@ else
     echo; echo "Creating the PDF summary ..."
 
 
+    # Set general params
+    if [ -z $resolution ]; then resolution=300; fi
+
     # Set pathes and files
 
     mkdir -p $work_PATH/Summary $output_PATH/Summary    
@@ -40,7 +43,7 @@ else
 	"$overview_dem is not a valid overview DEM file. Using dem.grd from $topo_PATH ..."
 	overview_dem=$dem_grd;
     fi
-
+        
     dem_grd_hs="$work_PATH/Summary/hillshade.grd"
     overview_dem_hs="$work_PATH/Summary/overview_hillshade.grd"
 
@@ -49,6 +52,7 @@ else
     DEM_GRD2="$work_PATH/Summary/dem_clip.grd"
     DEM_GRD2_HS="$work_PATH/Summary/dem_clip_HS.grd"
     CPDFS_dem="$work_PATH/Summary/CPDFS_dem.grd"
+    CPDFS_dem_HS="$work_PATH/Summary/CPDFS_dem_HS.grd"
 
 
     # Set GMT parameters
@@ -65,12 +69,8 @@ else
     gmt gmtset PROJ_LENGTH_UNIT cm
 
 
-    # #Set parameters
-    LOS_MIN="-50"
-    LOS_MAX="50"
-    LOS_STEP="5"
-
-
+    
+    
     # Check auxilliary vector files and do conversion where neccessary
 
     vector_files_raw=( reference_polygon aux_polygon_1 aux_polygon_2 aux_line_1 aux_line_2 aux_point_1 aux_point_2 )
@@ -91,6 +91,28 @@ else
 	fi
 	((vf_counter++))
     done
+
+
+    cd $output_PATH/Pairs-forward
+    folders=($( ls -d */ ))
+    echo "Folders: ${folders[@]}"
+    for folder in "${folders[@]}"; do
+    	folder=${folder::-1}
+    	echo "Now working on folder: $folder"
+    	if [ -f "$folder/display_amp_ll.grd" ]; then
+    	    amp_file_folder=$folder
+    	    break
+    	fi
+    done
+
+    echo "Amp file: $output_PATH/$amp_file_folder/display_amp_ll.grd"
+
+    if [ ! -f "$output_PATH/Pairs-forward/$amp_file_folder/display_amp_ll.grd" ]; then
+    	echo; echo "WARNING: No Amplitude file found in all output folders."; echo
+    else
+    	echo; echo "REGION is set to extent of $output_PATH/Pairs-forward/$amp_file_folder/display_amp_ll.grd"
+    	REGION="$output_PATH/Pairs-forward/$amp_file_folder/display_amp_ll.grd"
+    fi
       
 
 
@@ -109,35 +131,76 @@ else
 	gmt grdgradient $OVERVIEW_DEM2 -A315/45 -Nt0.6 -G$OVERVIEW_DEM2_HS -V
     fi
 
-    dem_min=$( gmt grdinfo $OVERVIEW_DEM2 | grep z_min | awk '{ print $3 }' )
-    dem_max=$( gmt grdinfo $OVERVIEW_DEM2 | grep z_min | awk '{ print $5 }' )
-    dem_diff=$( echo "$dem_max - $dem_min" | bc )
-    if [ $( echo "$dem_diff > 5000" | bc ) -eq 1 ]; then
-	dem_step=500
-    elif [ $( echo "$dem_diff > 2000" | bc ) -eq 1 ]; then
-	dem_step=200
-    elif [ $( echo "$dem_diff > 1000" | bc ) -eq 1 ]; then
-	dem_step=100
-    elif [ $( echo "$dem_diff > 500" | bc ) -eq 1 ]; then
-	dem_step=50
-    elif [ $( echo "$dem_diff > 200" | bc ) -eq 1 ]; then
-	dem_step=20
-    else
-	dem_step=10
-    fi
-    dem_min_remainder=$( echo "$dem_min%$dem_step" | bc )
-    dem_lower_boundary=$( echo "$dem_min-$dem_min_remainder" | bc )
-    dem_max_remainder=$( echo "$dem_max%$dem_step" | bc )
-    dem_upper_boundary=$( echo "$dem_max-$dem_max_remainder+$dem_step" | bc )
+
+
+    echo; echo "Cutting DEM to region of interest"
+    gmt grdcut $overview_dem -G$CPDFS_dem -R$REGION -V
     
-    echo; echo "DEM params: $dem_min/$dem_max/$dem_lower_boundary/$dem_upper_boundary/$dem_step"
+
+    #generate hillshade - will only need to be done once
+    if [ ! -f $CPDFS_dem_HS ]; then
+    	echo; echo "Generating hillshade $CPDFS_dem_HS"
+    	#gmt grdgradient $CPDFS_dem -Ep -Nt1 -G$CPDFS_dem_HS
+    	gmt grdgradient $CPDFS_dem -A315/45 -Nt0.6 -G$CPDFS_dem_HS -V
+    fi
+
+
+    
+    dem_min=$( gmt grdinfo $OVERVIEW_DEM2 | grep z_min | awk '{ print $3 }' )
+    dem_max=$( gmt grdinfo $OVERVIEW_DEM2 | grep z_min | awk '{ print $5 }' )   
+    dem_cpt_config=$( $OSARIS_PATH/lib/steps_boundaries.sh $dem_min $dem_max )
+    echo; echo "DEM cpt config: $dem_cpt_config"
+
+    if [ -z $amp_range ]; then
+	amp_extremes="$( $OSARIS_PATH/lib/z_min_max.sh display_amp_ll.grd $output_PATH/Pairs-forward $swath )"
+	amp_min=$( echo "$amp_extremes" | awk '{ print $1 }' )
+	amp_max=$( echo "$amp_extremes" | awk '{ print $2 }' )    
+	amp_cpt_config=$( $OSARIS_PATH/lib/steps_boundaries.sh $amp_min $amp_max )
+    else
+	amp_cpt_config=$amp_range
+    fi
+    echo; echo "AMP cpt config: $amp_cpt_config"
+
+    if [ -z $unw_range ]; then
+	unw_extremes="$( $OSARIS_PATH/lib/z_min_max.sh unwrap_mask_ll.grd $output_PATH/Pairs-forward $swath )"
+	unw_min=$( echo "$unw_extremes" | awk '{ print $1 }' )
+	unw_max=$( echo "$unw_extremes" | awk '{ print $2 }' )    
+	unw_cpt_config=$( $OSARIS_PATH/lib/steps_boundaries.sh $unw_min $unw_max 1 )
+    else
+	unw_cpt_config=$unw_range
+    fi
+    echo; echo "UNW cpt config: $unw_cpt_config"
+
+    if [ -z $los_range ]; then
+	los_extremes="$( $OSARIS_PATH/lib/z_min_max.sh los_ll.grd $output_PATH/Pairs-forward $swath )"
+	los_min=$( echo "$los_extremes" | awk '{ print $1 }' )
+	los_max=$( echo "$los_extremes" | awk '{ print $2 }' )    
+	los_cpt_config=$( $OSARIS_PATH/lib/steps_boundaries.sh $los_min $los_max 1 )
+    else
+	los_cpt_config=$los_range
+    fi
+    echo; echo "LOS cpt config: $los_cpt_config"
+    
+    if [ -z $coh_range ]; then
+	coh_cpt_config="0/1/0.1"
+    else
+	coh_cpt_config=$coh_range
+    fi
+
+    if [ -z $dem_cpt ]; then dem_cpt="#376a4e,#fae394,#8a5117,#7c7772,#ffffff"; fi
+    if [ -z $amp_cpt ]; then amp_cpt="gray"; fi
+    if [ -z $coh_cpt ]; then coh_cpt="jet"; fi
+    if [ -z $unw_cpt ]; then unw_cpt="seis"; fi
+    if [ -z $los_cpt ]; then los_cpt="cyclic"; fi
+
     # Make color tables - only one is needed
     # gmt makecpt -Cwysiwyg -T0/5/1 > conncomp_color.cpt
-    gmt makecpt -Cjet -T0/1/0.1 -V > $work_PATH/Summary/coherence_color.cpt
-    gmt makecpt -Ccyclic -T$LOS_MIN/$LOS_MAX/$LOS_STEP -V > $work_PATH/Summary/LOS_color.cpt
-    gmt makecpt -Cgray -T$AMP_MIN/$AMP_MAX/$AMP_STEP > amp_grayscale.cpt
-    gmt makecpt -Cdem2 -T$dem_lower_boundary/$dem_upper_boundary/$dem_step -V > $work_PATH/Summary/dem2_color.cpt
-    gmt makecpt -C#376a4e,#fae394,#8a5117,#7c7772,#ffffff -T$dem_lower_boundary/$dem_upper_boundary/$dem_step -V > $work_PATH/Summary/dem2_overview_color.cpt
+    gmt makecpt -C$coh_cpt -T$coh_cpt_config -V > $work_PATH/Summary/coherence_color.cpt
+    gmt makecpt -C$los_cpt -T$los_cpt_config -V > $work_PATH/Summary/LOS_color.cpt # $LOS_MIN/$LOS_MAX/$LOS_STEP
+    gmt makecpt -C$unw_cpt -T$unw_cpt_config -V > $work_PATH/Summary/unw_color.cpt
+    gmt makecpt -C$amp_cpt -T$amp_cpt_config > amp_grayscale.cpt
+    gmt makecpt -C$dem_cpt -T$dem_cpt_config -V > $work_PATH/Summary/dem2_color.cpt # $dem_lower_boundary/$dem_upper_boundary/$dem_step
+    gmt makecpt -C$dem_cpt -T$dem_cpt_config -V > $work_PATH/Summary/dem2_overview_color.cpt
 
 
     if [ ! -e $POSTSCRIPT1 ]; then
@@ -159,7 +222,7 @@ else
 	done
     	gmt psscale -R$OVERVIEW_REGION -JM$OVERVIEW_SCALE \
 	    -DjBC+o0/-1.5c+w6.5c/0.5c+h -C$CPT -I -F+gwhite+r1p+pthin,black -B1000:Elevation:/:m: -O -K -P -V >> $POSTSCRIPT1
-    	convert -quality 100 -density 300 $POSTSCRIPT1 $output_PATH/Summary/overview-map.pdf 
+    	convert -quality 100 -density $resolution $POSTSCRIPT1 $output_PATH/Summary/overview-map.pdf 
     else
 	echo "Skipping Overview Map Processing ..."
     fi
@@ -185,41 +248,128 @@ else
 	PDF_MERGED_ROT90=${PDF_MERGED::-4}_rot90.png
 	
 	if [ ! -f "$PDF_MERGED_ROT90" ]; then
-	    AMPLITUDE_GRD="$output_PATH/Pairs-forward/$folder/display_amp_ll.grd"
-	    AMPLITUDE_GRD_HISTEQ="$work_PATH/Summary/amp_histeq.grd"
-	    COHERENCE_PHASE_GRD="$output_PATH/Pairs-forward/$folder/corr_ll.grd"
+
+	    amp_fail=0
+	    coh_fail=0
+	    unw_fail=0
+	    los_fail=0
+
 	    
-	    if [ -d "$output_PATH/homogenized_intfs" ]; then
-		UNWSNAPHU_GRD="$output_PATH/homogenized_intfs/hintf_${folder}.grd"
-		LOS_GRD="$output_PATH/homogenized_intfs/hlosdsp_${folder}.grd"
-	    else
-		UNWSNAPHU_GRD="$output_PATH/Pairs-forward/$folder/unwrap_mask_ll.grd"
-		LOS_GRD="$output_PATH/Pairs-forward/$folder/los_ll.grd"
-	    fi
+    	    #echo; echo "Cutting DEM to region of interest"
+    	    #gmt grdcut $overview_dem -G$CPDFS_dem -R$REGION -V
+	    	    
 
-	    REGION=$AMPLITUDE_GRD
-
-	    if [ ! -f $AMPLITUDE_GRD_HISTEQ ]; then
-    		echo; echo "Calculate histogram equalization for ${AMPLITUDE_GRD}"
-    		gmt grdhisteq $AMPLITUDE_GRD -G$AMPLITUDE_GRD_HISTEQ -N -V
-    		gmt grd2cpt -E15 $AMPLITUDE_GRD_HISTEQ -Cgray -V > $work_PATH/Summary/amp_grayscale.cpt
-	    else
-		echo; echo "Amplitude histogram exists, skipping ..."; echo
-	    fi
-
-	    if [ ! -f $CPDFS_dem ]
-	    then
-    		echo; echo "Cutting DEM to region of interest"
+	    echo "Now looking for amp ..."
+	    if [ -f "$output_PATH/Pairs-forward/$folder/display_amp_ll.grd" ]; then
+		echo "Amplitude file found: $output_PATH/Pairs-forward/$folder/display_amp_ll.grd"
+		AMPLITUDE_GRD="$output_PATH/Pairs-forward/$folder/display_amp_ll.grd"
+		REGION=$AMPLITUDE_GRD
+		echo; echo "Cutting DEM to region of interest"
     		gmt grdcut $overview_dem -G$CPDFS_dem -R$REGION -V
+		gmt grdcut $OVERVIEW_DEM2_HS -G$CPDFS_dem_HS -R$REGION -V
+	    
+		AMPLITUDE_GRD_HISTEQ="$work_PATH/Summary/amp_histeq.grd"
+
+		if [ ! -f $AMPLITUDE_GRD_HISTEQ ]; then
+    		    echo; echo "Calculate histogram equalization for ${AMPLITUDE_GRD}"
+    		    gmt grdhisteq $AMPLITUDE_GRD -G$AMPLITUDE_GRD_HISTEQ -N -V
+    		    gmt grd2cpt -E15 $AMPLITUDE_GRD_HISTEQ -Cgray -V > $work_PATH/Summary/amp_grayscale.cpt
+		else
+		    echo; echo "Amplitude histogram exists, skipping ..."; echo
+		fi
+
+	    else
+		echo "No amplitude file found"
+		# AMPLITUDE_GRD=$CPDFS_dem_HS
+		# AMPLITUDE_GRD_HISTEQ=$CPDFS_dem_HS
+		amp_fail=1
+		amp_message="No amplitude file"
 	    fi
 
-	    #generate hillshade - will only need to be done once
-	    if [ ! -f $CPDFS_dem_HS ]
-	    then
-    		echo; echo "Generating hillshade $DEM_GRID_HS"
-    		#gmt grdgradient $CPDFS_dem -Ep -Nt1 -G$CPDFS_dem_HS
-    		gmt grdgradient $CPDFS_dem -A315/45 -Nt0.6 -G$CPDFS_dem_HS -V
+	    echo "Now looking for coh ..."
+	    if [ -f "$output_PATH/Pairs-forward/$folder/corr_ll.grd" ]; then
+		echo "Coherence file found: $output_PATH/Pairs-forward/$folder/corr_ll.grd"
+		COHERENCE_PHASE_GRD="$output_PATH/Pairs-forward/$folder/corr_ll.grd"
+	    else
+		echo "No coherence file found."
+		# COHERENCE_PHASE_GRD=$CPDFS_dem_HS
+		coh_fail=1
+		coh_message="No coherence file"
 	    fi
+	    
+	    echo "Now looking for unw ..."
+	    if [ -f "$output_PATH/homogenized_intfs/hintf_${folder}.grd" ]; then
+		echo "Homog. Unw. Intf file found: $output_PATH/homogenized_intfs/hintf_${folder}.grd"
+		UNWSNAPHU_GRD="$output_PATH/homogenized_intfs/hintf_${folder}.grd"   
+	    elif [ -f "$output_PATH/Pairs-forward/$folder/unwrap_mask_ll.grd" ]; then
+		echo "Using raw unw. intf: $output_PATH/Pairs-forward/$folder/unwrap_mask_ll.grd"
+		UNWSNAPHU_GRD="$output_PATH/Pairs-forward/$folder/unwrap_mask_ll.grd"
+	    else
+		echo "No unwr. intf. file found"
+		# UNWSNAPHU_GRD=$CPDFS_dem_HS
+		unw_fail=1
+		unw_message="No unwr. interferogram"
+	    fi
+	    
+	    echo "Now looking for los ..."
+	    if [ -f "$output_PATH/homogenized_intfs/hlosdsp_${folder}.grd" ]; then
+		echo "Homog. LOS file found at $output_PATH/homogenized_intfs/hlosdsp_${folder}.grd"
+		LOS_GRD="$output_PATH/homogenized_intfs/hlosdsp_${folder}.grd"		    
+	    elif [ -f "$output_PATH/Pairs-forward/$folder/los_ll.grd" ]; then
+		echo "Using raw LOS file from $output_PATH/Pairs-forward/$folder/los_ll.grd"
+		LOS_GRD="$output_PATH/Pairs-forward/$folder/los_ll.grd"
+	    else
+		echo "No LOS file found."
+		# LOS_GRD=$CPDFS_dem
+		los_fail=1
+		los_message="No LOS file"
+	    fi
+
+
+
+
+
+
+
+
+
+
+
+	    # AMPLITUDE_GRD="$output_PATH/Pairs-forward/$folder/display_amp_ll.grd"
+	    # AMPLITUDE_GRD_HISTEQ="$work_PATH/Summary/amp_histeq.grd"
+	    # COHERENCE_PHASE_GRD="$output_PATH/Pairs-forward/$folder/corr_ll.grd"
+	    
+	    # if [ -d "$output_PATH/homogenized_intfs" ]; then
+	    # 	UNWSNAPHU_GRD="$output_PATH/homogenized_intfs/hintf_${folder}.grd"
+	    # 	LOS_GRD="$output_PATH/homogenized_intfs/hlosdsp_${folder}.grd"
+	    # else
+	    # 	UNWSNAPHU_GRD="$output_PATH/Pairs-forward/$folder/unwrap_mask_ll.grd"
+	    # 	LOS_GRD="$output_PATH/Pairs-forward/$folder/los_ll.grd"
+	    # fi
+
+	    # REGION=$AMPLITUDE_GRD
+
+	    # if [ ! -f $AMPLITUDE_GRD_HISTEQ ]; then
+    	    # 	echo; echo "Calculate histogram equalization for ${AMPLITUDE_GRD}"
+    	    # 	gmt grdhisteq $AMPLITUDE_GRD -G$AMPLITUDE_GRD_HISTEQ -N -V
+    	    # 	gmt grd2cpt -E15 $AMPLITUDE_GRD_HISTEQ -Cgray -V > $work_PATH/Summary/amp_grayscale.cpt
+	    # else
+	    # 	echo; echo "Amplitude histogram exists, skipping ..."; echo
+	    # fi
+
+	    # if [ ! -f $CPDFS_dem ]
+	    # then
+    	    # 	echo; echo "Cutting DEM to region of interest"
+    	    # 	gmt grdcut $overview_dem -G$CPDFS_dem -R$REGION -V
+	    # fi
+
+	    # #generate hillshade - will only need to be done once
+	    # if [ ! -f $CPDFS_dem_HS ]
+	    # then
+    	    # 	echo; echo "Generating hillshade $DEM_GRID_HS"
+    	    # 	#gmt grdgradient $CPDFS_dem -Ep -Nt1 -G$CPDFS_dem_HS
+    	    # 	gmt grdgradient $CPDFS_dem -A315/45 -Nt0.6 -G$CPDFS_dem_HS -V
+	    # fi
 
 	    
 	    cd $work_PATH/Summary
@@ -233,9 +383,10 @@ else
     		if [ ! -e $POSTSCRIPT2 ]; then
 		    echo; echo "Creating Amplitude in ${POSTSCRIPT2}"		
 		    TITLE="Amplitude ${master_date}"
-		    if [ -f "$AMPLITUDE_GRD_HISTEQ" ]; then
+		    echo; echo "Amplitude: $AMPLITUDE_GRD_HISTEQ"; echo
+		    if [ ! "$amp_fail" -eq 1 ]; then
 			CPT="$work_PATH/Summary/amp_grayscale.cpt"
-			gmt grdimage $AMPLITUDE_GRD_HISTEQ -I$CPDFS_dem_HS \
+			gmt grdimage $AMPLITUDE_GRD_HISTEQ  \
 			    -C$CPT -R$REGION -JM$SCALE -B+t"$TITLE" -Q -Bx$XSTEPS -By$YSTEPS -V -K -Yc -Xc > $POSTSCRIPT2
 			for vector_file in ${vector_files[@]}; do
 			    style_name=${vector_file}_style
@@ -243,11 +394,14 @@ else
 			    gmt psxy $vector_style -JM$SCALE -R$REGION ${!vector_file::-4}.gmt -O -K -V >> $POSTSCRIPT2			    
 			    # echo; echo "${!style_name}"; echo "gmt psxy $vector_style -JM$SCALE -R$REGION ${!vector_file::-4}.gmt -O -K >> $POSTSCRIPT2"
 			done
+		    else			
+			gmt grdimage $CPDFS_dem_HS -C#ffffff,#eeeeee \
+			    -R$REGION -JM$SCALE -B+t"$amp_message" -Q -Bx$XSTEPS -By$YSTEPS -V -K -Yc -Xc > $POSTSCRIPT2
+			# echo $amp_message | gmt pstext -F+f12p,Helvetica-Bold,red -R$REGION -JM$SCALE  >> $POSTSCRIPT2
+			convert -density $resolution -fill red -pointsize 18 -gravity center -trim -verbose label:"$amp_message" $POSTSCRIPT2 -quality 100  $POSTSCRIPT2
 
-		    else
-			gmt grdimage $CPDFS_dem_HS -C#ffffff,#eeeeee -R$REGION -JM$SCALE -B+t"$TITLE" -Q -V -K -Yc -Xc > $POSTSCRIPT2
-		    fi
-		    convert $POSTSCRIPT2 -trim -verbose > $POSTSCRIPT2
+		    fi		    
+		    convert -verbose -density $resolution -trim  $POSTSCRIPT2 -quality 100 ${POSTSCRIPT2::-3}.png
 		else
 		    echo; echo "Amplitude in ${POSTSCRIPT2} exists, skipping ..."
     		fi
@@ -255,16 +409,17 @@ else
     		if [ ! -e $POSTSCRIPT3 ]; then
 		    echo; echo "Creating Coherence in ${POSTSCRIPT3}"
 		    TITLE="Coherence ${master_date}-${slave_date}"
-		    if [ -f $COHERENCE_PHASE_GRD ]; then
+		    if [ ! "$coh_fail" -eq 1 ]; then
 			CPT="$work_PATH/Summary/coherence_color.cpt"
-			gmt grdimage $COHERENCE_PHASE_GRD -I$CPDFS_dem_HS \
+			gmt grdimage $COHERENCE_PHASE_GRD \
 			    -C$CPT -R$REGION -JM$SCALE -B+t"$TITLE" -Q -Bx$XSTEPS -By$YSTEPS -V -K -Yc -Xc > $POSTSCRIPT3			
 			gmt psscale -R$REGION -JM$SCALE -DjBC+o0/-1.5c+w6.5c/0.5c+h \
 			    -C$CPT -I -F+gwhite+r1p+pthin,black -B0.2:"Coherence (0-1)":/:/: -O -K -V >> $POSTSCRIPT3
 		    else
-			gmt grdimage $CPDFS_dem_HS -C#ffffff,#eeeeee -R$REGION -JM$SCALE -B+t"$TITLE" -Q -V -K -Yc -Xc > $POSTSCRIPT3
+			gmt grdimage $CPDFS_dem_HS -C#ffffff,#eeeeee \
+			    -R$REGION -JM$SCALE -B+t"$coh_message" -Q -Bx$XSTEPS -By$YSTEPS -V -K -Yc -Xc > $POSTSCRIPT3
 		    fi
-		    convert $POSTSCRIPT3 -trim -verbose > $POSTSCRIPT3
+		    convert -verbose -density $resolution -trim  $POSTSCRIPT3 -quality 100 ${POSTSCRIPT3::-3}.png
 		else
 		    echo; echo "Coherence in ${POSTSCRIPT3} exists, skipping ..."
     		fi
@@ -272,15 +427,15 @@ else
     		if [ ! -e $POSTSCRIPT4 ]; then
 	    	    echo; echo "Creating Unwrapped Phase in ${POSTSCRIPT4}"
 	    	    TITLE="Unwrapped Phase"
-		    if [ -f $UNWSNAPHU_GRD ]; then
-	    		CPT="$work_PATH/Summary/LOS_color.cpt"
-	    		gmt grdimage $UNWSNAPHU_GRD -I$CPDFS_dem_HS -C$CPT -R$REGION -JM$SCALE -B+t"$TITLE" -Q -Bx$XSTEPS -By$YSTEPS -V -K -Yc -Xc > $POSTSCRIPT4	    	
-	    		gmt psxy -Wthinnest,lightblue -R$REGION -Glightblue -JM$SCALE $aux_polygon_1 -O -K >> $POSTSCRIPT4	    	
-	    		gmt psxy -Sa0.5c -Wblack -Gwhite -R$REGION -JM$SCALE $reference_polygon -O -K >> $POSTSCRIPT4
+		    if [ ! "$unw_fail" -eq 1 ]; then
+	    		CPT="$work_PATH/Summary/unw_color.cpt"
+	    		gmt grdimage $UNWSNAPHU_GRD -C$CPT -R$REGION -JM$SCALE -B+t"$TITLE" -Q -Bx$XSTEPS -By$YSTEPS -V -K -Yc -Xc > $POSTSCRIPT4
+			gmt psscale -R$REGION -JM$SCALE -DjBC+o0/-1.5c+w6.5c/0.5c+h -C$CPT -I -F+gwhite+r1p+pthin,black -Baf:"Vertical surface displacement":/:"mm/yr": -O -K -V >> $POSTSCRIPT4    # 
 		    else
-			gmt grdimage $CPDFS_dem_HS -C#ffffff,#eeeeee -R$REGION -JM$SCALE -B+t"$TITLE" -Q -V -K -Yc -Xc > $POSTSCRIPT4
+			gmt grdimage $CPDFS_dem_HS -C#ffffff,#eeeeee \
+			    -R$REGION -JM$SCALE -B+t"$unw_message" -Q -Bx$XSTEPS -By$YSTEPS -V -K -Yc -Xc > $POSTSCRIPT4
 		    fi
-		    convert $POSTSCRIPT4 -trim -verbose > $POSTSCRIPT4
+		    convert -verbose -density $resolution -trim  $POSTSCRIPT4 -quality 100 ${POSTSCRIPT4::-3}.png
 
 		else
 		    echo; echo "Unwrapped phase in ${POSTSCRIPT4} exists, skipping ..."
@@ -290,16 +445,15 @@ else
     		if [ ! -e $POSTSCRIPT5 ]; then
 		    echo; echo "Creating LOS (mm/yr) in ${POSTSCRIPT5}"
 		    TITLE="LOS (mm/yr)"
-		    if [ -f $LOS_GRD ]; then
+		    if [ ! "$los_fail" -eq 1 ]; then
 			CPT="$work_PATH/Summary/LOS_color.cpt"
-			gmt grdimage $LOS_GRD -I$CPDFS_dem_HS -C$CPT -R$REGION -JM$SCALE -B+t"$TITLE" -Q -Bx$XSTEPS -By$YSTEPS -V -K -Yc -Xc > $POSTSCRIPT5
-			gmt psxy -Wthinnest,lightblue -R$REGION -Glightblue -JM$SCALE $aux_polygon_1 -O -K -V >> $POSTSCRIPT5
-			gmt psxy -Wthinnest,white -R$REGION -JM$SCALE $reference_polygon -O -K -V >> $POSTSCRIPT5
-			gmt psscale -R$REGION -JM$SCALE -DjBC+o0/-1.5c+w6.5c/0.5c+h -C$CPT -I -F+gwhite+r1p+pthin,black -B2:"LOS":/:"mm/yr": -O -K -V >> $POSTSCRIPT5
+			gmt grdimage $LOS_GRD -C$CPT -R$REGION -JM$SCALE -B+t"$TITLE" -Q -Bx$XSTEPS -By$YSTEPS -V -K -Yc -Xc > $POSTSCRIPT5			
+			gmt psscale -R$REGION -JM$SCALE -DjBC+o0/-1.5c+w6.5c/0.5c+h -C$CPT -I -F+gwhite+r1p+pthin,black -Baf:"LOS":/:"mm/yr": -O -K -V >> $POSTSCRIPT5
 		    else
-			gmt grdimage $CPDFS_dem_HS -C#ffffff,#eeeeee -R$REGION -JM$SCALE -B+t"$TITLE" -Q -V -K -Yc -Xc > $POSTSCRIPT5
+			gmt grdimage $CPDFS_dem_HS -C#ffffff,#eeeeee \
+			    -R$REGION -JM$SCALE -B+t"$coh_message" -Q -Bx$XSTEPS -By$YSTEPS -V -K -Yc -Xc > $POSTSCRIPT5
 		    fi
-		    convert $POSTSCRIPT5 -trim -verbose > $POSTSCRIPT5
+		    convert -verbose -density $resolution -trim  $POSTSCRIPT5 -quality 100 ${POSTSCRIPT5::-3}.png
 		else
 		    echo; echo "LOS in ${POSTSCRIPT5} exists, skipping ..."
     		fi
@@ -308,9 +462,15 @@ else
     		# echo; echo "Merging PS into $PDF_MERGED"				
     		#montage ${POSTSCRIPT2} ${POSTSCRIPT3} ${POSTSCRIPT4} ${POSTSCRIPT5} -resize 2480x3508 -title "Sentinel1: ${master_date}-${slave_date}" -quality 100 -density 300 -tile 2x2 -geometry +50+10 -mode concatenate -extent 2480x3508 -page 2480x3508 ${PDF_MERGED}
     		echo "Merging PS into $PDF_MERGED_ROT90"
-    		montage ${POSTSCRIPT2} ${POSTSCRIPT3} ${POSTSCRIPT4} ${POSTSCRIPT5} -rotate 90 -title "${master_date}-${slave_date}" -quality 90 -density 300 -tile 4x1 -geometry +100-500 -mode concatenate -verbose $PDF_MERGED_ROT90
+		take_diff=$(( ($(date --date="$slave_date" +%s) - $(date --date="$master_date" +%s) )/(60*60*24) ))
+    		montage ${POSTSCRIPT2::-3}.png ${POSTSCRIPT3::-3}.png ${POSTSCRIPT4::-3}.png ${POSTSCRIPT5::-3}.png \
+		    -rotate 90 -geometry +100+150 -density $resolution -title "${master_date}-${slave_date} (${take_diff} days)" \
+		    -quality 100 -tile 4x1 -mode concatenate -verbose $PDF_MERGED_ROT90
     		# rm $POSTSCRIPT2 $POSTSCRIPT3 $POSTSCRIPT4 $POSTSCRIPT5
-		rm $AMPLITUDE_GRD_HISTEQ
+		
+		if [ "$AMPLITUDE_GRD_HISTEQ" != "$CPDFS_dem_HS" ]; then
+		    rm $AMPLITUDE_GRD_HISTEQ
+		fi
 	    fi
 	else
 	    echo "File $PDF_MERGED_ROT90 exists, skipping ..."
@@ -330,7 +490,7 @@ else
 	images_per_page=5
     fi
 
-    montage -page 2480x3508 -density 300 -units pixelsperinch -quality 90 -tile 1x$images_per_page \
+    montage -page 2480x3508 -density $resolution -units pixelsperinch -compress zip -quality 90 -tile 1x$images_per_page \
 	-mode concatenate -verbose -geometry +50+100 \
 	$png_tiles \
 	"$output_PATH/Summary/Summary-${prefix}.pdf"
