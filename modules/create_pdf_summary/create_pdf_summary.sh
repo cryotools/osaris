@@ -68,9 +68,7 @@ else
     gmt gmtset MAP_DEGREE_SYMBOL degree
     gmt gmtset PROJ_LENGTH_UNIT cm
 
-
-    
-    
+        
     # Check auxilliary vector files and do conversion where neccessary
 
     vector_files_raw=( reference_polygon aux_polygon_1 aux_polygon_2 aux_line_1 aux_line_2 aux_point_1 aux_point_2 )
@@ -82,7 +80,7 @@ else
     		ogr2ogr -f GMT ${!vector_file::-4}.gmt ${!vector_file::-4}.shp
 	    fi
 	    
-	    echo; echo "Vector style: ${vector_file}_style"
+	    echo "Vector style: ${vector_file}_style"
 	    if [ -z "${vector_file}_style" ]; then
 		echo "No style defined for ${vector_file}. Setting to default."
 		declare "${vector_file}_style='-Wthinnest,black -Glightblue'"
@@ -93,28 +91,28 @@ else
     done
 
 
+    # Initial setting of the region extent
+
     cd $output_PATH/Pairs-forward
+
     folders=($( ls -d */ ))
-    echo "Folders: ${folders[@]}"
     for folder in "${folders[@]}"; do
     	folder=${folder::-1}
-    	echo "Now working on folder: $folder"
     	if [ -f "$folder/display_amp_ll.grd" ]; then
     	    amp_file_folder=$folder
     	    break
     	fi
-    done
-
-    echo "Amp file: $output_PATH/$amp_file_folder/display_amp_ll.grd"
+    done    
 
     if [ ! -f "$output_PATH/Pairs-forward/$amp_file_folder/display_amp_ll.grd" ]; then
     	echo; echo "WARNING: No Amplitude file found in all output folders."; echo
     else
     	echo; echo "REGION is set to extent of $output_PATH/Pairs-forward/$amp_file_folder/display_amp_ll.grd"
     	REGION="$output_PATH/Pairs-forward/$amp_file_folder/display_amp_ll.grd"
-    fi
-      
+    fi    
 
+
+    # Prepare DEMs
 
     cd $work_PATH/Summary
 
@@ -132,11 +130,9 @@ else
     fi
 
 
-
     echo; echo "Cutting DEM to region of interest"
     gmt grdcut $overview_dem -G$CPDFS_dem -R$REGION -V
     
-
     #generate hillshade - will only need to be done once
     if [ ! -f $CPDFS_dem_HS ]; then
     	echo; echo "Generating hillshade $CPDFS_dem_HS"
@@ -144,12 +140,13 @@ else
     	gmt grdgradient $CPDFS_dem -A315/45 -Nt0.6 -G$CPDFS_dem_HS -V
     fi
 
-
     
+    # Prepare min/max/step configurations for GMT CPTs
+
     dem_min=$( gmt grdinfo $OVERVIEW_DEM2 | grep z_min | awk '{ print $3 }' )
     dem_max=$( gmt grdinfo $OVERVIEW_DEM2 | grep z_min | awk '{ print $5 }' )   
     dem_cpt_config=$( $OSARIS_PATH/lib/steps_boundaries.sh $dem_min $dem_max )
-    echo; echo "DEM cpt config: $dem_cpt_config"
+    echo "DEM cpt config: $dem_cpt_config"
 
     if [ -z $amp_range ]; then
 	amp_extremes="$( $OSARIS_PATH/lib/z_min_max.sh display_amp_ll.grd $output_PATH/Pairs-forward $swath )"
@@ -159,7 +156,7 @@ else
     else
 	amp_cpt_config=$amp_range
     fi
-    echo; echo "AMP cpt config: $amp_cpt_config"
+    echo "AMP cpt config: $amp_cpt_config"
 
     if [ -z $unw_range ]; then
 	unw_extremes="$( $OSARIS_PATH/lib/z_min_max.sh unwrap_mask_ll.grd $output_PATH/Pairs-forward $swath )"
@@ -169,7 +166,7 @@ else
     else
 	unw_cpt_config=$unw_range
     fi
-    echo; echo "UNW cpt config: $unw_cpt_config"
+    echo "UNW cpt config: $unw_cpt_config"
 
     if [ -z $los_range ]; then
 	los_extremes="$( $OSARIS_PATH/lib/z_min_max.sh los_ll.grd $output_PATH/Pairs-forward $swath )"
@@ -179,13 +176,16 @@ else
     else
 	los_cpt_config=$los_range
     fi
-    echo; echo "LOS cpt config: $los_cpt_config"
+    echo "LOS cpt config: $los_cpt_config"
     
     if [ -z $coh_range ]; then
 	coh_cpt_config="0/1/0.1"
     else
 	coh_cpt_config=$coh_range
     fi
+
+
+    # Prepare CPTs
 
     if [ -z $dem_cpt ]; then dem_cpt="#376a4e,#fae394,#8a5117,#7c7772,#ffffff"; fi
     if [ -z $amp_cpt ]; then amp_cpt="gray"; fi
@@ -202,6 +202,8 @@ else
     gmt makecpt -C$dem_cpt -T$dem_cpt_config -V > $work_PATH/Summary/dem2_color.cpt # $dem_lower_boundary/$dem_upper_boundary/$dem_step
     gmt makecpt -C$dem_cpt -T$dem_cpt_config -V > $work_PATH/Summary/dem2_overview_color.cpt
 
+
+    # Create overview map
 
     if [ ! -e $POSTSCRIPT1 ]; then
 	echo; printf "Creating overviewmap in \n ${POSTSCRIPT1} \n \n"
@@ -228,6 +230,8 @@ else
     fi
 
 
+    # Create and merge date maps for each scene pair
+
     cd $output_PATH/Pairs-forward
 
     folders=($( ls -d */ ))
@@ -253,10 +257,6 @@ else
 	    coh_fail=0
 	    unw_fail=0
 	    los_fail=0
-
-	    
-    	    #echo; echo "Cutting DEM to region of interest"
-    	    #gmt grdcut $overview_dem -G$CPDFS_dem -R$REGION -V
 	    	    
 
 	    echo "Now looking for amp ..."
@@ -325,55 +325,8 @@ else
 		los_message="No LOS file"
 	    fi
 
-
-
-
-
-
-
-
-
-
-
-	    # AMPLITUDE_GRD="$output_PATH/Pairs-forward/$folder/display_amp_ll.grd"
-	    # AMPLITUDE_GRD_HISTEQ="$work_PATH/Summary/amp_histeq.grd"
-	    # COHERENCE_PHASE_GRD="$output_PATH/Pairs-forward/$folder/corr_ll.grd"
-	    
-	    # if [ -d "$output_PATH/homogenized_intfs" ]; then
-	    # 	UNWSNAPHU_GRD="$output_PATH/homogenized_intfs/hintf_${folder}.grd"
-	    # 	LOS_GRD="$output_PATH/homogenized_intfs/hlosdsp_${folder}.grd"
-	    # else
-	    # 	UNWSNAPHU_GRD="$output_PATH/Pairs-forward/$folder/unwrap_mask_ll.grd"
-	    # 	LOS_GRD="$output_PATH/Pairs-forward/$folder/los_ll.grd"
-	    # fi
-
-	    # REGION=$AMPLITUDE_GRD
-
-	    # if [ ! -f $AMPLITUDE_GRD_HISTEQ ]; then
-    	    # 	echo; echo "Calculate histogram equalization for ${AMPLITUDE_GRD}"
-    	    # 	gmt grdhisteq $AMPLITUDE_GRD -G$AMPLITUDE_GRD_HISTEQ -N -V
-    	    # 	gmt grd2cpt -E15 $AMPLITUDE_GRD_HISTEQ -Cgray -V > $work_PATH/Summary/amp_grayscale.cpt
-	    # else
-	    # 	echo; echo "Amplitude histogram exists, skipping ..."; echo
-	    # fi
-
-	    # if [ ! -f $CPDFS_dem ]
-	    # then
-    	    # 	echo; echo "Cutting DEM to region of interest"
-    	    # 	gmt grdcut $overview_dem -G$CPDFS_dem -R$REGION -V
-	    # fi
-
-	    # #generate hillshade - will only need to be done once
-	    # if [ ! -f $CPDFS_dem_HS ]
-	    # then
-    	    # 	echo; echo "Generating hillshade $DEM_GRID_HS"
-    	    # 	#gmt grdgradient $CPDFS_dem -Ep -Nt1 -G$CPDFS_dem_HS
-    	    # 	gmt grdgradient $CPDFS_dem -A315/45 -Nt0.6 -G$CPDFS_dem_HS -V
-	    # fi
-
 	    
 	    cd $work_PATH/Summary
-
 
 	    SCALE=18  
 	    XSTEPS=0.5
@@ -414,7 +367,7 @@ else
 			gmt grdimage $COHERENCE_PHASE_GRD \
 			    -C$CPT -R$REGION -JM$SCALE -B+t"$TITLE" -Q -Bx$XSTEPS -By$YSTEPS -V -K -Yc -Xc > $POSTSCRIPT3			
 			gmt psscale -R$REGION -JM$SCALE -DjBC+o0/-1.5c+w6.5c/0.5c+h \
-			    -C$CPT -I -F+gwhite+r1p+pthin,black -B0.2:"Coherence (0-1)":/:/: -O -K -V >> $POSTSCRIPT3
+			    -C$CPT -I -F+gwhite+r1p+pthin,black -B0.2 -O -K -V >> $POSTSCRIPT3
 		    else
 			gmt grdimage $CPDFS_dem_HS -C#ffffff,#eeeeee \
 			    -R$REGION -JM$SCALE -B+t"$coh_message" -Q -Bx$XSTEPS -By$YSTEPS -V -K -Yc -Xc > $POSTSCRIPT3
@@ -426,11 +379,11 @@ else
 
     		if [ ! -e $POSTSCRIPT4 ]; then
 	    	    echo; echo "Creating Unwrapped Phase in ${POSTSCRIPT4}"
-	    	    TITLE="Unwrapped Phase"
+	    	    TITLE="Unwrapped Phase (mm/yr)"
 		    if [ ! "$unw_fail" -eq 1 ]; then
 	    		CPT="$work_PATH/Summary/unw_color.cpt"
 	    		gmt grdimage $UNWSNAPHU_GRD -C$CPT -R$REGION -JM$SCALE -B+t"$TITLE" -Q -Bx$XSTEPS -By$YSTEPS -V -K -Yc -Xc > $POSTSCRIPT4
-			gmt psscale -R$REGION -JM$SCALE -DjBC+o0/-1.5c+w6.5c/0.5c+h -C$CPT -I -F+gwhite+r1p+pthin,black -Baf:"Vertical surface displacement":/:"mm/yr": -O -K -V >> $POSTSCRIPT4    # 
+			gmt psscale -R$REGION -JM$SCALE -DjBC+o0/-1.5c+w6.5c/0.5c+h -C$CPT -I -F+gwhite+r1p+pthin,black -Baf -O -K -V >> $POSTSCRIPT4    # 
 		    else
 			gmt grdimage $CPDFS_dem_HS -C#ffffff,#eeeeee \
 			    -R$REGION -JM$SCALE -B+t"$unw_message" -Q -Bx$XSTEPS -By$YSTEPS -V -K -Yc -Xc > $POSTSCRIPT4
@@ -448,7 +401,7 @@ else
 		    if [ ! "$los_fail" -eq 1 ]; then
 			CPT="$work_PATH/Summary/LOS_color.cpt"
 			gmt grdimage $LOS_GRD -C$CPT -R$REGION -JM$SCALE -B+t"$TITLE" -Q -Bx$XSTEPS -By$YSTEPS -V -K -Yc -Xc > $POSTSCRIPT5			
-			gmt psscale -R$REGION -JM$SCALE -DjBC+o0/-1.5c+w6.5c/0.5c+h -C$CPT -I -F+gwhite+r1p+pthin,black -Baf:"LOS":/:"mm/yr": -O -K -V >> $POSTSCRIPT5
+			gmt psscale -R$REGION -JM$SCALE -DjBC+o0/-1.5c+w6.5c/0.5c+h -C$CPT -I -F+gwhite+r1p+pthin,black -Baf -O -K -V >> $POSTSCRIPT5
 		    else
 			gmt grdimage $CPDFS_dem_HS -C#ffffff,#eeeeee \
 			    -R$REGION -JM$SCALE -B+t"$coh_message" -Q -Bx$XSTEPS -By$YSTEPS -V -K -Yc -Xc > $POSTSCRIPT5
@@ -459,14 +412,16 @@ else
     		fi
 
 		
-    		# echo; echo "Merging PS into $PDF_MERGED"				
-    		#montage ${POSTSCRIPT2} ${POSTSCRIPT3} ${POSTSCRIPT4} ${POSTSCRIPT5} -resize 2480x3508 -title "Sentinel1: ${master_date}-${slave_date}" -quality 100 -density 300 -tile 2x2 -geometry +50+10 -mode concatenate -extent 2480x3508 -page 2480x3508 ${PDF_MERGED}
     		echo "Merging PS into $PDF_MERGED_ROT90"
 		take_diff=$(( ($(date --date="$slave_date" +%s) - $(date --date="$master_date" +%s) )/(60*60*24) ))
     		montage ${POSTSCRIPT2::-3}.png ${POSTSCRIPT3::-3}.png ${POSTSCRIPT4::-3}.png ${POSTSCRIPT5::-3}.png \
 		    -rotate 90 -geometry +100+150 -density $resolution -title "${master_date}-${slave_date} (${take_diff} days)" \
 		    -quality 100 -tile 4x1 -mode concatenate -verbose $PDF_MERGED_ROT90
-    		# rm $POSTSCRIPT2 $POSTSCRIPT3 $POSTSCRIPT4 $POSTSCRIPT5
+
+		if [ "$clean_up" -ge 1 ]; then
+    		    rm $POSTSCRIPT2 $POSTSCRIPT3 $POSTSCRIPT4 $POSTSCRIPT5
+		    rm ${POSTSCRIPT2::-3}.png ${POSTSCRIPT3::-3}.png ${POSTSCRIPT4::-3}.png ${POSTSCRIPT5::-3}.png
+		fi
 		
 		if [ "$AMPLITUDE_GRD_HISTEQ" != "$CPDFS_dem_HS" ]; then
 		    rm $AMPLITUDE_GRD_HISTEQ
@@ -479,6 +434,9 @@ else
 	((CPDFS_count+1))
     done
     
+
+    # Merge all rows to PDF summary file
+
     cd $work_PATH/Summary
 
     png_tiles=$( ls *rot90.png )
@@ -496,107 +454,11 @@ else
 	"$output_PATH/Summary/Summary-${prefix}.pdf"
 
 
-    
-    # echo; echo "Merging files to $output_PATH/Summary/${prefix}-summary.pdf"
-    # montage -label '%f [%wx%h]' -page 2480x3508 -density 300 -units pixelsperinch $png_tiles -title "Summary $prefix" -quality 90 -tile 1x$CPDFS_count -mode concatenate -verbose -geometry +50+100 "$output_PATH/Summary/${prefix}-summary.pdf"
-
-    # -resize 2480x -page 2480x -extent 2480x -geometry +100+1  -extent 2480x3508
-    # if [ $clean_up -gt 0 ]; then
-    # 	echo; echo
-    # 	echo "Cleaning up"
-    # 	rm $DIRECTORY/*.cpt
-    # 	rm $CPDFS_dem
-    # 	rm $CPDFS_dem_HS
-    # 	rm $AMPLITUDE_GRD_HISTEQ
-    # 	rm $UNWCONNCOMP_GRD
-    # 	rm $UNWSNAPHU_GRD
-    # 	rm $AMPLITUDE_GRD
-    # 	rm $COHERENCE_PHASE_GRD
-    # 	rm $OVERVIEW_DEM2
-    # 	rm $OVERVIEW_DEM2_HS	
-    # 	echo; echo
-    # fi
+    # Calculate runtime
 
     CPDFS_end_time=`date +%s`
-
     CPDFS_runtime=$((CPDFS_end_time - CPDFS_start_time))
-
     printf 'Processing finished in %02dd %02dh:%02dm:%02ds\n' $(($CPDFS_runtime/86400)) $(($CPDFS_runtime%86400/3600)) $(($CPDFS_runtime%3600/60)) $(($CPDFS_runtime%60))
     echo
 
-
 fi
-
-
-
-    #see more parameters here:
-    #http://gmt.soest.hawaii.edu/gmt/html/man/gmtdefaults.html
-    #http://www.ruf.rice.edu/~ben/gmt.html
-    #http://cosmolinux.no-ip.org/raconetlinux2/gmt.html
-
-    #convert tif to shapefile
-    #cd /raid2-manaslu/InSAR/NWArg/TerraSAR-X/Pocitos/isce2stamps/INSAR_20120917/SMALL_BASELINES/20120917_20121111
-    #gdal_trace_outline -ndv 0 -b 1 -erosion isce_minrefdem.rg7_az6.amp.wgs84.tif -out-cs ll -dp-toler 10 -ogr-out TerraSAR-X_INSAR_20120917.shp
-    #cp -rv TerraSAR-X_INSAR_20120917* /raid-cachi/bodo/Dropbox/Argentina/TerraSAR-X/Pocitos
-    #cd /raid-cachi/bodo/Dropbox/Argentina/TerraSAR-X/Pocitos
-    #ogr2ogr -f GMT TerraSAR-X_INSAR_20120917.gmt TerraSAR-X_INSAR_20120917.shp
-
-    #cd /raid-cachi/bodo/Dropbox/Argentina/Sentinel1A/Pocitos/orb149_asc
-    #/usr/bin/ogr2ogr -f GMT Sentinel1_Pocitos_orb149_ascending.gmt Sentinel1_Pocitos_orb149_ascending.kml
-    #cd /raid-cachi/bodo/Dropbox/Argentina/Sentinel1A/Salta/tr76
-    #/usr/bin/ogr2ogr -f GMT Sentinel1_Salta_orb76_ascending.gmt Sentinel1_Salta_orb76_ascending.kml
-
-    ###Example Call:
-    # bash /raid-cachi/bodo/Dropbox/Argentina/Sentinel1A/Pocitos/plot_S1_maps_gmt_Pocitos.sh
-    # 20141023 \
-    # 20150127 \
-    # rg12_az2 \
-    # -10 \
-    # 10 \
-    # 1 \
-    # /raid2-manaslu/InSAR/NWArg/S1/desc/S1_Pocitos_tr83_desc_Rg12_Az2_SRTM1_30m_procstep0_topo_overview_map.ps \
-    # /raid2-manaslu/InSAR/NWArg/S1/desc/20141023_20150127/merged/S1_Pocitos_tr83_desc_Rg12_Az2_SRTM1_30m_procstep0_20141023_20150127_amplitude.ps \
-    # /raid2-manaslu/InSAR/NWArg/S1/desc/20141023_20150127/merged/S1_Pocitos_tr83_desc_Rg12_Az2_SRTM1_30m_procstep0_20141023_20150127_conncomp.ps \
-    # /raid2-manaslu/InSAR/NWArg/S1/desc/20141023_20150127/merged/S1_Pocitos_tr83_desc_Rg12_Az2_SRTM1_30m_procstep0_20141023_20150127_coherence.ps \
-    # /raid2-manaslu/InSAR/NWArg/S1/desc/20141023_20150127/merged/S1_Pocitos_tr83_desc_Rg12_Az2_SRTM1_30m_procstep0_20141023_20150127_LOS_mm_yr.ps \
-    # /raid2-manaslu/InSAR/NWArg/S1/desc/20141023_20150127/merged/S1_Pocitos_tr83_desc_Rg12_Az2_SRTM1_30m_procstep0_20141023_20150127_combined_map.pdf \
-    # /raid-cachi/bodo/Dropbox/Argentina/TerraSAR-X/NEPocitos_stable_fan_DD_WGS84_centroid.gmt \
-    # /raid2-manaslu/InSAR/NWArg/S1/desc \
-    # -68.5/-64.5/-27/-23 \
-    # /raid2-manaslu/InSAR/NWArg/S1/desc
-    # demLat_S28_S22_Lon_W070_W062.dem.wgs84
-    # S1_Pocitos_tr83_desc_Rg12_Az2_SRTM1_30m_procstep0
-
-
-    # # Output files
-    # POSTSCRIPT1=${7}
-    # POSTSCRIPT2=${8}
-    # POSTSCRIPT3=${9}
-    # POSTSCRIPT4=${10}
-    # POSTSCRIPT5=${11}
-    # PDF_MERGED=${12}
-    # REF_POLYGON=${13}
-    # ISCE2STAMPS_DIR=${14}
-    # OVERVIEW_REGION=${15}
-    # DEM_DIR=${16}
-    # DEM_FNAME=${17}
-    # LABEL=${18}
-
-
-    # DEM_GRD="${ISCE2STAMPS_DIR}/${DEM_FNAME}.grd"
-    # OVERVIEW_GRD2="${ISCE2STAMPS_DIR}/overview_clip.grd"
-    # OVERVIEW_GRD2_HS="${ISCE2STAMPS_DIR}/overview_clip_HS.grd"
-    # DEM_GRD2="${ISCE2STAMPS_DIR}/${DEM_FNAME}_clip.grd"
-    # DEM_GRD2_HS="${ISCE2STAMPS_DIR}/${DEM_FNAME}_clip_HS.grd"
-    # UNWSNAPHU_GRD="${ISCE2STAMPS_DIR}/${master_date}_${slave_date}/merged/${LABEL}_LOS_mm_yr_${master_date}_$slave_date.grd"
-    # UNWCONNCOMP_GRD="${ISCE2STAMPS_DIR}/${master_date}_${slave_date}/merged/${LABEL}_conncomp_${master_date}_$slave_date.grd"
-    # AMPLITUDE_GRD="${ISCE2STAMPS_DIR}/${master_date}_${slave_date}/merged/${LABEL}_amp_${master_date}_$slave_date.grd"
-    # AMPLITUDE_GRD_HISTEQ="${AMPLITUDE_GRD::-4}_histeq.grd"
-    # COHERENCE_PHASE_GRD="${ISCE2STAMPS_DIR}/${master_date}_${slave_date}/merged/${LABEL}_phsig_${master_date}_$slave_date.grd"
-    # OSM_ROAD_VECTOR_FILE="/raid/data/OSM/SAM_NWArg_roads01.gmt"
-    # OSM_ROAD_VECTOR_FILE2="/raid/data/OSM/SAM_NWArg_roads02.gmt"
-    # OSM_RIVER_VECTOR_FILE="/raid/data/OSM/SAM_NWArg_rivers.gmt"
-    # OSM_LAKES_VECTOR_FILE="/raid/data/OSM/SAM_NWArg_lakes.gmt"
-    # OSM_RAILWAY_VECTOR_FILE="/raid/data/OSM/SAM_NWArg_railway.gmt"
-    # OSM_VOLCANO_VECTOR_FILE="/raid/data/OSM/SAM_NWArg_volcano.gmt"
-    # OSM_WETLANDS_VECTOR_FILE="/raid/data/OSM/SAM_NWArg_wetlands.gmt"

@@ -52,10 +52,12 @@ process_intf_mode=pairs
 # master_scene_date=20160217
 # Optionally specify the scene to use as Master in single_master mode
 
-process_pdf_overview=0
-# Create an overview pdf of the processing results (0 = no,1 = yes)
-# The PDF will be located in the output folder
-# ToDo: not yet implemented
+# Use the following parameters to skip processing steps.
+# Useful to run additional modules on data created by a previous run.
+skip_pre_processing=0
+# Will skip preprocessing processing (extracting raw files, cut+merge, etc.).
+skip_intf_processing=0
+# Will skip the complete GMTSAR interferometric processing.
 
 
 # - - - - - GMTSAR CONFIG FILE - - - - - - - - - - - - - 
@@ -84,9 +86,10 @@ post_extract_mods=( )
 post_processing_mods=( )
 # Modules to be run after GMTSAR processing
 # Recommended for:
-#   - unstable_coherence_metric
-#   - simple_PSI
+#   - unstable_coh_metric
+#   - simple_psi
 #   - homogenize_intfs
+#   - create_pdf_summary
 
 post_postprocessing_mods=( )
 # Modules to be run after calculating statistics and preparing summary reports
