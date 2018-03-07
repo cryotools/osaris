@@ -73,13 +73,14 @@ echo "- - - - - - - - - - - - - - - - - - - - "
 echo "Starting p2p_S1A_TOPS with options:"
 echo "S1A${previous_scene:15:8}_${previous_scene:24:6}_F$swath"
 echo "S1A${current_scene:15:8}_${current_scene:24:6}_F$swath"
-echo "$gmtsar_config_file" 
+echo "$gmtsar_config_file"
+echo "check PATH: $OSARIS_PATH"
 
 # p2p_S1A_TOPS.csh
 $OSARIS_directory/lib/GMTSAR-mods/p2p_S1PPC.csh \
     S1A${previous_scene:15:8}_${previous_scene:24:6}_F$swath \
     S1A${current_scene:15:8}_${current_scene:24:6}_F$swath \
-    $OSARIS_directory/$gmtsar_config_file 
+    $OSARIS_directory/$gmtsar_config_file $OSARIS_PATH
 
 
 cd $work_PATH/$folder/$job_ID/F$swath/intf/
