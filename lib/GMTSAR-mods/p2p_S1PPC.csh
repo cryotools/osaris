@@ -12,11 +12,11 @@
 alias rm 'rm -f'
 unset noclobber
 #
-  if ($#argv < 3) then
+  if ($#argv < 4) then
     echo ""
-    echo "Usage: p2p_S1A_TOPS.csh master_image slave_image configuration_file"
+    echo "Usage: p2p_S1A_TOPS.csh master_image slave_image configuration_file osaris_path"
     echo ""
-    echo "Example: p2p_S1A_TOPS.csh S1A20150526_F1 S1A20150607_F1 config.tsx.slc.txt "
+    echo "Example: p2p_S1A_TOPS.csh S1A20150526_F1 S1A20150607_F1 config.tsx.slc.txt /home/user/"
     echo ""
     echo "         Place the pre-processed data in a directory called raw and a dem.grd file in "
     echo "         a parallel directory called topo.  Execute this command at the directory"
@@ -33,6 +33,8 @@ unset noclobber
 #
 #   make sure the files exist
 #
+set osaris_path = $4
+
  if((! -f raw/$1.PRM) || (! -f raw/$1.LED) || (! -f raw/$1.SLC)) then
    echo " missing input files  raw/"$1
    exit
@@ -320,7 +322,7 @@ unset noclobber
       echo "SNAPHU.CSH - START"
       echo "threshold_snaphu: $threshold_snaphu"
       
-      /home/loibldav/Scripts/gmtsar-sentinel-processing-chain/lib/GMTSAR-mods/snaphu_S1PPC.csh $threshold_snaphu $defomax $region_cut
+      $osaris_path/lib/GMTSAR-mods/snaphu_S1PPC.csh $threshold_snaphu $defomax $region_cut
 
       echo "SNAPHU.CSH - END"
       cd ../..
