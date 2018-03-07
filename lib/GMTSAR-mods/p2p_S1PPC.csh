@@ -33,6 +33,8 @@ unset noclobber
 #
 #   make sure the files exist
 #
+set osaris_path = $4
+
  if((! -f raw/$1.PRM) || (! -f raw/$1.LED) || (! -f raw/$1.SLC)) then
    echo " missing input files  raw/"$1
    exit
@@ -320,7 +322,7 @@ unset noclobber
       echo "SNAPHU.CSH - START"
       echo "threshold_snaphu: $threshold_snaphu"
       
-      /home/loibldav/Scripts/gmtsar-sentinel-processing-chain/lib/GMTSAR-mods/snaphu_S1PPC.csh $threshold_snaphu $defomax $region_cut
+      $osaris_path/lib/GMTSAR-mods/snaphu_S1PPC.csh $threshold_snaphu $defomax $region_cut
 
       echo "SNAPHU.CSH - END"
       cd ../..
