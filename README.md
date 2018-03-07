@@ -48,10 +48,6 @@ Go to the OSARIS folder. Launch your run with
 Wake up sleeping nodes
 Status: beta
 
-## Prepare ArcticDEM
-Prepare ArcticDEM tiles to be used as topo data in GMTSAR (merge, project).
-Status: alpha
-
 ## Simple PSI
 Identify persistent scatterers by finding data points of consitently high coherences.
 Status: beta
@@ -60,9 +56,9 @@ Status: beta
 Shift unwrapped interferograms and LOS relatively to 'stable ground points'.
 Status: beta
 
-## Coherence diff
-Calculate the difference between coherences.
-Status: conceptual
+## Grid difference
+Calculate the difference between OSARIS result grid files throughout the timeseries.
+Status: beta
 
 ## Unstable Coherence Metric
 Identify regions where high coherence values drop substantially between two data takes.
