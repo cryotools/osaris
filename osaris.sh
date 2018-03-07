@@ -14,7 +14,7 @@ else
     echo
     echo " ╔══════════════════════════════════════════╗"
     echo " ║                                          ║"
-    echo " ║             OSARIS v. 0.5.1              ║"
+    echo " ║             OSARIS v. 0.5.2              ║"
     echo " ║   Open Source SAR Investigation System   ║"
     echo " ║                                          ║"
     echo " ╚══════════════════════════════════════════╝"
@@ -227,7 +227,7 @@ else
 		    slurm_jobname="$slurm_jobname_prefix-SM" 
 		    $OSARIS_PATH/lib/check-queue.sh $slurm_jobname 1
 
-		    $OSARIS_PATH/lib/process-pairs.sh $config_file CPR 2>&1 >>$logfile
+		    $OSARIS_PATH/lib/process-pairs.sh $config_file CMP 2>&1 >>$logfile
 		    slurm_jobname="$slurm_jobname_prefix-CMP" 
 		    $OSARIS_PATH/lib/check-queue.sh $slurm_jobname 1
 
@@ -254,17 +254,19 @@ else
 	
 	cd $output_PATH/Pairs-forward
 	
-	folders=($( ls -r ))
-	for folder in "${folders[@]}"; do
-	    scene_id_1=${folder:0:21}
-	    scene_id_2=${folder:24:21}
-	    echo "Scene ID 1: $scene_id_1 \n Scene ID 2: $scene_id_2 "
-	    $OSARIS_PATH/lib/unwrapping-sum.sh \
-		$output_PATH/Pairs-forward/$folder/unwrap_mask_ll.grd \
-		$output_PATH/Pairs-reverse/$scene_id_2---$scene_id_1/unwrap_mask_ll.grd \
-		$output_PATH/Unwrapping-sums \
-		$folder-fwd-rev-sum
-		2>&1 >>$logfile
+	for swath in ${swaths_to_process[@]}; do
+	    folders=($( ls -d *-F$swath/ ))
+	    for folder in "${folders[@]}"; do
+		folder=${folder::-1}
+		scene_id_1=${folder:0:8}
+		scene_id_2=${folder:10:8}
+		echo "Scene ID 1: $scene_id_1 \n Scene ID 2: $scene_id_2 "
+		$OSARIS_PATH/lib/unwrapping-sum.sh \
+		    $output_PATH/Pairs-forward/$folder/unwrap_mask_ll.grd \
+		    $output_PATH/Pairs-reverse/${scene_id_2}--${scene_id_1}-F$swath/unwrap_mask_ll.grd \
+		    $output_PATH/Unwrapping-sums \
+		    ${folder}-fwd-rev-sum 2>&1 >>$logfile
+	    done
 	done
     fi
 
