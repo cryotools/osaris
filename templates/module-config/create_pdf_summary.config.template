@@ -1,0 +1,58 @@
+##################################################################
+#
+# Template configuration for the 'Create PDF Summary' module
+#
+# Copy to 'config' folder, rename to 'create_pdf_summary.config' 
+# and fit to your machine's configuration.
+#
+#################################################################
+
+images_per_page=5
+# Number of image rows to be displayed on each page of the summary PDF.
+# Default is 5
+
+resolution=300
+# Image resolution in dpi.
+# Default is 300 (print quality).
+
+# Override default color schemes and/or value range for maps.
+# All default GMT cpt files can be used
+# Range must be provided as "minimum_value/maximum_value/step"
+# amp_cpt=""
+# amp_range=""
+# coh_cpt=""
+# coh_range=""
+# unw_cpt=""
+unw_range="-20/20/2"
+# los_cpt=""
+los_range="-40/40/5"
+# dem_cpt=""
+# dem_range=""
+
+
+overview_dem="/path/to/overview_dem.grd"
+# A DEM of the wider study region.
+# If not set, the DEM used by GMTSAR will be used.
+
+OVERVIEW_REGION="11/12/45/46"
+# The extent of the map window in decimal degrees 
+# Format: lon_min/lon_max/lat_min/lat_max
+
+# Supplementary vector data for map output
+reference_polygon="/path/to/aoi_outline.gmt"
+aux_polygon_1="/path/to/some_additional_vectordata.gmt"
+aux_polygon_2="/path/to/more_auxilliary_data.shp"
+# aux_line_1="/data/scratch/loibldav/Shapefiles/ne_10m_admin_0_countries.shp"
+# aux_line_2="/data/scratch/loibldav/Shapefiles/ne_10m_roads.shp"
+# aux_point_1="/data/scratch/loibldav/Shapefiles/ne_50m_populated_places.shp"
+# aux_point_2="/data/scratch/loibldav/Shapefiles/asdf.grd"
+
+# Styling for suppl. vector data sets in GMT syntax.
+# More info: http://gmt.soest.hawaii.edu/doc/5.4.3/psxy.html
+reference_polygon_style="-Wthin,red"
+aux_polygon_1_style="-Wthinnest,lightblue -Glightblue"
+aux_polygon_2_style="-Wthinnest,lightred -Glightred"
+aux_line_1_style="-Wthick,dotted,white"
+aux_line_2_style="-Wthinnest,black"
+aux_point_1_style="-Sc0.5c -Wred -Gorange"
+aux_point_2_style="-Sd0.5c -Wblack -Gwhite"

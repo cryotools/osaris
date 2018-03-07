@@ -48,8 +48,8 @@ else
     source $config_file
     echo "Config file: $config_file"
 
-    GSP_directory=$( pwd )
-    echo "GSP directory: $GSP_directory"
+    OSARIS_PATH=$( pwd )
+    echo "GSP directory: $OSARIS_PATH"
 
     work_PATH=$base_PATH/$prefix/Processing
     # Path to working directory
@@ -126,7 +126,7 @@ else
 
 	    SAT_baseline $work_PATH/intf_all/"$master"_"$slave"/$master_PRM $work_PATH/intf_all/"$master"_"$slave"/$slave_PRM > tmp
 	   
-	    BPL=$(grep B_parallel tmp | awk '{print $3}')
+	    BPL=$(grep B_perpendicular tmp | awk '{print $3}')
 	    # rm tmp*
 	    
 	    #make intf.tab file

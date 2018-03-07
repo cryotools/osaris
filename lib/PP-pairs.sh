@@ -11,7 +11,7 @@ current_orbit=$4
 swath=$5
 config_file=$6
 gmtsar_config_file=$7
-OSARIS_directory=$8
+OSARIS_PATH=$8
 direction=$9
 
 folder="Pairs-$direction"
@@ -19,7 +19,7 @@ folder="Pairs-$direction"
 
 echo "Reading configuration file $config_file" 
 if [ ${config_file:0:2} = "./" ]; then
-    config_file=$OSARIS_directory/${config_file:2:${#config_file}}
+    config_file=$OSARIS_PATH/${config_file:2:${#config_file}}
 fi
 
 source $config_file
@@ -76,16 +76,17 @@ echo "S1A${current_scene:15:8}_${current_scene:24:6}_F$swath"
 echo "$gmtsar_config_file" 
 
 # p2p_S1A_TOPS.csh
-$OSARIS_directory/lib/GMTSAR-mods/p2p_S1PPC.csh \
+$OSARIS_PATH/lib/GMTSAR-mods/p2p_S1_OSARIS.csh \
     S1A${previous_scene:15:8}_${previous_scene:24:6}_F$swath \
     S1A${current_scene:15:8}_${current_scene:24:6}_F$swath \
-    $OSARIS_directory/$gmtsar_config_file 
+    $OSARIS_PATH/$gmtsar_config_file \
+    $OSARIS_PATH
 
 
 cd $work_PATH/$folder/$job_ID/F$swath/intf/
 intf_dir=($( ls )) 
         
-output_intf_dir=$output_PATH/$folder/F$swath/S1${previous_scene:15:8}_${previous_scene:24:6}_F$swath"---"S1${current_scene:15:8}_${current_scene:24:6}_F$swath
+output_intf_dir="$output_PATH/$folder/${previous_scene:15:8}--${current_scene:15:8}-F$swath"
 
 mkdir -pv $output_intf_dir
 
@@ -100,7 +101,7 @@ cp ./$intf_dir/*.conf $output_intf_dir
 echo; echo "Checking results and writing report ..."; echo
 
 cd $output_intf_dir
-unwrapping_active=`grep threshold_snaphu $OSARIS_directory/$gmtsar_config_file | awk '{ print $3 }'`
+unwrapping_active=`grep threshold_snaphu $OSARIS_PATH/$gmtsar_config_file | awk '{ print $3 }'`
 
 if [ -f "display_amp_ll.grd" ]; then status_amp=1; else status_amp=0; fi
 if [ -f "corr_ll.grd" ]; then status_coh=1; else status_coh=0; fi

@@ -31,26 +31,34 @@ Go to the OSARIS folder. Launch your run with
 ./osaris.sh ./config/_my_config_.config
 
 
+### TIPPS
+- Launch OSARIS from within a tmux or screen session to detach your terminal session from the process. Doing this will prevent the OSARIS processing to fail in case you lose connection, your terminal crashes, etc. (besides numerous other advantages of using tmux/screen).
+
+- Start with relatively few scenes and optimize your configuration. When the basic processing results fit your needs, use the options to turn off pre- and interferometric preocesing to work on module configuration in detail.
+
+- Keep an eye on the log files during processing. In your procesing directory, use 'tail -f Log/_logfile_name_' to monitor what is going on.
+
+- After processing, take a look at the reports in 'Output/Reports'.
+
+- Use the 'create_pdf_summary' module to get an overview of the interferometric processing results.
+
+
 ### MODULES
 ## Ping
 Wake up sleeping nodes
 Status: beta
 
-## Prepare ArcticDEM
-Prepare ArcticDEM tiles to be used as topo data in GMTSAR (merge, project).
-Status: alpha
-
 ## Simple PSI
 Identify persistent scatterers by finding data points of consitently high coherences.
-Status: alpha
+Status: beta
 
 ## Homogenize interferograms
 Shift unwrapped interferograms and LOS relatively to 'stable ground points'.
-Status: alpha
+Status: beta
 
-## Coherence diff
-Calculate the difference between coherences.
-Status: conceptual
+## Grid difference
+Calculate the difference between OSARIS result grid files throughout the timeseries.
+Status: beta
 
 ## Unstable Coherence Metric
 Identify regions where high coherence values drop substantially between two data takes.
@@ -58,7 +66,11 @@ Status: beta
 
 ## Timeseries xy
 Extract values for particular coordinates throughout a series of grids (e.g. coherence, phase). 
-Status: alpha
+Status: beta
+
+## Create PDF Summary
+Preview key processing results in a single graphic overview. 
+Status: beta
 
 
 ### GETTING INVOLVED

@@ -1,0 +1,22 @@
+##################################################################
+#
+# Template configuration for the grid_difference module
+#
+# Copy to 'config' folder, rename to 'grid_difference.config' 
+# and fit to your setup and needs.
+#
+#################################################################
+
+grddiff_input_filenames=( display_amp_ll.grd )
+# Files to process, e.g. 'display_amp_ll.grd' for amplitudes.
+# You may provide multiple file names, seperated by spaces.
+# Input files shall reside in sub-directories of input directory (s. below)
+
+grddiff_input_PATH="$output_PATH/Pairs-forward"
+# Path where the input data resides.
+# You may provide a full path or use the $output_PATH variable, e.g.
+# Default: $output_PATH/Pairs-forward
+
+grddiff_palette="$OSARIS_PATH/lib/palettes/corr_diff_brown_green.cpt"
+# Define a CPT palette to use for for styling the results.
+

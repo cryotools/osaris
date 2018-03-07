@@ -29,30 +29,28 @@ else
     mkdir -p $work_PATH/UCM/cut_files
     mkdir -p $work_PATH/UCM/temp
     mkdir -p $output_PATH/UCM/
-   
+    mkdir -p $work_PATH/UCM/input
+
+    base_PATH=$output_PATH/Pairs-forward
+    cd $base_PATH
+
+    folders=($( ls -d */ ))
+    for folder in "${folders[@]}"; do
+	folder=${folder::-1}
+	ln -s $base_PATH/$folder/corr_ll.grd $work_PATH/UCM/input/corr_${folder}.grd
+    done
+
+    count=0
     for swath in ${swaths_to_process[@]}; do
-	count=0
-	mkdir -p $work_PATH/UCM/input/F$swath
-
-	base_PATH=$output_PATH/Pairs-forward/F$swath
 	cd $base_PATH
-
 
 	# Obtain minimum boundary box for corr_ll.grd files
 	min_grd_extent_file=corr_ll.grd
 	source $OSARIS_PATH/lib/include/min_grd_extent.sh
 
+	cd $work_PATH/UCM/input
 
-	folders=($( ls -d */ ))
-	for folder in "${folders[@]}"; do
-	    folder=${folder::-1}
-	    ln -s $base_PATH/$folder/corr_ll.grd $work_PATH/UCM/input/F$swath/corr_${folder}.grd
-	done
-
-
-	cd $work_PATH/UCM/input/F$swath/
-
-	corr_files=(*.grd)
+	corr_files=(*F$swath.grd)
 
 	for corr_file in ${corr_files[@]}; do
 	    if [ "$count" -gt "0" ]; then
@@ -79,7 +77,6 @@ else
 		    $xmin/$xmax/$ymin/$ymax \
 		    $swath
 		
-
 	    fi
 	    ((count++))
 	done
