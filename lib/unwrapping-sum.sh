@@ -10,6 +10,8 @@
 # Both input files must be in GRD format.
 # Output filename needs only to be set when both input files have
 # the same name (e.g. multiple unwrap_mask_ll.grd files).
+#
+# David Loibl, 2018
 # 
 ################################################################
 
@@ -173,7 +175,7 @@ else
    gmt grdcut $file_2 -GTemp/$cut_filename_2  -R$xmin/$xmax/$ymin/$ymax -V
 
    cd Temp
-   gmt grdmath $cut_filename_2 $cut_filename_1 ADD = $output_PATH/$diff_filename.grd -V
+   gmt grdmath $cut_filename_2 $cut_filename_1 ADD = $output_PATH/${diff_filename}.grd -V
 
    cd ..
    # rm -r Temp

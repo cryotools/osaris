@@ -42,6 +42,8 @@ Go to the OSARIS folder. Launch your run with
 
 - Use the 'create_pdf_summary' module to get an overview of the interferometric processing results.
 
+- Make sure the DEM extent is not much bigger than the extent of the scenes you actually want to process. A big DEM will need a lot of extra processing time.
+
 
 ### MODULES
 ## Ping
@@ -69,7 +71,7 @@ Extract values for particular coordinates throughout a series of grids (e.g. coh
 Status: beta
 
 ## Create PDF Summary
-Preview key processing results in a single graphic overview. 
+Preview key processing results in a single graphic overview. Requires ImageMagick.
 Status: beta
 
 
