@@ -66,9 +66,9 @@ else
 		    echo "   Cropping $crop_file ..."
 		    crop_region_counter=0
 		    for crop_region in ${crop_region_labels[@]}; do
-			echo "gmt grdcut $crop_file -G$crop_output_PATH/$crop_region/crop-${folder}-${crop_file} -R${crop_regions[$crop_region_counter]} -V"
+			echo "gmt grdcut $crop_file -G$crop_output_PATH/$crop_region/${folder}-${crop_file::-4}-crop.grd -R${crop_regions[$crop_region_counter]} -V"
 			gmt grdcut $crop_file \
-			    -G$crop_output_PATH/$crop_region/crop-${folder}-${crop_file} \
+			    -G$crop_output_PATH/$crop_region/${folder}-${crop_file::-4}-crop.grd \
 			    -R${crop_regions[$crop_region_counter]} -V
 			((crop_region_counter++))
 		    done

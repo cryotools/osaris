@@ -22,11 +22,12 @@
 #
 #####################################################################
 
-HGI_start=`date +%s`
+HI_start=`date +%s`
 
 
 echo; echo "Homogenizing interferograms ..."
-mkdir -p $output_PATH/homogenized_intfs
+HI_output_PATH="$output_PATH/Homogenized-Intfs"
+mkdir -p $HI_output_PATH
 
 for swath in ${swaths_to_process[@]}; do
 
@@ -44,7 +45,7 @@ for swath in ${swaths_to_process[@]}; do
 		echo; echo "Processing data from $folder"
 		if [ -f "$folder/unwrap_mask_ll.grd" ]; then
 		    # Get xy coordinates of 'stable ground point' from file and check the value the raster set has at this location.
-		    gmt grdtrack $output_PATH/PSI/ps_coords-F$swath.xy -G$folder/unwrap_mask_ll.grd >> $output_PATH/homogenized_intfs/sg_vals.xyz
+		    gmt grdtrack $output_PATH/PSI/ps_coords-F$swath.xy -G$folder/unwrap_mask_ll.grd >> $HI_output_PATH/sg_vals.xyz
 		    sg_unwrap_trk=$( gmt grdtrack $output_PATH/PSI/ps_coords-F$swath.xy -G$folder/unwrap_mask_ll.grd )
 		    if [ ! -z ${sg_unwrap_trk+x} ]; then
 			sg_unwrap_val=$( echo "$sg_unwrap_trk" | awk '{ print $3 }')
@@ -57,7 +58,7 @@ for swath in ${swaths_to_process[@]}; do
 		    
 		    if [ ! -z ${sg_unwrap_val+x} ]; then
 			# Shift input grid (unwrapped intf) so that the 'stable ground value' is zero
-			gmt grdmath $folder/unwrap_mask_ll.grd $sg_unwrap_val SUB = $output_PATH/homogenized_intfs/hintf_${folder}.grd -V
+			gmt grdmath $folder/unwrap_mask_ll.grd $sg_unwrap_val SUB = $HI_output_PATH/${folder}-hintf.grd -V
 		    else 
 			echo "Unwrap difference calculation for stable ground point failed in ${folder}. Skipping ..."
 		    fi		    
@@ -78,7 +79,7 @@ for swath in ${swaths_to_process[@]}; do
 
 		    if [ ! -z ${sg_losdsp_val+x} ]; then
 			# Shift input grid (los displacement) so that the 'stable ground value' is zero
-			gmt grdmath $folder/los_ll.grd $sg_losdsp_val SUB = $output_PATH/homogenized_intfs/hlosdsp_${folder}.grd -V
+			gmt grdmath $folder/los_ll.grd $sg_losdsp_val SUB = $HI_output_PATH/${folder}-hlosdsp.grd -V
 		    else 
 			echo "LOS difference calculation for stable ground point failed in ${folder}. Skipping ..."
 		    fi
@@ -96,11 +97,11 @@ for swath in ${swaths_to_process[@]}; do
     fi
 done
 
-HGI_end=`date +%s`
+HI_end=`date +%s`
 
-HGI_runtime=$((HGI_end-HGI_start))
+HI_runtime=$((HI_end-HI_start))
 
-printf 'Processing finished in %02dd %02dh:%02dm:%02ds\n' $(($HGI_runtime/86400)) $(($HGI_runtime%86400/3600)) $(($HGI_runtime%3600/60)) $(($HGI_runtime%60))
+printf 'Processing finished in %02dd %02dh:%02dm:%02ds\n' $(($HI_runtime/86400)) $(($HI_runtime%86400/3600)) $(($HI_runtime%3600/60)) $(($HI_runtime%60))
 echo
 
 

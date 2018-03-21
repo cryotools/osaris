@@ -30,7 +30,7 @@ gmt grdcut HC_$high_corr_file -G$UCM_work_PATH/cut_files/HC_$high_corr_file -R$b
 
 echo; echo "Processing Unstable Coherence Metric ..."
 cd $UCM_work_PATH/cut_files
-UCM_file="UCM_${high_corr_file:5:8}-${high_corr_file:13:8}---${corr_file:5:8}-${corr_file:13:8}_F${swath}.grd"
+UCM_file="${high_corr_file:5:8}-${high_corr_file:15:8}---${corr_file:5:8}-${corr_file:15:8}_F${swath}-UCM.grd"
 echo "gmt grdmath $high_corr_file $corr_file SUB -V1 = $work_PATH/UCM/temp/$UCM_file"
 gmt grdmath HC_$high_corr_file $corr_file SUB -V1 = $UCM_work_PATH/temp/$UCM_file
 
