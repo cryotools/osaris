@@ -40,8 +40,13 @@ else
 
     for swath in ${swaths_to_process[@]}; do
 
-	# Obtain minimum boundary box for corr_ll.grd files
-	min_bb=$( $OSARIS_PATH/lib/min_grd_extent.sh corr_ll.grd $psi_input_PATH $swath )
+	if [ -z $psi_region ]; then
+	    echo "Obtaining minimum boundary box for corr_ll.grd files in subdirs of $psi_input_PATH ..."
+	    boundary_box=$( $OSARIS_PATH/lib/min_grd_extent.sh corr_ll.grd $psi_input_PATH $swath )
+	else
+	    echo "Boundary box set to $psi_region ..."
+	    boundary_box=$psi_region
+	fi
 
 
 	folders=($( ls -d *-F$swath/ ))
@@ -49,7 +54,7 @@ else
 	for folder in "${folders[@]}"; do           
 	    folder=${folder::-1}
 	    if [ -f "$folder/corr_ll.grd" ]; then
-		gmt grdcut $folder/corr_ll.grd -G$psi_output_PATH/cut/corr_cut_$folder.grd  -R$min_bb -V
+		gmt grdcut $folder/corr_ll.grd -G$psi_output_PATH/cut/corr_cut_$folder.grd  -R$boundary_box -V
 		gmt grdclip $psi_output_PATH/cut/corr_cut_$folder.grd -G$psi_output_PATH/cut/corr_thres_$folder.grd -Sb${psi_threshold}/NaN -V
 		psi_count=$((psi_count+1))
 	    else

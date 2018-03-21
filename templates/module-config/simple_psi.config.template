@@ -17,6 +17,6 @@ psi_input_PATH="$output_PATH/Pairs-forward/F3"
 # You may provide a full path or use the $output_PATH variable, e.g.
 # psi_input_PATH="$output_PATH/Pairs-forward/F3"
 
-psi_output_PATH="$output_PATH/PSI"
-# Where to put the results.
-# Default: "$output_PATH/PSI"
+# psi_region="11.1/22.2/33.3/44.4"
+# Limit the analysis to a subregion instead of whole scene extents (optional).
+# Format: lon_min/lon_max/lat_min/lat_max (each in decimal degrees).
