@@ -317,7 +317,7 @@ else
 				fi
 			    else
 				# TODO: include "both" mode -> sm + pairs	
-				echo "${stem_2}:$orbit_match" >> $work_PATH/raw/data_swath$swath.tmp			    
+				echo "${stem_2:15:8}-${stem_2}:$orbit_match" >> $work_PATH/raw/data_swath$swath.tmp			    
 			    fi			
 
 			done
@@ -466,12 +466,14 @@ else
 			if [ "$master_scene_date" = "${target_scene:17:8}" ]; then
 			    # master_scene=$target_scene; master_orbit=$orbit_match
 			    echo "HOORAY, we have found our master!"
-			    echo "${target_sense}:$orbit_match" >> data_sm_swath$swath.master	    
+			    echo "${target_scene}:$orbit_match" >> data_sm_swath$swath.master	    
 			else	 
 			    echo "${target_scene:name_stem}:$orbit_match" >> data_sm_swath$swath.tmp		
 			fi
-		    else			
-			echo "${swath_names[$swath]}:$orbit_match" >> data_swath$swath.tmp			
+		    else
+			data_name=${swath_names[$swath]}
+		        data_year=${data_name:15:8}
+			echo "${data_year}-${data_name}:$orbit_match" >> data_swath$swath.tmp
 		    fi
 
 		echo; printf " Name stem: ${swath_names[$swath]} \n Orbit match: $orbit_match \n Swath name: ${swath_names[$swath]} \n swath: $swath"
@@ -494,8 +496,9 @@ else
 	    # rm data_sm_swath$swath.tmp data_sm_swath$swath.master
 	else
 	    echo "Adding data_swath$swath.tmp to data_swath$swath.in"
-	    sort data_swath$swath.tmp > data_swath$swath.in  
-	    rm data_swath$swath.tmp
+	    sort data_swath$swath.tmp > data_swath${swath}_sorted.tmp
+	    cut -c 10- < data_swath${swath}_sorted.tmp > data_swath$swath.in  
+	    # rm data_swath$swath.tmp
 	fi
     done
     

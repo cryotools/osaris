@@ -46,7 +46,7 @@ else
 
 	# Obtain minimum boundary box for corr_ll.grd files
 	min_grd_extent_file=corr_ll.grd
-	source $OSARIS_PATH/lib/include/min_grd_extent.sh
+	min_bb=$( $OSARIS_PATH/lib/min_grd_extent.sh corr_ll.grd $base_PATH $swath )       
 
 	cd $work_PATH/UCM/input
 
@@ -74,7 +74,7 @@ else
 		    $corr_file \
 		    $prev_corr_file \
 		    $high_corr_threshold \
-		    $xmin/$xmax/$ymin/$ymax \
+		    $min_bb \
 		    $swath
 		
 	    fi
