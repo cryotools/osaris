@@ -77,7 +77,7 @@ endif
 #
 # convert to grd
 #
-gmt xyz2grd con_comp.out -ZTLi -r `gmt grdinfo -I- phase_patch.grd` `gmt grdinfo -I phase_patch.grd` -Gcon_comp.grd -V
+gmt xyz2grd con_comp.out -ZTLu -r `gmt grdinfo -I- phase_patch.grd` `gmt grdinfo -I phase_patch.grd` -Gcon_comp.grd
 gmt xyz2grd unwrap.out -ZTLf -r `gmt grdinfo -I- phase_patch.grd` `gmt grdinfo -I phase_patch.grd` -Gtmp.grd
 gmt grdmath tmp.grd mask2_patch.grd MUL = tmp.grd
 #
