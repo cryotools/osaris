@@ -151,8 +151,9 @@ When your module works and you think it mi
 
 ### <a name="constants"> Constants you can use
 The following constants will be set by the OSARIS main program upon initialization and are available in all modules that get included:
-| Constant       | Value |
-| -------------- | ----- |
+
+| Constant        | Value |
+| --------------- | ----- |
 | $OSARIS\_PATH   | Full path to the directory from which OSARIS was launched. |
 | $work\_PATH     | Full path to the Processing directory. |
 | $output\_PATH   | Full path to the Output directory. |
