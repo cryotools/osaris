@@ -41,6 +41,13 @@ orbits_PATH="/path/to/orbits_folder"
 # --> make sure to set $update_orbits to "1"
 
 
+# - - - - - GMTSAR CONFIG FILE - - - - - - - - - - - - - 
+
+# File name of GMTSAR config file. Specify full path if the file is
+# not located in the program directory (along with this config file)
+gmtsar_config_file="config/GMTSAR.config"
+
+
 # - - - - - PROCESSING CONFIGURATION - - - - - - - - - - - - - - - - 
 
 process_intf_mode=pairs
@@ -52,18 +59,20 @@ process_intf_mode=pairs
 # master_scene_date=20160217
 # Optionally specify the scene to use as Master in single_master mode
 
-process_pdf_overview=0
-# Create an overview pdf of the processing results (0 = no,1 = yes)
-# The PDF will be located in the output folder
-# ToDo: not yet implemented
+process_reverse_intfs=0
+# Activate processing of inverse interferograms (0 = no,1 = yes)
+# Master and slave image will be switched and differences between
+# original and reverse interferograms will be calculated.
+# Primarily useful to assess phase unwrapping errors.
+# Warning: Will need a lot of extra computing time. 
 
 
-# - - - - - GMTSAR CONFIG FILE - - - - - - - - - - - - - 
-
-# File name of GMTSAR config file. Specify full path if the file is
-# not located in the program directory (along with this config file)
-gmtsar_config_file="config/GMTSAR.config"
-
+# Use the following parameters to skip processing steps.
+# Useful to run additional modules on data created by a previous run.
+skip_pre_processing=0
+# Will skip preprocessing processing (extracting raw files, cut+merge, etc.).
+skip_intf_processing=0
+# Will skip the complete GMTSAR interferometric processing.
 
 
 # - - - - - MODULES - - - - - - - - - - - - - - - - - - -
@@ -81,12 +90,16 @@ post_download_mods=( )
 post_extract_mods=( )
 # Modules to be run after extracting the data S1 scenes
 
-post_processing_mods=( )
+post_processing_mods=( create_pdf_summary )
 # Modules to be run after GMTSAR processing
 # Recommended for:
-#   - unstable_coherence_metric
-#   - simple_PSI
-#   - homogenize_intfs
+#   - simple_psi 
+#   - homogenize_intfs 
+#   - unstable_coh_metric 
+#   - timeseries_xy 
+#   - statistics 
+#   - grid_difference 
+#   - create_pdf_summary
 
 post_postprocessing_mods=( )
 # Modules to be run after calculating statistics and preparing summary reports

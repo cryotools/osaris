@@ -19,7 +19,6 @@ if [ $# -lt 4 ]; then
     echo
 else
 
-
     # Check whether .grd files where provided
     if [ ! -f $1 ]; then
 	echo
@@ -40,7 +39,7 @@ else
     
     if [ ! -f $2 ]; then
 	echo
-	echo "ERROR: Cannot open 21. Please provide file."
+	echo "ERROR: Cannot open $2. Please provide file."
 	echo
 	exit 1
     else
@@ -155,13 +154,7 @@ else
 
 	counter=$((counter+1))
     done
-
-    # echo "xmin: $xmin"
-    # echo "xmax: $xmax"
-    # echo "ymin: $ymin"
-    # echo "ymax: $ymax"
-
-    
+   
     cut_filename_1="$filename_1-cut.grd"
     cut_filename_2="$filename_2-cut.grd"  
 
@@ -192,10 +185,10 @@ else
 	echo "Skipping generation of PNG and KML files."
     fi
 
-    mv *.grd $output_PATH
+    mv ${diff_filename}.grd $output_PATH
     cd ..
 
-    rm -r $tempdir_PATH
+    # rm -r $tempdir_PATH
 
 
 fi

@@ -1,0 +1,13 @@
+##################################################################
+#
+# Template configuration for the statistics module
+#
+# Copy to 'config' folder, rename to 'grid_difference.config' 
+# and fit to your setup and needs.
+#
+#################################################################
+
+stats_input_filenames=( corr_ll.grd display_amp_ll.grd )
+# Files to process, e.g. 'display_amp_ll.grd' for amplitudes.
+# You may provide multiple file names, seperated by spaces.
+# Input files shall reside in sub-directories of input directory (s. below)

@@ -1,0 +1,15 @@
+##################################################################
+#
+# Template configuration for the OSARIS module template.
+#
+# Only of interest when you are developing a new module.
+#
+# Add all variables that should be user-defined here.
+#
+#################################################################
+
+example_var="Foo bar"
+# Put a brief description of the variable here ...
+
+example_array=( piff paff bam )
+# Put a brief description of the array here ...

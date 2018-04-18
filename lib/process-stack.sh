@@ -33,8 +33,8 @@ else
     source $config_file
     echo "Config file: $config_file"
 
-    GSP_directory=$( pwd )
-    echo "GSP directory: $GSP_directory"
+    OSARIS_PATH=$( pwd )
+    echo "GSP directory: $OSARIS_PATH"
 
     work_PATH=$base_PATH/$prefix/Processing
     # Path to working directory
@@ -75,11 +75,11 @@ else
 	    --account=$slurm_account \
 	    --partition=$slurm_partition \
 	    --mail-type=$slurm_mailtype \
-	    $GSP_directory/lib/PP-stack \
+	    $OSARIS_PATH/lib/PP-stack.sh \
 	    data_swath$swath.in \
 	    $config_file \
-	    $GSP_directory/$gmtsar_config_file \
-	    $GSP_directory
+	    $OSARIS_PATH/$gmtsar_config_file \
+	    $OSARIS_PATH
 	
 	
     done  
