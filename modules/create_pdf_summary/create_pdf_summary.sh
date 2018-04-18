@@ -149,7 +149,7 @@ else
     echo "DEM cpt config: $dem_cpt_config"
 
     if [ -z $amp_range ]; then
-	amp_extremes="$( $OSARIS_PATH/lib/z_min_max.sh display_amp_ll.grd $output_PATH/Pairs-forward $swath )"
+	amp_extremes="$( $OSARIS_PATH/lib/z_min_max.sh $output_PATH/Pairs-forward display_amp_ll.grd $swath )"
 	amp_min=$( echo "$amp_extremes" | awk '{ print $1 }' )
 	amp_max=$( echo "$amp_extremes" | awk '{ print $2 }' )    
 	amp_cpt_config=$( $OSARIS_PATH/lib/steps_boundaries.sh $amp_min $amp_max )
@@ -157,6 +157,17 @@ else
 	amp_cpt_config=$amp_range
     fi
     echo "AMP cpt config: $amp_cpt_config"
+
+    # if [ -z $amp_diff_range ]; then
+    # 	amp_diff_extremes="$( $OSARIS_PATH/lib/z_min_max.sh $output_PATH/Grid-difference )"
+    # 	amp_diff_min=$( echo "$amp_diff_extremes" | awk '{ print $1 }' )
+    # 	amp_diff_max=$( echo "$amp_diff_extremes" | awk '{ print $2 }' )    
+    # 	amp_diff_cpt_config=$( $OSARIS_PATH/lib/steps_boundaries.sh $amp_diff_min $amp_diff_max 1 )
+    # else
+    # 	amp_diff_cpt_config=$amp_diff_range
+    # fi
+    # echo "AMP diff cpt config: $amp_diff_cpt_config"
+
 
     # if [ -z $unw_range ]; then
     # 	unw_extremes="$( $OSARIS_PATH/lib/z_min_max.sh unwrap_mask_ll.grd $output_PATH/Pairs-forward $swath )"
@@ -169,7 +180,7 @@ else
     # echo "UNW cpt config: $unw_cpt_config"
 
     if [ -z $ccp_range ]; then
-	ccp_extremes="$( $OSARIS_PATH/lib/z_min_max.sh con_comp_ll.grd $output_PATH/Pairs-forward $swath )"
+	ccp_extremes="$( $OSARIS_PATH/lib/z_min_max.sh $output_PATH/Pairs-forward con_comp_ll.grd $swath )"
 	ccp_min=$( echo "$ccp_extremes" | awk '{ print $1 }' )
 	ccp_max=$( echo "$ccp_extremes" | awk '{ print $2 }' )    
 	ccp_cpt_config=$( $OSARIS_PATH/lib/steps_boundaries.sh $ccp_min $ccp_max 1 )
@@ -180,7 +191,11 @@ else
 
 
     if [ -z $los_range ]; then
-	los_extremes="$( $OSARIS_PATH/lib/z_min_max.sh los_ll.grd $output_PATH/Pairs-forward $swath )"
+	if [ -d "$output_PATH/Homogenized-Intfs" ]; then
+	    los_extremes="$( $OSARIS_PATH/lib/z_min_max.sh $output_PATH/Homogenized-Intfs )"
+	else
+	    los_extremes="$( $OSARIS_PATH/lib/z_min_max.sh $output_PATH/Pairs-forward los_ll.grd $swath )"
+	fi
 	los_min=$( echo "$los_extremes" | awk '{ print $1 }' )
 	los_max=$( echo "$los_extremes" | awk '{ print $2 }' )    
 	los_cpt_config=$( $OSARIS_PATH/lib/steps_boundaries.sh $los_min $los_max 1 )
@@ -361,7 +376,7 @@ else
 	    if [ ! -e $PDF_MERGED ]; then
     		if [ ! -e $POSTSCRIPT2 ]; then
 		    echo; echo "Creating Amplitude in ${POSTSCRIPT2}"		
-		    TITLE="Amplitude ${master_date}"
+		    TITLE="Amplitude {master_date}"
 		    echo; echo "Amplitude: $AMPLITUDE_GRD_HISTEQ"; echo
 		    if [ ! "$amp_fail" -eq 1 ]; then
 			CPT="$work_PATH/Summary/amp_grayscale.cpt"
@@ -377,10 +392,20 @@ else
 			gmt grdimage $CPDFS_dem_HS -C#ffffff,#eeeeee \
 			    -R$REGION -JM$SCALE -B+t"$amp_message" -Q -Bx$XSTEPS -By$YSTEPS -V -K -Yc -Xc > $POSTSCRIPT2
 			# echo $amp_message | gmt pstext -F+f12p,Helvetica-Bold,red -R$REGION -JM$SCALE  >> $POSTSCRIPT2
-			convert -density $resolution -fill red -pointsize 18 -gravity center -trim -verbose label:"$amp_message" $POSTSCRIPT2 -quality 100  $POSTSCRIPT2
+			
+			
+			if [ $page_orientation -eq 1 ]; then
+			    convert -density $resolution -fill red -pointsize 18 -gravity center -trim -verbose label:"$amp_message" $POSTSCRIPT2 -quality 100  $POSTSCRIPT2
+			else
+			    convert -rotate 90 -density $resolution -fill red -pointsize 18 -gravity center -trim -verbose label:"$amp_message" $POSTSCRIPT2 -quality 100  $POSTSCRIPT2
+			fi
 
 		    fi		    
-		    convert -verbose -density $resolution -trim  $POSTSCRIPT2 -quality 100 ${POSTSCRIPT2::-3}.png
+		    if [ $page_orientation -eq 1 ]; then
+			convert -verbose -density $resolution -trim  $POSTSCRIPT2 -quality 100 ${POSTSCRIPT2::-3}.png
+		    else
+			convert -verbose -rotate 90 -density $resolution -trim  $POSTSCRIPT2 -quality 100 ${POSTSCRIPT2::-3}.png
+		    fi
 		else
 		    echo; echo "Amplitude in ${POSTSCRIPT2} exists, skipping ..."
     		fi
@@ -398,7 +423,13 @@ else
 			gmt grdimage $CPDFS_dem_HS -C#ffffff,#eeeeee \
 			    -R$REGION -JM$SCALE -B+t"$coh_message" -Q -Bx$XSTEPS -By$YSTEPS -V -K -Yc -Xc > $POSTSCRIPT3
 		    fi
-		    convert -verbose -density $resolution -trim  $POSTSCRIPT3 -quality 100 ${POSTSCRIPT3::-3}.png
+		    
+		    if [ $page_orientation -eq 1 ]; then
+			convert -verbose -density $resolution -trim  $POSTSCRIPT3 -quality 100 ${POSTSCRIPT3::-3}.png
+		    else
+			convert -verbose -rotate 90 -density $resolution -trim  $POSTSCRIPT3 -quality 100 ${POSTSCRIPT3::-3}.png
+		    fi
+
 		else
 		    echo; echo "Coherence in ${POSTSCRIPT3} exists, skipping ..."
     		fi
@@ -431,7 +462,12 @@ else
 			gmt grdimage $CPDFS_dem_HS -C#ffffff,#eeeeee \
 			    -R$REGION -JM$SCALE -B+t"$ccp_message" -Q -Bx$XSTEPS -By$YSTEPS -V -K -Yc -Xc > $POSTSCRIPT4
 		    fi
-		    convert -verbose -density $resolution -trim  $POSTSCRIPT4 -quality 100 ${POSTSCRIPT4::-3}.png
+
+		    if [ $page_orientation -eq 1 ]; then
+			convert -verbose -density $resolution -trim  $POSTSCRIPT4 -quality 100 ${POSTSCRIPT4::-3}.png
+		    else
+			convert -verbose -rotate 90 -density $resolution -trim  $POSTSCRIPT4 -quality 100 ${POSTSCRIPT4::-3}.png
+		    fi
 
 		else
 		    echo; echo "Connected components in ${POSTSCRIPT4} exists, skipping ..."
@@ -449,7 +485,12 @@ else
 			gmt grdimage $CPDFS_dem_HS -C#ffffff,#eeeeee \
 			    -R$REGION -JM$SCALE -B+t"$coh_message" -Q -Bx$XSTEPS -By$YSTEPS -V -K -Yc -Xc > $POSTSCRIPT5
 		    fi
-		    convert -verbose -density $resolution -trim  $POSTSCRIPT5 -quality 100 ${POSTSCRIPT5::-3}.png
+		    
+		    if [ "$page_orientation" -eq 1 ]; then
+			convert -verbose -density $resolution -trim  $POSTSCRIPT5 -quality 100 ${POSTSCRIPT5::-3}.png
+		    else
+			convert -verbose -rotate 90 -density $resolution -trim  $POSTSCRIPT5 -quality 100 ${POSTSCRIPT5::-3}.png
+		    fi
 		else
 		    echo; echo "LOS in ${POSTSCRIPT5} exists, skipping ..."
     		fi
@@ -457,9 +498,17 @@ else
 		
     		echo "Merging PS into $PDF_MERGED_ROT90"
 		take_diff=$(( ($(date --date="$slave_date" +%s) - $(date --date="$master_date" +%s) )/(60*60*24) ))
-    		montage ${POSTSCRIPT2::-3}.png ${POSTSCRIPT3::-3}.png ${POSTSCRIPT4::-3}.png ${POSTSCRIPT5::-3}.png \
-		    -rotate 90 -geometry +100+150 -density $resolution -title "${master_date}-${slave_date} (${take_diff} days)" \
-		    -quality 100 -tile 4x1 -mode concatenate -verbose $PDF_MERGED_ROT90
+		if [ "$page_orientation" -eq 1 ]; then
+    		    montage ${POSTSCRIPT2::-3}.png ${POSTSCRIPT3::-3}.png ${POSTSCRIPT4::-3}.png ${POSTSCRIPT5::-3}.png \
+			-rotate 90 -geometry +100+150 -density $resolution -title "${master_date}-${slave_date} (${take_diff} days)" \
+			-quality 100 -tile 4x1 -mode concatenate -verbose $PDF_MERGED_ROT90
+		else
+		    montage -tile 1x4 -geometry +20+30 \
+			${POSTSCRIPT2::-3}.png ${POSTSCRIPT3::-3}.png ${POSTSCRIPT4::-3}.png ${POSTSCRIPT5::-3}.png \
+			-title "${master_date}-${slave_date} (${take_diff} days)" \
+			-density $resolution -quality 100 -mode concatenate -verbose $PDF_MERGED_ROT90
+		fi
+
 
 		if [ "$clean_up" -ge 1 ]; then
     		    rm $POSTSCRIPT2 $POSTSCRIPT3 $POSTSCRIPT4 $POSTSCRIPT5
@@ -491,10 +540,17 @@ else
 	images_per_page=5
     fi
 
-    montage -page 2480x3508 -density $resolution -units pixelsperinch -compress zip -quality 90 -tile 1x$images_per_page \
-	-mode concatenate -verbose -geometry +50+100 \
-	$png_tiles \
-	"$output_PATH/Summary/Summary-${prefix}.pdf"
+    if [ $page_orientation -eq 1 ]; then
+	montage -page 2480x3508 -density $resolution -units pixelsperinch -compress zip -quality 90 -tile 1x$images_per_page \
+	    -mode concatenate -verbose -geometry +50+100 \
+	    $png_tiles \
+	    "$output_PATH/Summary/Summary-${prefix}.pdf"
+    else
+	montage -page 3508x2480 -density $resolution -units pixelsperinch -compress zip -quality 90 -tile ${images_per_page}x1 \
+	    -mode concatenate -verbose -geometry +50+100 \
+	    $png_tiles \
+	    "$output_PATH/Summary/Summary-${prefix}.pdf"
+    fi
 
 
     # Calculate runtime

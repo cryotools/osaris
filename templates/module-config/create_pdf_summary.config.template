@@ -7,6 +7,10 @@
 #
 #################################################################
 
+page_orientation=1
+# 1: portrait
+# 2: landscape
+
 images_per_page=5
 # Number of image rows to be displayed on each page of the summary PDF.
 # Default is 5

@@ -37,12 +37,12 @@ git clone https://github.com/cryotools/osaris.git
 ```
 
 ### <a name="initial-configuration"></a> Initial configuration
-- Provide DEM data. You may use the [DEM generator](http://topex.ucsd.edu/gmtsar/demgen/) 
+- Provide DEM data. You may use the [DEM generator](http://topex.ucsd.edu/gmtsar/demgen/) kindly provided by Scripps Institution of Oceanography at the University of California, San Diego.
   
 - In the OSARIS folder, copy configuration templates to config folder
 ```console
-cp ./templates/config.template ./config/<_my_study_.config>
-cp ./templates/GMTSAR.template ./config/<GMTSAR_my_study_.config>
+cp ./templates/config.template ./config/*<my_study>*.config
+cp ./templates/GMTSAR.template ./config/*<GMTSAR_my_study>*.config
 ```
 - Edit new config files to fit your needs and local configuration.
   See comments in template files for details.
@@ -55,7 +55,7 @@ chmod +x <filename>
 ### <a name="launch"></a> Launch
 Go to the OSARIS folder. Launch your run with
 ```console
-./osaris.sh ./config/<_my_config_.config>
+./osaris.sh ./config/<my_config>.config
 ```
 
 ## <a name="tipps"></a> Tipps

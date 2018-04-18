@@ -125,7 +125,7 @@ else
 		    orbit_2=$current_orbit
 		fi
 		
-		if [ "${scene_1:15:8}" -gt "${scene_2:15:8}" ]; then
+		if [ "$mode" = "CMP" ] && [ "${scene_1:15:8}" -gt "${scene_2:15:8}" ]; then
 		    echo "Scenes ${scene_1:15:8} and ${scene_2:15:8} seem not to make a senseful pair. Skipping ..."
 		else
 		    scene_pair_name=${scene_1:15:8}--${scene_2:15:8}
