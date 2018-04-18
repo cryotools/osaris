@@ -28,7 +28,7 @@ else
     echo Calculating grid difference
     echo
 
-    mkdir -p $output_PATH/Grid-differences
+    mkdir -p $output_PATH/Grid-difference
     slurm_jobname="$slurm_jobname_prefix-griddiff"
 
     echo "Filenames: ${grddiff_input_filenames[@]}"
@@ -59,7 +59,7 @@ else
 			folder_2=$folder_1
 			folder_1=$folder
 
-			grddiff_output_filename="${grddiff_input_filename::-4}--${folder_2:0:8}---${folder_1:0:8}-F${swath}"
+			grddiff_output_filename="${folder_1:0:8}--${folder_2:0:8}-F${swath}-${grddiff_input_filename::-4}-grddiff"
 			
 			sbatch \
 			    --ntasks=1 \
@@ -70,13 +70,7 @@ else
 			    --qos=$slurm_qos \
 			    --account=$slurm_account \
 			    --mail-type=$slurm_mailtype \
-			    $OSARIS_PATH/lib/difference.sh \
-			    $grddiff_input_PATH/$folder_1/$grddiff_input_filename \
-			    $grddiff_input_PATH/$folder_2/$grddiff_input_filename \
-			    $output_PATH/Grid-difference \
-			    $grddiff_output_filename \
-			    0 2>&1 >>$logfile
-			# TODO: Create an adequate palette for coherence differences		
+			    $OSARIS_PATH/lib/difference.sh "$grddiff_input_PATH/$folder_2/$grddiff_input_filename" "$grddiff_input_PATH/$folder_1/$grddiff_input_filename" "$output_PATH/Grid-difference" "$grddiff_output_filename" 0 2>&1 >>$logfile
 			
 		    else
 			folder_1=$folder
@@ -89,5 +83,15 @@ else
     fi
 
     $OSARIS_PATH/lib/check-queue.sh $slurm_jobname 1
+
+
+    if [ $clean_up -gt 0 ]; then
+	echo
+	echo - - - - - - - - - - - - - - - -
+	echo Cleaning up a bit ...
+	echo "Deleting processing folder ..."
+	rm -rf $output_PATH/Grid-difference/Temp-*
+    fi
+
 
 fi

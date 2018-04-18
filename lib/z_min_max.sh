@@ -2,12 +2,13 @@
 
 ######################################################################
 #
-# Helper tool to identify minimum and maximum values of files with the
-# same file name in a series of directories.
+# Helper tool to identify minimum and maximum values of grid files.
+# Option 1: Analyse all files in a given directory.
+# Option 2: Analyse all files with given file name in a series of directories.
 # 
 # Input:
 # - Path where files reside in subdirs, e.g. Output/Pairs-forward/
-# - File name, e.g. corr_ll.grd
+# - File name, e.g. corr_ll.grd (optional, will acitvate multi-directory mode)
 # - Swath number (optional to consider only specific swathes)
 #
 # Output:
@@ -19,67 +20,103 @@
 #####################################################################
 
 
-if [ $# -lt 2 ]; then
+if [ $# -lt 1 ]; then
     echo
-    echo "Usage: z_min_max.sh file_name path [swath]"  
+    echo "Usage: z_min_max.sh path [file_name] [swath]"  
     echo
 else
-    mmz_file=$1
-    mmz_PATH=$2
-    swath=$3
-    
-    cd $mmz_PATH
-    if [ -z $swath ]; then
-	mmz_folders=($( ls -d */ ))
-    else
-	mmz_folders=($( ls -d *-F$swath/ ))
-    fi
+    mmz_PATH=$1
 
+    cd $mmz_PATH
+    
     mmz_count=1
 
+    if [ $# -eq 1 ]; then
+	# Analyse files in directory
 
-    for folder in "${mmz_folders[@]}"; do   
-	folder=${folder::-1}
-	if [ -f "$folder/$mmz_file" ]; then
+	mmz_files=($( ls *.grd ))
+	for mmz_file in "${mmz_files[@]}"; do   
+	    if [ -f "$mmz_file" ]; then
 
-	    # Find min and max z values for a grd file.		
-	    
-	    current_file=$mmz_PATH/$folder/$mmz_file
+		# Find min and max z values for a grd file.		
+		
+		current_file=$mmz_PATH/$mmz_file
 
-	    current_z_min=$( gmt grdinfo $current_file | grep z_min | awk '{ print $3}' )
-	    current_z_max=$( gmt grdinfo $current_file | grep z_min | awk '{ print $5}' )
+		current_z_min=$( gmt grdinfo $current_file | grep z_min | awk '{ print $3}' )
+		current_z_max=$( gmt grdinfo $current_file | grep z_min | awk '{ print $5}' )
 
-	    if [ "$mmz_count" -eq 1 ]; then
-		# First round, set min and max values to values from file
-		z_min=$current_z_min
-		z_max=$current_z_max
-		z_min_file=$current_file
-		z_max_file=$current_file
-	    else
-		# Iteration, check if min/max from file are smaller/larger than previous ...
-		if [ $( echo "$current_z_min < $z_min" | bc -l ) -eq 1 ]; then 
+		if [ "$mmz_count" -eq 1 ]; then
+		    # First round, set min and max values to values from file
 		    z_min=$current_z_min
-		    z_min_file=$current_file			
-		fi
-
-		if [ $( echo "$current_z_max > $z_max" | bc -l ) -eq 1 ]; then 
 		    z_max=$current_z_max
+		    z_min_file=$current_file
 		    z_max_file=$current_file
+		else
+		    # Iteration, check if min/max from file are smaller/larger than previous ...
+		    if [ $( echo "$current_z_min < $z_min" | bc -l ) -eq 1 ]; then 
+			z_min=$current_z_min
+			z_min_file=$current_file			
+		    fi
+
+		    if [ $( echo "$current_z_max > $z_max" | bc -l ) -eq 1 ]; then 
+			z_max=$current_z_max
+			z_max_file=$current_file
+		    fi
 		fi
-	    fi
-    
-	    mmz_count=$((mmz_count+1))
+		
+		mmz_count=$((mmz_count+1))
 	    	
+	    fi
+	done
+    else
+	# Analyse files of given name in subdirectories
+
+	mmz_file=$2    
+	swath=$3
+    
+    
+	if [ -z $swath ]; then
+	    mmz_folders=($( ls -d */ ))
+	else
+	    mmz_folders=($( ls -d *-F$swath/ ))
 	fi
-    done
+
+	for folder in "${mmz_folders[@]}"; do   
+	    folder=${folder::-1}
+	    if [ -f "$folder/$mmz_file" ]; then
+
+		# Find min and max z values for a grd file.		
+		
+		current_file=$mmz_PATH/$folder/$mmz_file
+
+		current_z_min=$( gmt grdinfo $current_file | grep z_min | awk '{ print $3}' )
+		current_z_max=$( gmt grdinfo $current_file | grep z_min | awk '{ print $5}' )
+
+		if [ "$mmz_count" -eq 1 ]; then
+		    # First round, set min and max values to values from file
+		    z_min=$current_z_min
+		    z_max=$current_z_max
+		    z_min_file=$current_file
+		    z_max_file=$current_file
+		else
+		    # Iteration, check if min/max from file are smaller/larger than previous ...
+		    if [ $( echo "$current_z_min < $z_min" | bc -l ) -eq 1 ]; then 
+			z_min=$current_z_min
+			z_min_file=$current_file			
+		    fi
+
+		    if [ $( echo "$current_z_max > $z_max" | bc -l ) -eq 1 ]; then 
+			z_max=$current_z_max
+			z_max_file=$current_file
+		    fi
+		fi
+		
+		mmz_count=$((mmz_count+1))
+	    	
+	    fi
+	done
+    fi
 
     echo "$z_min $z_max $z_min_file $z_max_file"
-
-    # if [ $debug -gt 0 ]; then 
-    # 	echo; echo "Overall min/max z values: $z_min/$z_max"; 
-    # 	echo "Min z was found in file $z_min_file"; 
-    # 	echo "Max z was found in file $z_max_file" 
-    # fi
-    # cd $mmz_base_PATH
 
 fi

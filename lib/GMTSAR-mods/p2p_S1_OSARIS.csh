@@ -349,7 +349,7 @@ set OSARIS_PATH = $4
       rm trans.dat
       ln -s  ../../topo/trans.dat . 
       echo "threshold_geocode: $threshold_geocode"
-      geocode.csh $threshold_geocode
+      $OSARIS_PATH/lib/GMTSAR-mods/geocode_OSARIS.csh $threshold_geocode
     else 
       echo "topo_ra is needed to geocode"
       exit 1

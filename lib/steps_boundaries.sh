@@ -49,8 +49,32 @@ else
 	step="0.05"
     elif [ $( echo "$diff > 0.2" | bc ) -eq 1 ]; then
 	step="0.02"
-    else
+    elif [ $( echo "$diff > 0.1" | bc ) -eq 1 ]; then
 	step="0.01"
+    elif [ $( echo "$diff > 0.05" | bc ) -eq 1 ]; then
+	step="0.005"
+    elif [ $( echo "$diff > 0.02" | bc ) -eq 1 ]; then
+	step="0.002"
+    elif [ $( echo "$diff > 0.01" | bc ) -eq 1 ]; then
+	step="0.001"
+    elif [ $( echo "$diff > 0.005" | bc ) -eq 1 ]; then
+	step="0.0005"
+    elif [ $( echo "$diff > 0.002" | bc ) -eq 1 ]; then
+	step="0.0002"
+    elif [ $( echo "$diff > 0.001" | bc ) -eq 1 ]; then
+	step="0.0001"
+    elif [ $( echo "$diff > 0.0005" | bc ) -eq 1 ]; then
+	step="0.00005"
+    elif [ $( echo "$diff > 0.0002" | bc ) -eq 1 ]; then
+	step="0.00002"
+    elif [ $( echo "$diff > 0.0001" | bc ) -eq 1 ]; then
+	step="0.00001"
+    elif [ $( echo "$diff > 0.00005" | bc ) -eq 1 ]; then
+	step="0.000005"
+    elif [ $( echo "$diff > 0.00002" | bc ) -eq 1 ]; then
+	step="0.000002"        
+    else
+	step="0.000001"
     fi
     min_remainder=$( echo "${min} % $step" | bc )
     lower_boundary=$( echo "${min} - $min_remainder" | bc )
