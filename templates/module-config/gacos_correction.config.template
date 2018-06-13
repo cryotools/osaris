@@ -1,0 +1,16 @@
+##################################################################
+#
+# Template configuration for the 'GACOS correction' module
+#
+# Copy to 'config' folder, rename to 'gacos_correction.config' 
+# and fit to your machine's configuration.
+#
+#################################################################
+
+gacos_PATH="/path/to/GACOS-data"
+# Path to directory where the GACOS files are located
+
+gacos_extent="11.11/22.22/33.33/44.44"
+# The extent of the map window in decimal degrees 
+# Format: lon_min/lon_max/lat_min/lat_max
+
