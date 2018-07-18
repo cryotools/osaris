@@ -117,7 +117,27 @@ else
 	fi
     fi
 
+    # Create input file csv
+    cd $input_PATH
+    input_files= *.zip 
+    for input_file in ${input_files[@]}; do
+	input_file_elements=${input_file//_/ }
+	input_file_startdatetime=$( $input_file_elements | awk '{ print $5 }' )
+	input_file_startdatetime=${input_file_startdatetime/T/ }
+	input_file_start_date=$( echo $input_file_startdatetime | awk '{ print $1 }' )
+	input_file_start_time=$( echo $input_file_startdatetime | awk '{ print $2 }' )
+	input_file_enddatetime=$( $input_file_elements | awk '{ print $6 }' )
+	input_file_enddatetime=${input_file_enddatetime/T/ }
+	input_file_end_date=$( echo $input_file_enddatetime | awk '{ print $1 }' )
+	input_file_end_time=$( echo $input_file_enddatetime | awk '{ print $2 }' )
+ 
+	input_file_sensor=$( $input_file_elements | awk '{ print $1 }' )
+	input_file_mode=$( $input_file_elements | awk '{ print $2 }' )
+	input_file_format=$( $input_file_elements | awk '{ print $3 }' )
+	input_file_type=$( $input_file_elements | awk '{ print $4 }' )
 
+	echo "$input_file_start_date $input_file_start_time $input_file_end_date $input_file_end_time $input_file_sensor $input_file_mode $input_file_type $input_type_format" >> $output_PATH/input_files.csv
+    done
 
     # Update orbits when requested
     if [ "$update_orbits" -eq 1 ]; then
