@@ -49,6 +49,9 @@ else
     mkdir -p $work_PATH/GACOS_correction/GACOS_files
     mkdir -p $work_PATH/GACOS_correction/cut_intfs
     mkdir -p $output_PATH/GACOS-corrected
+    
+    # TODO: read from .PRM files in Processing/raw
+    radar_wavelength="0.554658"
 
     for swath in ${swaths_to_process[@]}; do
 
@@ -202,8 +205,11 @@ else
 			gmt xyz2grd $work_PATH/GACOS_correction/GACOS_files/${master_date}.ztd \
 			    -ZTLf -r -R$gacos_x_min/$gacos_x_max/$gacos_y_min/$gacos_y_max -I$gacos_x_step/$gacos_y_step -G${master_grd::-4}-raw.grd -V
 
+			echo; echo "  Converting GACOS file from m to radians ..."
+			gmt grdmath ${master_grd::-4}-raw.grd 4 MUL PI MUL $radar_wavelength MUL = ${master_grd::-4}-raw-rad.grd -V
+			
 			echo; echo "  Interpolating GACOS grid file to interferogram resolution ..."
-			gmt grdsample ${master_grd::-4}-raw.grd -I0.0001 -G$master_grd -V
+			gmt grdsample ${master_grd::-4}-raw-rad.grd -I0.0001 -G$master_grd -V
 			# `gmt grdinfo -I $output_PATH/Homogenized-Intfs/$intf`
 			# ncdump -h ${master_grd::-4}-raw.grd
 
@@ -313,6 +319,9 @@ else
 			echo "gmt xyz2grd $work_PATH/GACOS_correction/GACOS_files/${slave_date}.ztd -ZTLf -r -R$gacos_x_min/$gacos_x_max/$gacos_y_min/$gacos_y_max -I$gacos_x_step/$gacos_y_step -G${slave_grd::-4}-raw.grd -V"
 			gmt xyz2grd $work_PATH/GACOS_correction/GACOS_files/${slave_date}.ztd \
 			    -ZTLf -r -R$gacos_x_min/$gacos_x_max/$gacos_y_min/$gacos_y_max -I$gacos_x_step/$gacos_y_step -G${slave_grd::-4}-raw.grd -V
+
+			echo; echo "  Converting GACOS file from m to radians ..."
+			gmt grdmath ${master_grd::-4}-raw.grd 4 MUL PI MUL $radar_wavelength MUL = ${master_grd::-4}-raw-rad.grd -V
 
 			echo; echo "  Interpolating GACOS grid file to interferogram resolution ..."
 			gmt grdsample ${slave_grd::-4}-raw.grd -I0.0001 -G$slave_grd -V
@@ -474,7 +483,7 @@ else
 		    
 
 		corrected_phase_file="$output_PATH/GACOS-corrected/${slave_date}-${master_date}-intf.grd"
-		gmt grdmath $work_PATH/GACOS_correction/cut_intfs/$intf ${szpddm_file::-4}-cut.grd SUB = $corrected_phase_file -V
+		gmt grdmath ${szpddm_file::-4}-cut.grd $work_PATH/GACOS_correction/cut_intfs/$intf SUB = $corrected_phase_file -V
 
 		# Step 4: Linear detrending (?)
 	    done
