@@ -81,9 +81,9 @@ to monitor what is going on.
 
 Modules allow to execute additional processing routines at different stages, i.e. after file downloads, after file extraction, after GMTSAR processing, and after post-processing (more module hooks may be added in the future). As such, OSARIS modules facilitate designing processing schemes that fit individual needs while keeping the core code as compact as possible. 
 
-In order to execute a module, go to the 'MODULES' section in the config file and put the module name (i.e. the name of the subdirectory of modules/) into the array of the adequate hook. For example, if you would like to execute 'Simple PSI', 'Homogenize Interferograms', and 'Create PDF Summary' after GMTSAR interferometric processing, this would be:
+In order to execute a module, go to the 'MODULES' section in the config file and put the module name (i.e. the name of the subdirectory of modules/) into the array of the adequate hook. For example, if you would like to execute 'Stable Ground Point Identification', 'Harmonize Interferogram Time Series', and 'Create PDF Summary' after GMTSAR interferometric processing, this would be:
 ```sh
-post_processing_mods=( simple_psi homogenize_intfs create_pdf_summary )
+post_processing_mods=( SGP_identification harmonize_intfs create_pdf_summary )
 ```
 When multiple modules are allocated at one hook the modules will be executed in the same order they appear in the array. 
 Most modules require a config file; A template configuration should be in templates/modules-config which must be copied to the config directory for the module to work:
@@ -97,17 +97,22 @@ Wake up sleeping nodes.
 Call: ping
 Status: beta
 
-#### Simple PSI
-Identify persistent scatterers by finding data points of consitently high coherences.
-Call: simple_psi
+#### Stable Ground Point Identification
+Identify stable ground points based on consitently high coherences throughout the time series.
+Call: SGP_identification
 Status: beta
 
-#### Homogenize interferograms
-Shift unwrapped interferograms and LOS relatively to 'stable ground points'.
-Call: homogenize_intfs
+#### GACOS correction
+Correct interferogram time series for atmospheric delays of the SAR signal using [GACOS](http://ceg-research.ncl.ac.uk/v2/gacos/) data.
+Call: gacos_correction
+Status: alpha
+
+#### Harmonize Interferogram Time Series
+Shift unwrapped interferograms and LOS relative to 'stable ground points'.
+Call: harmonize_intfs
 Status: beta
 
-#### Grid difference
+#### Grid Difference
 Calculate the difference between OSARIS result grid files throughout the timeseries.
 Call: grid_difference
 Status: beta
