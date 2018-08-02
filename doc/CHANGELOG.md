@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Module "GACOS correction" to correct interferograms for atmospheric disturbances
+
+### Changed
+- Renamed module "Homogenize Interferograms" to "Harmonize Interferogram Time Series"
+- Renamed module "Simple Persistant Scatterer Identification" to "Stable Ground Point Identification"
+
 
 ## [0.6.0] - 2018-04-18
 ### Added

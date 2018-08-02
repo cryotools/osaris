@@ -17,9 +17,8 @@
 # file in $OSARIS_PATH/config
 #
 # Input:
-# - Stable ground point identified by simple_PSI module
-# - Unwrapped interferogram homogenized to this stable ground point
-#   with the homogenize_intfs module
+# - Stable ground point identified by SGP_indentification module
+# - Unwrapped interferograms
 # - GACOS data for each scene data in the timeseries
 #
 # David Loibl, 2018
@@ -46,6 +45,13 @@ else
     
     echo "Starting the GACOS Correction module ..."
 
+    
+    if [ ! -z "$unwrp_intf_PATH" ]; then
+	echo "Variable 'unwrp_intf_PATH' not set in config/${module_name}.config."
+	echo "Trying default path $output_PATH/Pairs-forward/Interferograms-unwrapped ..."
+	unwrp_intf_PATH="$output_PATH/Pairs-forward/Interferograms-unwrapped"
+    fi
+
     mkdir -p $work_PATH/GACOS_correction/GACOS_files
     mkdir -p $work_PATH/GACOS_correction/cut_intfs
     mkdir -p $output_PATH/GACOS-corrected
@@ -67,23 +73,24 @@ else
 	    sg_lon=($( cat $output_PATH/PSI/ps_coords-F$swath.xy | awk '{ print $2 }' ))
 	fi
 
-	# (ii) Homog. unwr. intfs
-	if [ ! -d "$output_PATH/Homogenized-Intfs" ]; then
-	    echo; echo "ERROR: Directory $output_PATH/Homogenized-Intfs does not exist. Please run the homogenize_intfs module before executing gacos_correction. Exiting ..."
-	    check_hi=0
+
+	# (ii) Unwrapped interferograms
+	if [ ! -d "$unwrp_intf_PATH" ]; then
+	    echo; echo "ERROR: Directory $unwrp_intf_PATH does not exist. Exiting ..."
+	    check_ui=0
 	else	    
-	    cd $output_PATH/Homogenized-Intfs/
-	    scenes=$( ls *hintf.grd )
+	    cd "$unwrp_intf_PATH"
+	    scenes=$( ls *.grd )
 	    if [ ! -z "$scenes" ]; then
 		for scene in ${scenes[@]}; do 
 		    echo $ scenes >> $work_PATH/GACOS_correction/intfs.list
 		    echo ${scene:0:8} >> $work_PATH/GACOS_correction/master_dates.list
 		    echo ${scene:10:8} >> $work_PATH/GACOS_correction/slave_dates.list
 		done
-		check_hi=1
+		check_ui=1
 	    else
-		echo; echo "ERROR: No intf-files in $output_PATH/Homogenized-Intfs. Please run the homogenize_intfs module before executing gacos_correction. Exiting ..."
-		check_hi=0
+		echo; echo "ERROR: No interferogram files in $unwrp_intf_PATH. Exiting ..."
+		check_ui=0
 	    fi
 	fi
 	
@@ -109,31 +116,13 @@ else
 	    fi	    
 	fi
 
-	# # (iv) XML files in Processing/orig
-	# # TODO rewrite to also work with orig directory
-	# if [ ! -d "$work_PATH/orig_cut" ]; then
-	#     echo; echo "ERROR: Directory $work_PATH/orig does not exist."
-	#     echo "Cannot retrieve incidence angle information from xml files."
-	#     echo "Exiting ..."
-	#     check_xml=0
-	# else
-	#     cd $work_PATH/orig_cut
-	#     xml_files=$( ls *.xml )
-	#     if [ ! -z "$xml_files" ]; then
-	# 	for xml_file in ${xml_files[@]}; do 
-	# 	    incidence_angle=$( cat $xml_file | grep -oPm1 "(?<=<incidenceAngleMidSwath>)[^<]+" )
-	# 	    echo "${xml_file:15:8} $incidence_angle" >> $work_PATH/GACOS_correction/incidence_angles.list
-	# 	done		
-	# 	check_xml=1
-	#     else
-	# 	echo; echo "ERROR: No XML files in ${work_PATH}/orig_cut."
-	# 	echo "Exiting ..."
-	# 	check_xml=0
-	#     fi	    
-	# fi
-	
-	if [ $check_ps -eq 1 ] && [ $check_hi -eq 1 ] && [ $check_gs -eq 1 ]; then #&& [ $check_xml -eq 1 ]
+
+	if [ $check_ps -eq 1 ] && [ $check_ui -eq 1 ] && [ $check_gs -eq 1 ]; then #&& [ $check_xml -eq 1 ]
 	    
+	    # Calculate factor to convert m to radians:
+	    # lambda * -4 * PI
+	    # Minus is to invert the result for subsequent
+	    radians2m_conversion=$( echo "$radar_wavelength * 4 * 4 * a(1)" | bc -l )
 	    
 	    for intf in ${scenes[@]}; do
 		# Cut GACOS data and intfs. to same extent
@@ -206,7 +195,9 @@ else
 			    -ZTLf -r -R$gacos_x_min/$gacos_x_max/$gacos_y_min/$gacos_y_max -I$gacos_x_step/$gacos_y_step -G${master_grd::-4}-raw.grd -V
 
 			echo; echo "  Converting GACOS file from m to radians ..."
-			gmt grdmath ${master_grd::-4}-raw.grd 4 MUL PI MUL $radar_wavelength MUL = ${master_grd::-4}-raw-rad.grd -V
+			# Factor 1000 is to convert from m (GACOS) to mm (GMTSAR)
+			gmt grdmath ${master_grd::-4}-raw.grd $radians2m_conversion DIV 1000 MUL = ${master_grd::-4}-raw-rad.grd -V   
+			# gmt grdmath ${master_grd::-4}-raw.grd 4 MUL PI MUL $radar_wavelength MUL = ${master_grd::-4}-raw-rad.grd -V
 			
 			echo; echo "  Interpolating GACOS grid file to interferogram resolution ..."
 			gmt grdsample ${master_grd::-4}-raw-rad.grd -I0.0001 -G$master_grd -V
@@ -321,7 +312,8 @@ else
 			    -ZTLf -r -R$gacos_x_min/$gacos_x_max/$gacos_y_min/$gacos_y_max -I$gacos_x_step/$gacos_y_step -G${slave_grd::-4}-raw.grd -V
 
 			echo; echo "  Converting GACOS file from m to radians ..."
-			gmt grdmath ${master_grd::-4}-raw.grd 4 MUL PI MUL $radar_wavelength MUL = ${master_grd::-4}-raw-rad.grd -V
+			# Factor 1000 is to convert from m (GACOS) to mm (GMTSAR)
+			gmt grdmath ${master_grd::-4}-raw.grd $radians2m_conversion DIV 1000 MUL = ${master_grd::-4}-raw-rad.grd -V   
 
 			echo; echo "  Interpolating GACOS grid file to interferogram resolution ..."
 			gmt grdsample ${slave_grd::-4}-raw.grd -I0.0001 -G$slave_grd -V
@@ -397,7 +389,7 @@ else
 		
 		# Step 3: Apply the correction
 		echo; echo "Applying GACOS correction to interferogram"
-		echo "$output_PATH/Homogenized-Intfs/$intf"
+		echo "$unwrp_intf_PATH/$intf"
 
 		# Cut GACOS diff file and phase file to same extent
 
@@ -405,7 +397,7 @@ else
 
 
 		file_1="$szpddm_file"
-		file_2="$output_PATH/Homogenized-Intfs/$intf"
+		file_2="$unwrp_intf_PATH/$intf"
 
 		file_1_extent=$( gmt grdinfo -I- $file_1 ); file_1_extent=${file_1_extent:2}
 		file_2_extent=$( gmt grdinfo -I- $file_2 ); file_2_extent=${file_2_extent:2}
@@ -468,13 +460,13 @@ else
 
 		echo; echo "  The common minimum boundary box for the files"
 		echo "  - $szpddm_file and"
-		echo "  - $output_PATH/Homogenized-Intfs/$intf"
+		echo "  - $unwrp_intf_PATH/$intf"
 		echo "  is $xmin/$xmax/$ymin/$ymax"
-		echo; echo "gmt grdcut $szpddm_file -G${szpddm_file::-4}-cut.grd -R$xmin/$xmax/$ymin/$ymax `gmt grdinfo -I $output_PATH/Homogenized-Intfs/$intf` -V"; echo
+		echo; echo "gmt grdcut $szpddm_file -G${szpddm_file::-4}-cut.grd -R$xmin/$xmax/$ymin/$ymax `gmt grdinfo -I $unwrp_intf_PATH/$intf` -V"; echo
 		#  `gmt grdinfo -I $output_PATH/Homogenized-Intfs/$intf`
 
-		gmt grdsample $szpddm_file -G${szpddm_file::-4}-cut.grd -R$xmin/$xmax/$ymin/$ymax `gmt grdinfo -I $output_PATH/Homogenized-Intfs/$intf` -V
-		gmt grdsample $output_PATH/Homogenized-Intfs/$intf -G$work_PATH/GACOS_correction/cut_intfs/$intf \
+		gmt grdsample $szpddm_file -G${szpddm_file::-4}-cut.grd -R$xmin/$xmax/$ymin/$ymax `gmt grdinfo -I $unwrp_intf_PATH/$intf` -V
+		gmt grdsample $unwrp_intf_PATH/$intf -G$work_PATH/GACOS_correction/cut_intfs/$intf \
 		    `gmt grdinfo -I- ${szpddm_file::-4}-cut.grd` \
 		    `gmt grdinfo -I ${szpddm_file::-4}-cut.grd` -V
 		# gmt grdcut $szpddm_file -G${szpddm_file::-4}-cut.grd -R$xmin/$xmax/$ymin/$ymax -V

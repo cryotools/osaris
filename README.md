@@ -99,7 +99,7 @@ Status: beta
 
 #### Stable Ground Point Identification
 Identify stable ground points based on consitently high coherences throughout the time series.
-Call: SGP_identification
+Call: sgp_identification
 Status: beta
 
 #### GACOS correction
@@ -107,9 +107,9 @@ Correct interferogram time series for atmospheric delays of the SAR signal using
 Call: gacos_correction
 Status: alpha
 
-#### Harmonize Interferogram Time Series
-Shift unwrapped interferograms and LOS relative to 'stable ground points'.
-Call: harmonize_intfs
+#### Harmonize Grids 
+Shift grid files relative to 'stable ground points'. Typically used to harmonize time series of interferograms and LOS displacement files.
+Call: harmonize_grids
 Status: beta
 
 #### Grid Difference
