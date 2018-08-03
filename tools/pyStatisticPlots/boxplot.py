@@ -1,3 +1,18 @@
+#!/usr/bin/python3
+
+"""
+Create boxplots from summary statistics created with OSARIS' 'Statisitics' module
+
+Input
+- CSV file from 'Statistics' module
+
+Output
+- Box plot
+
+"""
+
+import sys
+import getopt
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import matplotlib.dates as mdates
@@ -5,8 +20,47 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 
+# Enter path and name
+# csv_file = './data/Golubin-_.grd.csv'
 
-def customized_box_plot(percentiles, redraw = True, *args, **kwargs):
+
+def main(argv):
+    csv_file = ''
+    outputfile = ''
+    try:
+        opts, args = getopt.getopt(argv, "hi:o:", ["ifile=", "ofile="])
+    except getopt.GetoptError:
+        print('osaris_boxplot.py -i <inputfile> -o <outputfile>')
+        sys.exit(2)
+    for opt, arg in opts:
+        if opt == '-h':
+            print('osaris_boxplot.py -i <inputfile> -o <outputfile>')
+            sys.exit()
+        elif opt in ("-i", "--ifile"):
+            csv_file = arg
+        elif opt in ("-o", "--ofile"):
+            outputfile = arg
+    print('Input file is "', csv_file)
+    print('Output file is "', outputfile)
+
+    csv_dataset = pd.read_csv(csv_file, dtype={'Days': np.int32})
+
+    minimum = csv_dataset['Min']
+    low_box = csv_dataset['Median'] - csv_dataset['Scale']
+    median = csv_dataset['Median']
+    up_box = csv_dataset['Median'] + csv_dataset['Scale']
+    maximum = csv_dataset['Max']
+    start_date = csv_dataset['Start date']
+    end_date = csv_dataset['End date']
+    days = csv_dataset['Days']
+
+    percentiles = np.array([minimum, low_box, median, up_box, maximum, start_date, end_date, days])
+    percentiles = percentiles.T
+
+    b = customized_box_plot(percentiles)
+
+
+def customized_box_plot(percentiles, redraw=True, *args, **kwargs):
     """
     Generates a customized boxplot based on the given percentile values
     """
@@ -60,8 +114,6 @@ def customized_box_plot(percentiles, redraw = True, *args, **kwargs):
         xbox_ur = xbox_last_max + np.timedelta64(days, 'D')
         xbox_ul = xbox_last_max  # xbox[3] - (0.01 * days)
         xbox_ll2 = xbox_last_max  # xbox[4] - (0.01 * days)
-
-
 
         box_plot['boxes'][box_no].set_xdata([xbox_ll, xbox_lr, xbox_ur, xbox_ul, xbox_ll2])
         path = box_plot['boxes'][box_no].get_path()
@@ -155,19 +207,6 @@ def customized_box_plot(percentiles, redraw = True, *args, **kwargs):
     # return box_plot
 
 
-csv_dataset = pd.read_csv('./data/Golubin-_.grd.csv', dtype={'Days': np.int32})
-# ./display_amp_ll-F3.csv
-# ./corr_ll-F3.csv
-minimum = csv_dataset['Min']
-low_box = csv_dataset['Median'] - csv_dataset['Scale']
-median = csv_dataset['Median']
-up_box = csv_dataset['Median'] + csv_dataset['Scale']
-maximum = csv_dataset['Max']
-start_date = csv_dataset['Start date']
-end_date = csv_dataset['End date']
-days = csv_dataset['Days']
+if __name__ == "__main__":
+    main(sys.argv[1:])
 
-percentiles = np.array([minimum, low_box, median, up_box, maximum, start_date, end_date, days])
-percentiles = percentiles.T
-
-b = customized_box_plot(percentiles)
