@@ -4,17 +4,17 @@
 #
 # OSARIS module for 'Stable Ground Point Identification' (SGPI).
 #
-# Calculates the sum and arithmetic mean and average of a time series
-# of cohernece files.
+# Calculates the sum and arithmetic mean of a time series of cohernece files.
 #
-# Provide a valid config file named 'sgd_identification.config' in the config
+# Provide a valid config file named 'sgp_identification.config' in the config
 # directory; a template is provided in templates/module_config/
 #
 # Requires processed GMTSAR coherence files (corr_ll.grd) as input.
 #
 # Output files will be written to $output_PATH/SGPI:
-#   - sgp_coords-F$swath.xy     -> Coordinates of max. coherence the stack
-#                                 Input file for homogenize_intfs
+#   - sgp_coords-F$swath.xy    -> Coordinates of max. coherence the stack.
+#                                 Input file for other modules, including
+#                                 'Harmonize Grids' and 'GACOS Correction'
 #   - corr_sum-F$swath.grd     -> Sum of coherences from stack (grid)
 #   - corr_arithmean-F$swath   -> Arith. mean of coherences (grid)
 #

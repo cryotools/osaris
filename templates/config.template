@@ -93,8 +93,8 @@ post_extract_mods=( )
 post_processing_mods=( create_pdf_summary )
 # Modules to be run after GMTSAR processing
 # Recommended for:
-#   - simple_psi 
-#   - homogenize_intfs 
+#   - sgp_identification
+#   - harmonize_grids
 #   - unstable_coh_metric 
 #   - timeseries_xy 
 #   - statistics 
