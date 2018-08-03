@@ -18,6 +18,7 @@
 #   - corr_sum-F$swath.grd     -> Sum of coherences from stack (grid)
 #   - corr_arithmean-F$swath   -> Arith. mean of coherences (grid)
 #
+#
 # David Loibl, 2018
 #
 #####################################################################
