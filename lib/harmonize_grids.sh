@@ -2,102 +2,82 @@
 
 ######################################################################
 #
-# OSARIS module to harmonize a series of grid files relative to a 
-# reference point.
-#
-# Shift all frid files in a directory by their offset to a 
-# 'stable ground point' (by default the result from the 'SGP Identification'
-# module. Most commonly used to harmonize a time series of unwrapped 
-# intereferograms or LoS displacement grids.
-#
-# Input: 
-#    - path(s) to one or more directories containing grid files
-#    - xy coordinates of stable ground point (default SGPI result)
-#
-# Output:
-#    - harmonized series of .grd files.
-#
+# Harmonize a series of grid files relative to a reference point.
 #
 # David Loibl, 2018
 #
 #####################################################################
 
 
-module_name="harmonize_grids"
-
-if [ ! -f "$OSARIS_PATH/config/${module_name}.config" ]; then
+if [ $# -lt 3 ]; then
     echo
-    echo "Cannot open ${module_name}.config in the OSARIS config folder. Please provide a valid config file."
+    echo "Harmonize a series of grid files relative to a reference point."
+    echo 
+    echo "Usage: harmonize_grids.sh input_path reference_point output_path"  
     echo
-else
-    # Start runtime timer
-    HG_start=`date +%s`
+    echo " Shift all grid files in input directory by their offset relative to a "
+    echo " 'stable ground point'. Most commonly used to harmonize a time series of "
+    echo " unwrapped intereferograms or LoS displacement grids."
+    echo 
+    echo " Arguments: "
+    echo "   Input path       -> The directory containing grid files"
+    echo "   Reference point  -> Coordinates of reference point in decimal degrees using the format"
+    echo "                       Longitude/Latitude, e.g. 165.1/-12.5"
+    echo "   Output path      -> Output grids will be written here"
+    echo 
+    echo " Output:"
+    echo "   Harmonized series of .grd files."; echo
 
-    # Include the config file
-    source $OSARIS_PATH/config/${module_name}.config
-
-
-    ############################
-    # Module actions start here
-
+else    
 
     echo; echo "Harmonizing grids to reference point ..."
 
-    HG_output_PATH="$output_PATH/Harmonized-Grids"   
-    HG_work_PATH="$work_PATH/Harmonized-Grids"
+    # Read attributes and setup environment
+    grid_input_PATH=$1
+    ref_point_xy_coords=$2
+    HG_output_PATH=$3
+    HG_work_PATH="$work_PATH/Harmonize-Grids"
+    
+    echo "Reference point is set to $ref_point_xy_coords"
+    ref_point_array=(${ref_point_xy_coords//\// })
+    echo "${ref_point_array[0]} ${ref_point_array[1]}" > $HG_work_PATH/ref_point.xy
 
     mkdir -p $HG_output_PATH
     mkdir -p $HG_work_PATH
-            
-    if [ ! -z "$ref_point_xy_coords" ]; then
-	echo "Reference point is set to $ref_point_xy_coords"
-	ref_point_array=(${ref_point_xy_coords//\// })
-	echo "${ref_point_array[0]} ${ref_point_array[1]}" > $HG_work_PATH/ref_point.xy
-	# ref_point_lon=${ref_point_array[0]}
-	# ref_point_lat=${ref_point_array[1]}
-    elif [ -f $output_PATH/SGPI/sgp_coords.xy ]; then
-	cat $output_PATH/SGPI/sgp_coords.xy > $HG_work_PATH/ref_point.xy
-	# ref_point_lat=($( cat $output_PATH/SGPI/sgp_coords.xy | awk '{ print $1 }' ))
-	# ref_point_lon=($( cat $output_PATH/SGPI/sgp_coords.xy | awk '{ print $2 }' ))
+                
+    if [ ! -d "$grid_input_PATH" ]; then
+	echo; echo "ERROR: Directory $grid_input_PATH does not exist. Skipping ..."
     else
-	echo "ERROR: No reference point coordinates found in harmonize_grids.config or sgp_coords.xy."
-	echo "Exiting module 'Harmonize Grids'."
-    fi
+	
+	cd $grid_input_PATH
 
-    for grid_dir in ${grid_input_PATH[@]}; do
-	if [ ! -d "$grid_dir" ]; then
-	    echo; echo "ERROR: Directory $grid_dir does not exist. Skipping ..."
-	else
+	grid_input_PATH_basename=$( basename "$PWD" )
+	mkdir -p ${HG_output_PATH}/${grid_input_PATH_basename}	    
+
+	grid_files=($( ls *.grd ))
+	for grid_file in ${grid_files[@]}; do
+
+	    # Get xy coordinates of 'stable ground point' from file and check the value the raster set has at this location.
+	    gmt grdtrack $HG_work_PATH/ref_point.xy -G${grid_input_PATH}/${grid_file} >> $HG_work_PATH/${grid_input_PATH_basename}_ref_point_vals.xyz
+	    ref_point_grid_trk=$( gmt grdtrack ${HG_work_PATH}/ref_point.xy -G${grid_input_PATH}/${grid_file} )
+
+	    if [ ! -z ${ref_point_grid_trk+x} ]; then
+		ref_point_grid_val=$( echo "$ref_point_grid_trk" | awk '{ print $3 }')		    
+		if [ $debug -gt 1 ]; then echo "Stable ground diff ${grid_input_PATH}/${grid_file}: $ref_point_grid_val"; fi
+	    else
+		echo "GMT grdtrack for stable ground yielded no result for ${grid_input_PATH}/${grid_file}. Skipping"
+	    fi
 	    
-	    cd $grid_dir
+	    if [ ! -z ${ref_point_grid_val+x} ]; then
+		# Shift input grid so that the 'stable ground value' is zero
+		gmt grdmath ${grid_input_PATH}/${grid_file} $ref_point_grid_val SUB = $HG_output_PATH/${grid_input_PATH_basename}/${grid_file::-4}-harmonized.grd -V
+	    else 
+		echo "Unwrap difference calculation for stable ground point failed in ${folder}. Skipping ..."
+	    fi		    
+	done	    
 
-	    grid_dir_basename=$( basename "$PWD" )
-	    mkdir -p ${HG_output_PATH}/${grid_dir_basename}	    
-
-	    grid_files=($( ls *.grd ))
-	    for grid_file in ${grid_files[@]}; do
-
-		# Get xy coordinates of 'stable ground point' from file and check the value the raster set has at this location.
-		gmt grdtrack $HG_work_PATH/ref_point.xy -G${grid_dir}/${grid_file} >> $HG_work_PATH/${grid_dir_basename}_ref_point_vals.xyz
-		ref_point_grid_trk=$( gmt grdtrack ${HG_work_PATH}/ref_point.xy -G${grid_dir}/${grid_file} )
-
-		if [ ! -z ${ref_point_grid_trk+x} ]; then
-		    ref_point_grid_val=$( echo "$ref_point_grid_trk" | awk '{ print $3 }')		    
-		    if [ $debug -gt 1 ]; then echo "Stable ground diff ${grid_dir}/${grid_file}: $ref_point_grid_val"; fi
-		else
-		    echo "GMT grdtrack for stable ground yielded no result for ${grid_dir}/${grid_file}. Skipping"
-		fi
-		
-		if [ ! -z ${ref_point_grid_val+x} ]; then
-		    # Shift input grid so that the 'stable ground value' is zero
-		    gmt grdmath ${grid_dir}/${grid_file} $ref_point_grid_val SUB = $HG_output_PATH/${grid_dir_basename}/${grid_file::-4}-harmonized.grd -V
-		else 
-		    echo "Unwrap difference calculation for stable ground point failed in ${folder}. Skipping ..."
-		fi		    
-	    done	    
-
-	fi    
-    done
+    fi    
+    
 
     HG_end=`date +%s`
 
