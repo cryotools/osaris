@@ -29,7 +29,7 @@ if [ $# -lt 3 ]; then
     echo "   Harmonized series of .grd files."; echo
 
 else    
-
+    HG_start=`date +%s`
     echo; echo "Harmonizing grids to reference point ..."
 
     # Read attributes and setup environment
@@ -63,7 +63,7 @@ else
 
 	    if [ ! -z ${ref_point_grid_trk+x} ]; then
 		ref_point_grid_val=$( echo "$ref_point_grid_trk" | awk '{ print $3 }')		    
-		if [ $debug -gt 1 ]; then echo "Stable ground diff ${grid_input_PATH}/${grid_file}: $ref_point_grid_val"; fi
+		# if [ $debug -gt 1 ]; then echo "Stable ground diff ${grid_input_PATH}/${grid_file}: $ref_point_grid_val"; fi
 	    else
 		echo "GMT grdtrack for stable ground yielded no result for ${grid_input_PATH}/${grid_file}. Skipping"
 	    fi

@@ -51,10 +51,12 @@ else
 	echo "Trying default path $output_PATH/Pairs-forward/Interferograms-unwrapped ..."
 	unwrp_intf_PATH="$output_PATH/Pairs-forward/Interferograms-unwrapped"
     fi
-
-    mkdir -p $work_PATH/GACOS_correction/GACOS_files
-    mkdir -p $work_PATH/GACOS_correction/cut_intfs
-    mkdir -p $output_PATH/GACOS-corrected
+    
+    GACOS_work_PATH="$work_PATH/GACOS_correction/"
+    GACOS_output_PATH="$output_PATH/GACOS-corrected"
+    mkdir -p $GACOS_work_PATH/GACOS_files
+    mkdir -p $GACOS_work_PATH/cut_intfs
+    mkdir -p $GACOS_output_PATH
     
     # TODO: read from .PRM files in Processing/raw
     radar_wavelength="0.554658"
@@ -64,32 +66,63 @@ else
 	# Check if all data is available
 
 	# (i) Stable ground point
-	if [ ! -f "$output_PATH/PSI/ps_coords-F${swath}.xy" ]; then
-	    echo; echo "ERROR: Cannot open $output_PATH/PSI/ps_coords-F${swath}.xy - Please run the simple_PSI module before executing gacos_correction. Exiting ..."
-	    check_ps=0
-	else
+
+	# Check how to deal with the reference point depending of value of config var $harmonize_input
+	if [ -z $reference_point ]; then
+	    echo "Variable reference_point not set in ${module_name}.config "
+	    echo "Trying to use results from SGPI ..."; echo
+
+	    #########
+	    ## TODO: Adapt the whole following if statement to new path after renaming to SGPI module and removing swaths in post-processing stage ...
+	    #########
+
+	    if [ ! -f "$output_PATH/PSI/ps_coords-F${swath}.xy" ]; then
+		echo; echo "ERROR: Cannot open $output_PATH/PSI/ps_coords-F${swath}.xy - Please run the simple_PSI module before executing gacos_correction. Exiting ..."
+		check_ps=0
+	    else
+		check_ps=1
+		sg_lon=($( cat $output_PATH/PSI/ps_coords-F$swath.xy | awk '{ print $1 }' ))
+		sg_lat=($( cat $output_PATH/PSI/ps_coords-F$swath.xy | awk '{ print $2 }' ))
+		echo "${sg_lon} ${sg_lat}" > $GACOS_work_PATH/ref_point.xy
+	    fi
+	else	    
+	    echo "Variable reference_point set to $reference_point in ${module_name}.config " 
+	    echo "Validating coordinates ..."
+	    ref_point_array=(${ref_point_xy_coords//\// })	    
+	    sg_lon=${ref_point_array[0]}
+	    sg_lat=${ref_point_array[1]}
+	    echo "${sg_lon} ${sg_lat}" > $GACOS_work_PATH/ref_point.xy
 	    check_ps=1
-	    sg_lat=($( cat $output_PATH/PSI/ps_coords-F$swath.xy | awk '{ print $1 }' ))
-	    sg_lon=($( cat $output_PATH/PSI/ps_coords-F$swath.xy | awk '{ print $2 }' ))
 	fi
 
 
 	# (ii) Unwrapped interferograms
-	if [ ! -d "$unwrp_intf_PATH" ]; then
-	    echo; echo "ERROR: Directory $unwrp_intf_PATH does not exist. Exiting ..."
+	if [ $harmonize_input_grids -eq 0 ]; then
+	    echo; echo "Interferogram stack harmonization disabled in ${module_name}.config "
+	    echo " -> Assuming interferograms in $unwrp_intf_PATH are harmonized to reference point ..."; echo
+	    GACOS_intf_input_PATH="$unwrp_intf_PATH"
+	else
+	    echo; echo "Harmonizing input interferogram time series ... "
+	    GACOS_intf_input_PATH="$unwrp_intf_PATH"
+	    mkdir -p $GACOS_intf_input_PATH
+	    $OSARIS_PATH/lib/harmonize_grids.sh $unwrp_intf_PATH $sg_lon/$sg_lat $GACOS_intf_input_PATH
+	fi
+
+	if [ ! -d "$GACOS_intf_input_PATH" ]; then
+	    echo; echo "ERROR: Directory $GACOS_intf_input_PATH does not exist. Exiting ..."
 	    check_ui=0
 	else	    
-	    cd "$unwrp_intf_PATH"
+	    cd "$GACOS_intf_input_PATH"
 	    scenes=$( ls *.grd )
 	    if [ ! -z "$scenes" ]; then
 		for scene in ${scenes[@]}; do 
-		    echo $ scenes >> $work_PATH/GACOS_correction/intfs.list
-		    echo ${scene:0:8} >> $work_PATH/GACOS_correction/master_dates.list
-		    echo ${scene:10:8} >> $work_PATH/GACOS_correction/slave_dates.list
+		    echo $ scenes >> $GACOS_work_PATH/intfs.list
+		    echo ${scene:0:8} >> $GACOS_work_PATH/master_dates.list
+		    echo ${scene:10:8} >> $GACOS_work_PATH/slave_dates.list
 		done
 		check_ui=1
 	    else
-		echo; echo "ERROR: No interferogram files in $unwrp_intf_PATH. Exiting ..."
+		echo; echo "ERROR: No interferogram files in $GACOS_intf_input_PATH. Exiting ..."
 		check_ui=0
 	    fi
 	fi
@@ -105,7 +138,7 @@ else
 	    gacos_files=$( ls *.rsc )
 	    if [ ! -z "$gacos_files" ]; then
 		for gacos_file in ${gacos_files[@]}; do 
-		    echo ${gacos_file:0:8} >> $work_PATH/GACOS_correction/gacos_dates.list
+		    echo ${gacos_file:0:8} >> $GACOS_work_PATH/gacos_dates.list
 		done		
 		check_gs=1
 	    else
@@ -128,11 +161,11 @@ else
 		# Cut GACOS data and intfs. to same extent
 		master_date="${intf:10:8}"
 		slave_date="${intf:0:8}"
-		master_grd="$work_PATH/GACOS_correction/GACOS_files/${master_date}.grd"
-		slave_grd="$work_PATH/GACOS_correction/GACOS_files/${slave_date}.grd"
+		master_grd="$GACOS_work_PATH/GACOS_files/${master_date}.grd"
+		slave_grd="$GACOS_work_PATH/GACOS_files/${slave_date}.grd"
 
-		# master_incidence_angle=$( cat $work_PATH/GACOS_correction/incidence_angles.list | grep ${master_date} | awk '{ print $2 }' )
-		# slave_incidence_angle=$( cat $work_PATH/GACOS_correction/incidence_angles.list | grep ${slave_date} | awk '{ print $2 }' )
+		# master_incidence_angle=$( cat $GACOS_work_PATH/incidence_angles.list | grep ${master_date} | awk '{ print $2 }' )
+		# slave_incidence_angle=$( cat $GACOS_work_PATH/incidence_angles.list | grep ${slave_date} | awk '{ print $2 }' )
 		
 		echo; echo "Now working on master $master_date / slave $slave_date"
 
@@ -187,11 +220,11 @@ else
 			echo "x_max for ${master_date}.ztd: $gacos_x_max"
 			echo "y_max for ${master_date}.ztd: $gacos_y_max"
 
-			cp $gacos_PATH/${master_date}.ztd $work_PATH/GACOS_correction/GACOS_files
+			cp $gacos_PATH/${master_date}.ztd $GACOS_work_PATH/GACOS_files
 			
 			echo; echo "  Converting GACOS ztd to grid file ..."
-			echo "gmt xyz2grd $work_PATH/GACOS_correction/GACOS_files/${master_date}.ztd -ZTLf -r -R$gacos_x_min/$gacos_x_max/$gacos_y_min/$gacos_y_max -I$gacos_x_step/$gacos_y_step -G${master_grd::-4}-raw.grd -V"
-			gmt xyz2grd $work_PATH/GACOS_correction/GACOS_files/${master_date}.ztd \
+			echo "gmt xyz2grd $GACOS_work_PATH/GACOS_files/${master_date}.ztd -ZTLf -r -R$gacos_x_min/$gacos_x_max/$gacos_y_min/$gacos_y_max -I$gacos_x_step/$gacos_y_step -G${master_grd::-4}-raw.grd -V"
+			gmt xyz2grd $GACOS_work_PATH/GACOS_files/${master_date}.ztd \
 			    -ZTLf -r -R$gacos_x_min/$gacos_x_max/$gacos_y_min/$gacos_y_max -I$gacos_x_step/$gacos_y_step -G${master_grd::-4}-raw.grd -V
 
 			echo; echo "  Converting GACOS file from m to radians ..."
@@ -226,21 +259,21 @@ else
 			#`gmt grdinfo -I $output_PATH/Homogenized-Intfs/$intf`
 
 			
-			# echo; echo "gmt blockmedian $work_PATH/GACOS_correction/GACOS_files/${master_date}.ztd \
+			# echo; echo "gmt blockmedian $GACOS_work_PATH/GACOS_files/${master_date}.ztd \
 			#     -R$gacos_x_min/$gacos_x_max/$gacos_y_min/$gacos_y_max \
-			#     -I${gacos_x_step} -bi3f+L -V > $work_PATH/GACOS_correction/GACOS_files/${master_date}.xyz"; echo
+			#     -I${gacos_x_step} -bi3f+L -V > $GACOS_work_PATH/GACOS_files/${master_date}.xyz"; echo
 
-			# gmt blockmedian $work_PATH/GACOS_correction/GACOS_files/${master_date}.ztd \
+			# gmt blockmedian $GACOS_work_PATH/GACOS_files/${master_date}.ztd \
 			#     -R$gacos_x_min/$gacos_x_max/$gacos_y_min/$gacos_y_max \
-			#     -I${gacos_x_step} -bi3f+L -V > $work_PATH/GACOS_correction/GACOS_files/${master_date}.xyz
+			#     -I${gacos_x_step} -bi3f+L -V > $GACOS_work_PATH/GACOS_files/${master_date}.xyz
 
-			# echo; echo "gmt surface $work_PATH/GACOS_correction/GACOS_files/${master_date}.xyz \
+			# echo; echo "gmt surface $GACOS_work_PATH/GACOS_files/${master_date}.xyz \
 			#     -R$gacos_x_min/$gacos_x_max/$gacos_y_min/$gacos_y_max -Q `gmt grdinfo -I $output_PATH/Homogenized-Intfs/$intf` -T0.3 -N1000 -G$master_grd -r -Vl"; echo
 
-			# gmt surface $work_PATH/GACOS_correction/GACOS_files/${master_date}.xyz \
+			# gmt surface $GACOS_work_PATH/GACOS_files/${master_date}.xyz \
 			#     -R$gacos_x_min/$gacos_x_max/$gacos_y_min/$gacos_y_max -Q `gmt grdinfo -I $output_PATH/Homogenized-Intfs/$intf` -T0.3 -N1000 -G$master_grd -r -Vl
 
-			# gmt surface $work_PATH/GACOS_correction/GACOS_files/${master_date}.ztd \
+			# gmt surface $GACOS_work_PATH/GACOS_files/${master_date}.ztd \
 			#     -bi3f \
 			#     -R$gacos_x_min/$gacos_x_max/$gacos_y_min/$gacos_y_max \
 			#     -I0.00001/0.00001 \
@@ -303,12 +336,12 @@ else
 			echo "x_max for ${master_date}.ztd: $gacos_x_max"
 			echo "y_max for ${master_date}.ztd: $gacos_y_max"
 
-			cp $gacos_PATH/${slave_date}.ztd $work_PATH/GACOS_correction/GACOS_files
+			cp $gacos_PATH/${slave_date}.ztd $GACOS_work_PATH/GACOS_files
 
 			echo; echo "  Converting GACOS ztd to grid file ..."
 			
-			echo "gmt xyz2grd $work_PATH/GACOS_correction/GACOS_files/${slave_date}.ztd -ZTLf -r -R$gacos_x_min/$gacos_x_max/$gacos_y_min/$gacos_y_max -I$gacos_x_step/$gacos_y_step -G${slave_grd::-4}-raw.grd -V"
-			gmt xyz2grd $work_PATH/GACOS_correction/GACOS_files/${slave_date}.ztd \
+			echo "gmt xyz2grd $GACOS_work_PATH/GACOS_files/${slave_date}.ztd -ZTLf -r -R$gacos_x_min/$gacos_x_max/$gacos_y_min/$gacos_y_max -I$gacos_x_step/$gacos_y_step -G${slave_grd::-4}-raw.grd -V"
+			gmt xyz2grd $GACOS_work_PATH/GACOS_files/${slave_date}.ztd \
 			    -ZTLf -r -R$gacos_x_min/$gacos_x_max/$gacos_y_min/$gacos_y_max -I$gacos_x_step/$gacos_y_step -G${slave_grd::-4}-raw.grd -V
 
 			echo; echo "  Converting GACOS file from m to radians ..."
@@ -333,11 +366,11 @@ else
 
 
 
-			# gmt blockmedian $work_PATH/GACOS_correction/GACOS_files/${slave_date}.ztd \
+			# gmt blockmedian $GACOS_work_PATH/GACOS_files/${slave_date}.ztd \
 			#     -R$gacos_x_min/$gacos_x_max/$gacos_y_min/$gacos_y_max \
-			#     -I$gacos_x_step/$gacos_y_step -bi3f -V > $work_PATH/GACOS_correction/GACOS_files/${slave_date}.xyz
+			#     -I$gacos_x_step/$gacos_y_step -bi3f -V > $GACOS_work_PATH/GACOS_files/${slave_date}.xyz
 
-			# gmt surface $work_PATH/GACOS_correction/GACOS_files/${slave_date}.xyz \
+			# gmt surface $GACOS_work_PATH/GACOS_files/${slave_date}.xyz \
 			#     -R$gacos_x_min/$gacos_x_max/$gacos_y_min/$gacos_y_max -Q `gmt grdinfo -I $output_PATH/Homogenized-Intfs/$intf` -T0.3 -N1000 -G$slave_grd -r -Vl
 
 
@@ -347,17 +380,17 @@ else
 			#     -I0.0001/0.0001 \
 			#     -Vl
 
-			# echo; echo "gmt surface $work_PATH/GACOS_correction/GACOS_files/${slave_date}.ztd -bi3f -R$gacos_x_min/$gacos_x_max/$gacos_y_min/$gacos_y_max -Q `gmt grdinfo -I $output_PATH/Homogenized-Intfs/$intf` -T0.3 -G$slave_grd -N1000 -r -Vl"; echo 
+			# echo; echo "gmt surface $GACOS_work_PATH/GACOS_files/${slave_date}.ztd -bi3f -R$gacos_x_min/$gacos_x_max/$gacos_y_min/$gacos_y_max -Q `gmt grdinfo -I $output_PATH/Homogenized-Intfs/$intf` -T0.3 -G$slave_grd -N1000 -r -Vl"; echo 
 
-			# gmt surface $work_PATH/GACOS_correction/GACOS_files/${slave_date}.ztd \
+			# gmt surface $GACOS_work_PATH/GACOS_files/${slave_date}.ztd \
 			#     -bi3f \
 			#     -R$gacos_x_min/$gacos_x_max/$gacos_y_min/$gacos_y_max -Q `gmt grdinfo -I $output_PATH/Homogenized-Intfs/$intf` -T0.3 -N1000 -r -Vl
 
 
 
 			# if [ -f "$gacos_PATH/${slave_date}.ztd" ]; then
-			# 	cp $gacos_PATH/${slave_date}.ztd $work_PATH/GACOS_correction/GACOS_files
-			# 	gmt xyz2grd $work_PATH/GACOS_correction/GACOS_files/$gacos_slave \
+			# 	cp $gacos_PATH/${slave_date}.ztd $GACOS_work_PATH/GACOS_files
+			# 	gmt xyz2grd $GACOS_work_PATH/GACOS_files/$gacos_slave \
 			# 	    -ZTLf -r -R$gacos_extent -G$slave_grd -V
 			# 	# `gmt grdinfo -I- $output_PATH/Homogenized-Intfs/$intf` `gmt grdinfo -I $output_PATH/Homogenized-Intfs/$intf`
 		    else
@@ -366,7 +399,7 @@ else
 
 		fi
 
-		# gacos_extent=$( gmt grdinfo -I- $work_PATH/GACOS_correction/GACOS_files/${intf:0:8}.grd ); gacos_extent=${gacos_extent:2}
+		# gacos_extent=$( gmt grdinfo -I- $GACOS_work_PATH/GACOS_files/${intf:0:8}.grd ); gacos_extent=${gacos_extent:2}
 		# intf_extent=file_1_extent=$( gmt grdinfo -I- $file_1 ); file_1_extent=${file_1_extent:2}
 
 		
@@ -375,29 +408,26 @@ else
 
 		# Step 1: Time Differencing
 		echo; echo "Conducting time differencing of GACOS scenes ..."
-		zpddm_file="$work_PATH/GACOS_correction/${slave_date}-${master_date}.grd"
+		zpddm_file="$GACOS_work_PATH/${slave_date}-${master_date}.grd"
 		gmt grdmath $master_grd $slave_grd SUB = "$zpddm_file" -V
 
 		
 		# Step 2: Space Differencing
 		echo; echo "Conducting space differencing of GACOS scenes ..."
-		szpddm_file="$work_PATH/GACOS_correction/${slave_date}-${master_date}-sd.grd"
-		zpddm_ps_value=$( gmt grdtrack $output_PATH/PSI/ps_coords-F$swath.xy -G$zpddm_file )
+		szpddm_file="$GACOS_work_PATH/${slave_date}-${master_date}-sd.grd"
+		zpddm_ps_value=$( gmt grdtrack $GACOS_work_PATH/ref_point.xy -G$zpddm_file )
 		zpddm_ps_value=$( echo "$zpddm_ps_value" | awk '{ print $3 }' )
 		echo; echo " PS value: $zpddm_ps_value"
 		gmt grdmath $zpddm_file $zpddm_ps_value SUB = $szpddm_file -V
 		
 		# Step 3: Apply the correction
 		echo; echo "Applying GACOS correction to interferogram"
-		echo "$unwrp_intf_PATH/$intf"
+		echo "$GACOS_intf_input_PATH/$intf"
 
 		# Cut GACOS diff file and phase file to same extent
 
-
-
-
 		file_1="$szpddm_file"
-		file_2="$unwrp_intf_PATH/$intf"
+		file_2="$GACOS_intf_input_PATH/$intf"
 
 		file_1_extent=$( gmt grdinfo -I- $file_1 ); file_1_extent=${file_1_extent:2}
 		file_2_extent=$( gmt grdinfo -I- $file_2 ); file_2_extent=${file_2_extent:2}
@@ -460,22 +490,22 @@ else
 
 		echo; echo "  The common minimum boundary box for the files"
 		echo "  - $szpddm_file and"
-		echo "  - $unwrp_intf_PATH/$intf"
+		echo "  - $GACOS_intf_input_PATH/$intf"
 		echo "  is $xmin/$xmax/$ymin/$ymax"
-		echo; echo "gmt grdcut $szpddm_file -G${szpddm_file::-4}-cut.grd -R$xmin/$xmax/$ymin/$ymax `gmt grdinfo -I $unwrp_intf_PATH/$intf` -V"; echo
+		echo; echo "gmt grdcut $szpddm_file -G${szpddm_file::-4}-cut.grd -R$xmin/$xmax/$ymin/$ymax `gmt grdinfo -I $GACOS_intf_input_PATH/$intf` -V"; echo
 		#  `gmt grdinfo -I $output_PATH/Homogenized-Intfs/$intf`
 
-		gmt grdsample $szpddm_file -G${szpddm_file::-4}-cut.grd -R$xmin/$xmax/$ymin/$ymax `gmt grdinfo -I $unwrp_intf_PATH/$intf` -V
-		gmt grdsample $unwrp_intf_PATH/$intf -G$work_PATH/GACOS_correction/cut_intfs/$intf \
+		gmt grdsample $szpddm_file -G${szpddm_file::-4}-cut.grd -R$xmin/$xmax/$ymin/$ymax `gmt grdinfo -I $GACOS_intf_input_PATH/$intf` -V
+		gmt grdsample $GACOS_intf_input_PATH/$intf -G$GACOS_work_PATH/cut_intfs/$intf \
 		    `gmt grdinfo -I- ${szpddm_file::-4}-cut.grd` \
 		    `gmt grdinfo -I ${szpddm_file::-4}-cut.grd` -V
 		# gmt grdcut $szpddm_file -G${szpddm_file::-4}-cut.grd -R$xmin/$xmax/$ymin/$ymax -V
-		# gmt grdcut $output_PATH/Homogenized-Intfs/$intf -G$work_PATH/GACOS_correction/cut_intfs/$intf \
+		# gmt grdcut $output_PATH/Homogenized-Intfs/$intf -G$GACOS_work_PATH/cut_intfs/$intf \
 		#     `gmt grdinfo -I- ${szpddm_file::-4}-cut.grd` -V
 		    
 
-		corrected_phase_file="$output_PATH/GACOS-corrected/${slave_date}-${master_date}-intf.grd"
-		gmt grdmath ${szpddm_file::-4}-cut.grd $work_PATH/GACOS_correction/cut_intfs/$intf SUB = $corrected_phase_file -V
+		corrected_phase_file="$GACOS_output_PATH/${slave_date}-${master_date}-intf.grd"
+		gmt grdmath ${szpddm_file::-4}-cut.grd $GACOS_work_PATH/cut_intfs/$intf SUB = $corrected_phase_file -V
 
 		# Step 4: Linear detrending (?)
 	    done
