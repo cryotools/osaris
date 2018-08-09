@@ -122,6 +122,11 @@ Identify regions where high coherence values drop substantially between two data
 Call: unstable_coh_metric
 Status: beta
 
+#### Displacement
+Convert unwrapped phase (radians) to line-of-sight displacement (mm)
+Call: displacement
+Status: beta
+
 #### Timeseries xy
 Extract values for particular coordinates throughout a series of grids (e.g. coherence, phase). 
 Call: timerseries_xy
