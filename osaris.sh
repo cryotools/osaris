@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 if [ $# -eq 0 ]; then
     echo
@@ -137,9 +137,9 @@ else
 	input_file_type=$( echo $input_file_elements | awk '{ print $4 }' )
 
 	echo "$input_file_start_date $input_file_start_time $input_file_end_date $input_file_end_time $input_file_sensor $input_file_mode $input_file_type $input_type_format" >> $work_PATH/input_files.csv
-    done
-    
+    done    
     sort $work_PATH/input_files.csv > $output_PATH/input_files.csv
+
 
     # Update orbits when requested
     if [ "$update_orbits" -eq 1 ]; then
@@ -268,11 +268,39 @@ else
     include_modules "${post_processing_mods[@]}"
 
 
+
     #### STEP 4: POSTPROCESSING
+
+    # Move files from $work_PATH/Pairs-forward to directories in $output_PATH
+    # as specified by the var $output_directory_map in the config file
+
+    echo; echo - - - - - - - - - - - - - - - -; echo "Moving files to output directories ...";	echo
+
+    # if [ -z "$output_directory_map" ]; then
+    # 	echo "Variable output_directory_map not set in config file. Using default mapping ..."
+    # 	output_directory_map=( "display_amp_ll.grd:Amplitudes" "corr_ll.grd:Coherences" "phasefilt_mask_ll.grd:Interferograms-raw" "unwrap_mask_ll.grd:Interferograms-unwrapped" )
+    # fi
+
+    # # Create array of output directories
+    
+
+    # for file_dir_pair in ${output_directory_map[@]}; do
+	
+    # 	# Split by ':'
+    # 	mkdir -p __
+
+    # 	for _directory_ in ${__direcotry_list__[@]}; do
+
+    # 	    # Move stuff to output directory
+
+    # 	done
+
+    # done
+
 
     # TODO: Make module
     if [ "$process_reverse_intfs" -eq 1 ]; then
-	echo; echo - - - - - - - - - - - - - - - -; echo "Processing unwrapping diffs";	echo
+	echo; echo - - - - - - - - - - - - - - - -; echo "Processing differences between forward and reverse pairs of unwrapped interferograms ...";	echo
 	
 	cd $output_PATH/Pairs-forward
 	
