@@ -1,6 +1,6 @@
 #!/bin/csh -f
 #
-# Modified for the S1PPC basing on the original script by
+# Modified for OSARIS basing on the original script by
 #
 #   David Dandwell, December 29, 2015
 #
@@ -291,6 +291,8 @@ set OSARIS_PATH = $4
     cd ../..
     echo "INTF.CSH, FILTER.CSH - END"
   endif
+
+
 
 ################################
 # 5 - start from unwrap phase  #

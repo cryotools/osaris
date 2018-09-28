@@ -53,56 +53,51 @@ else
     cd $sgpi_input_PATH
 
 
-    for swath in ${swaths_to_process[@]}; do
+    # Handle boundary box
+    if [ -z $sgpi_region ]; then
+	echo "Obtaining minimum boundary box from files in $sgpi_input_PATH ..."
+	boundary_box=$( $OSARIS_PATH/lib/min_grd_extent.sh $sgpi_input_PATH )
+    else
+	echo "Boundary box set to $sgpi_region ..."
+	boundary_box=$sgpi_region
+    fi
 
-	if [ -z $sgpi_region ]; then
-	    echo "Obtaining minimum boundary box for corr_ll.grd files in subdirs of $sgpi_input_PATH ..."
-	    boundary_box=$( $OSARIS_PATH/lib/min_grd_extent.sh corr_ll.grd $sgpi_input_PATH $swath )
+
+    # Cut input files to boundary box extent
+    coh_files=($( ls *.grd ))
+    for coh_file in ${coh_files[@]}; do
+	gmt grdcut $coh_file -G$sgpi_work_PATH/cut/${coh_file::-4}-cut.grd  -R$boundary_box -V
+	gmt grdclip $sgpi_work_PATH/cut/${coh_file::-4}-cut.grd -G$sgpi_work_PATH/cut/${coh_file::-4}-cut-thres.grd -Sb${sgpi_threshold}/NaN -V
+    done
+
+
+    # Calculate sum of coherence from all files
+    cd $sgpi_work_PATH/cut
+    rm *-cut.grd
+    cut_files=($(ls *.grd))
+    cut_files_count=1
+    for cut_file in "${cut_files[@]}"; do
+	if [ "$cut_files_count" -eq 1 ]; then
+	    if [ $debug -gt 1 ]; then echo "First file $cut_file"; fi
+	elif [ "$cut_files_count" -eq 2 ]; then	
+	    if [ $debug -gt 0 ]; then echo "Addition of coherence from $cut_file and $prev_cut_file ..."; fi
+	    gmt grdmath $cut_file $prev_cut_file ADD -V = $sgpi_work_PATH/coherence-sum.grd
 	else
-	    echo "Boundary box set to $sgpi_region ..."
-	    boundary_box=$sgpi_region
+	    if [ $debug -gt 0 ]; then echo "Adding coherence from $cut_file ..."; fi
+	    gmt grdmath $cut_file $sgpi_work_PATH/coherence-sum.grd ADD -V = $sgpi_work_PATH/coherence-sum.grd
 	fi
 
-
-	folders=($( ls -d *-F$swath/ ))
-	sgpi_count=0
-	for folder in "${folders[@]}"; do           
-	    folder=${folder::-1}
-	    if [ -f "$folder/corr_ll.grd" ]; then
-		gmt grdcut $folder/corr_ll.grd -G$sgpi_work_PATH/cut/corr_cut_$folder.grd  -R$boundary_box -V
-		gmt grdclip $sgpi_work_PATH/cut/corr_cut_$folder.grd -G$sgpi_work_PATH/cut/corr_thres_$folder.grd -Sb${sgpi_threshold}/NaN -V
-		sgpi_count=$((sgpi_count+1))
-	    else
-		echo "No coherence file in folder $folder - skipping ..."
-	    fi
-	done
-
-
-	cd $sgpi_work_PATH/cut
-	rm corr_cut*
-	cut_files=($(ls *F$swath.grd))
-	cut_files_count=1
-	for cut_file in "${cut_files[@]}"; do
-	    if [ "$cut_files_count" -eq 1 ]; then
-		if [ $debug -gt 1 ]; then echo "First file $cut_file"; fi
-	    elif [ "$cut_files_count" -eq 2 ]; then	
-		if [ $debug -gt 0 ]; then echo "Addition of coherence from $cut_file and $prev_cut_file ..."; fi
-		gmt grdmath $cut_file $prev_cut_file ADD -V = $sgpi_work_PATH/corr_sum-F$swath.grd
-	    else
-		if [ $debug -gt 0 ]; then echo "Adding coherence from $cut_file ..."; fi
-		gmt grdmath $cut_file $sgpi_work_PATH/corr_sum-F$swath.grd ADD -V = $sgpi_work_PATH/corr_sum-F$swath.grd
-	    fi
-
-	    prev_cut_file=$cut_file
-	    cut_files_count=$((cut_files_count+1))
-	done
-
-	gmt grdmath $sgpi_work_PATH/corr_sum-F$swath.grd $sgpi_count DIV -V = $sgpi_output_PATH/corr_arithmean-F$swath.grd
-	cp $sgpi_work_PATH/corr_sum-F$swath.grd $sgpi_output_PATH/corr_sum-F$swath.grd
-
-	# Write coords of max coherence points to file for further processing ..
-	gmt grdinfo -M -V $sgpi_work_PATH/corr_sum-F$swath.grd | grep z_max | awk '{ print $16,$19 }' > $sgpi_output_PATH/ps_coords-F$swath.xy
+	prev_cut_file=$cut_file
+	cut_files_count=$((cut_files_count+1))
     done
+
+    # Calculate the arithmetic mean of all coherences files
+    gmt grdmath $sgpi_work_PATH/coherence-sum.grd $sgpi_count DIV -V = $sgpi_output_PATH/corr_arithmean-F$swath.grd
+    cp $sgpi_work_PATH/coherence-sum.grd $sgpi_output_PATH/coherence-sum.grd
+
+    # Write coords of max coherence points to file for further processing ..
+    gmt grdinfo -M -V $sgpi_work_PATH/coherence-sum.grd | grep z_max | awk '{ print $16,$19 }' > $sgpi_output_PATH/ps_coords-F$swath.xy
+
 
     if [ $clean_up -gt 0 ]; then
 	echo; echo
@@ -110,8 +105,6 @@ else
 	rm -r $sgpi_work_PATH/cut
 	echo; echo
     fi
-
-
 
     # Stop runtime timer and print runtime
     module_end=`date +%s`    

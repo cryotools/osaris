@@ -230,25 +230,25 @@ else
 
 		if [ $process_intf_mode = "pairs" ]; then
 		    echo; echo "Initializing processing in 'chronologically moving pairs' mode."; echo
-
+		    cd $OSARIS_PATH
 		    $OSARIS_PATH/lib/process-pairs.sh $config_file CMP 2>&1 >>$logfile
 		    slurm_jobname="$slurm_jobname_prefix-CMP" 
 		    $OSARIS_PATH/lib/check-queue.sh $slurm_jobname 1
 
 		elif [ $process_intf_mode = "single_master" ]; then
 		    echo; echo "Initializing processing in 'single master' mode."; echo
-
+		    cd $OSARIS_PATH
 		    $OSARIS_PATH/lib/process-pairs.sh $config_file SM 2>&1 >>$logfile		
 		    slurm_jobname="$slurm_jobname_prefix-SM" 
 		    $OSARIS_PATH/lib/check-queue.sh $slurm_jobname 1
 
 		elif [ $process_intf_mode = "both" ]; then
 		    echo; echo "Initializing processing in both 'single master' and 'chronologically moving pairs' modes.";	echo
-
+		    cd $OSARIS_PATH
 		    $OSARIS_PATH/lib/process-pairs.sh $config_file SM 2>&1 >>$logfile
 		    slurm_jobname="$slurm_jobname_prefix-SM" 
 		    $OSARIS_PATH/lib/check-queue.sh $slurm_jobname 1
-
+		    cd $OSARIS_PATH
 		    $OSARIS_PATH/lib/process-pairs.sh $config_file CMP 2>&1 >>$logfile
 		    slurm_jobname="$slurm_jobname_prefix-CMP" 
 		    $OSARIS_PATH/lib/check-queue.sh $slurm_jobname 1
