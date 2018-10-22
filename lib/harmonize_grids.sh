@@ -70,7 +70,7 @@ else
 	    
 	    if [ ! -z ${ref_point_grid_val+x} ]; then
 		# Shift input grid so that the 'stable ground value' is zero
-		gmt grdmath ${grid_input_PATH}/${grid_file} $ref_point_grid_val SUB = $HG_output_PATH/${grid_input_PATH_basename}/${grid_file::-4}-harmonized.grd -V
+		gmt grdmath ${grid_input_PATH}/${grid_file} $ref_point_grid_val SUB = $HG_output_PATH/${grid_file::-4}-harmonized.grd -V
 	    else 
 		echo "Unwrap difference calculation for stable ground point failed in ${folder}. Skipping ..."
 	    fi		    

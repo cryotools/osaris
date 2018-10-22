@@ -1,0 +1,25 @@
+##################################################################
+#
+# Template configuration for the 'Mask unwrapping errors' module
+#
+# Copy to 'config' folder, rename to 'mask_unwrapping_errors.config' 
+# and fit to your machine's configuration.
+#
+#################################################################
+
+MUE_input_PATH="$output_PATH/GACOS-corrected"
+# Path to directory where the (forward) unwrapped interferograms are located
+# Default "$output_PATH/Interf_unwrpd"
+# Alternatively you may use:
+# "$output_PATH/Harmonized-grids/some_directory" if you applied time series harmonization (highly recommended), or 
+# "$output_PATH/GACOS-correction" if the gacos correction was applied previously
+
+MUE_fwdrev_sums_PATH="$output_PATH/Unwrapping-sums"
+# Path to reverse unwrapping sum results.
+# Make sure to activate reverse interferogram processing in the main config file!
+# Default: $output_PATH/Unwrapping-sums
+
+MUE_threshold="0.1"
+# The threshold of allowed difference between fwd and rev unwr. intfs.
+# All pixels with values greater +threshold and less than -threshold will be masked.
+# Default: 0.1

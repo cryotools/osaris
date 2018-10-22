@@ -42,8 +42,8 @@ else
 
     echo; echo "Harmonizing grids to reference point ..."
 
-    HG_output_PATH="$output_PATH/Harmonize-Grids"   
-    HG_work_PATH="$work_PATH/Harmonize-Grids"
+    HG_output_PATH="$output_PATH/Harmonized-grids"   
+    HG_work_PATH="$work_PATH/Harmonized-grids"
 
     mkdir -p $HG_output_PATH
     mkdir -p $HG_work_PATH
@@ -53,10 +53,10 @@ else
 	ref_point_array=(${ref_point_xy_coords//\// })	
 	ref_point_lon=${ref_point_array[0]}
 	ref_point_lat=${ref_point_array[1]}
-    elif [ -f $output_PATH/SGPI/sgp_coords.xy ]; then
+    elif [ -f $output_PATH/SGPI/sgp-coords.xy ]; then
 	# cat $output_PATH/SGPI/sgp_coords.xy > $HG_work_PATH/ref_point.xy
-	ref_point_lon=($( cat $output_PATH/SGPI/sgp_coords.xy | awk '{ print $1 }' ))
-	ref_point_lat=($( cat $output_PATH/SGPI/sgp_coords.xy | awk '{ print $2 }' ))
+	ref_point_lon=($( cat $output_PATH/SGPI/sgp-coords.xy | awk '{ print $1 }' ))
+	ref_point_lat=($( cat $output_PATH/SGPI/sgp-coords.xy | awk '{ print $2 }' ))
     else
 	echo "ERROR: No reference point coordinates found in harmonize_grids.config or sgp_coords.xy."
 	echo "Exiting module 'Harmonize Grids'."
@@ -66,7 +66,7 @@ else
 	if [ ! -d "$grid_dir" ]; then
 	    echo; echo "ERROR: Directory $grid_dir does not exist. Skipping ..."
 	else
-	    grid_dir_basename=$( basename "$PWD" )
+	    grid_dir_basename=$( basename "$grid_dir" )
 	    mkdir -p ${HG_output_PATH}/${grid_dir_basename}
 
 	    $OSARIS_PATH/lib/harmonize_grids.sh "$grid_dir" "${ref_point_lon}/${ref_point_lat}" "${HG_output_PATH}/${grid_dir_basename}"

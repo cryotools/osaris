@@ -17,7 +17,7 @@
 #####################################################################
 
 
-if [ $# -lt 2 ]; then
+if [ ! -d $1 ]; then
     echo
     echo "Usage: min_grd_extent.sh path"  
     echo
@@ -30,7 +30,7 @@ else
 
     min_ext_files=($( ls *.grd ))
 
-    for min_ext_file in ${min_ext_files[@]}; do
+    for min_ext_file in "${min_ext_files[@]}"; do
 	if [ "$min_ext_count" -eq 1 ]; then		
 	    min_ext_prev_file=$min_ext_file
 	else 

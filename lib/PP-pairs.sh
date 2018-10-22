@@ -14,8 +14,6 @@ gmtsar_config_file=$7
 OSARIS_PATH=$8
 direction=$9
 
-folder="Pairs-$direction"
-
 
 echo "Reading configuration file $config_file" 
 if [ ${config_file:0:2} = "./" ]; then
@@ -107,32 +105,37 @@ intf_dir=($( ls ))
 
 echo; echo "Checking results and moving to files to Output directory ..."; echo
 
-mkdir -p $output_PATH/Amplitudes
-cp ./$intf_dir/display_amp_ll.grd $output_PATH/Amplitudes/${previous_scene:15:8}--${current_scene:15:8}-amplitude.grd
-if [ -f "$output_PATH/Amplitudes/${previous_scene:15:8}--${current_scene:15:8}-amplitude.grd" ]; then status_amp=1; else status_amp=0; fi
+if [ ! "$direction" == "reverse" ]; then
+    mkdir -p $output_PATH/Amplitudes
+    cp ./$intf_dir/display_amp_ll.grd $output_PATH/Amplitudes/${previous_scene:15:8}--${current_scene:15:8}-amplitude.grd
+    if [ -f "$output_PATH/Amplitudes/${previous_scene:15:8}--${current_scene:15:8}-amplitude.grd" ]; then status_amp=1; else status_amp=0; fi
 
-mkdir -p $output_PATH/Conn-comps
-cp ./$intf_dir/con_comp_ll.grd $output_PATH/Conn-comps/${previous_scene:15:8}--${current_scene:15:8}-conn_comp.grd
-if [ -f "$output_PATH/Conn-comps/${previous_scene:15:8}--${current_scene:15:8}-conn_comp.grd" ]; then status_ccp=1; else status_ccp=0; fi
+    mkdir -p $output_PATH/Conn-comps
+    cp ./$intf_dir/con_comp_ll.grd $output_PATH/Conn-comps/${previous_scene:15:8}--${current_scene:15:8}-conn_comp.grd
+    if [ -f "$output_PATH/Conn-comps/${previous_scene:15:8}--${current_scene:15:8}-conn_comp.grd" ]; then status_ccp=1; else status_ccp=0; fi
 
-mkdir -p $output_PATH/Coherences
-cp ./$intf_dir/corr_ll.grd $output_PATH/Coherences/${previous_scene:15:8}--${current_scene:15:8}-coherence.grd
-if [ -f "$output_PATH/Coherences/${previous_scene:15:8}--${current_scene:15:8}-coherence.grd" ]; then status_coh=1; else status_coh=0; fi
+    mkdir -p $output_PATH/Coherences
+    cp ./$intf_dir/corr_ll.grd $output_PATH/Coherences/${previous_scene:15:8}--${current_scene:15:8}-coherence.grd
+    if [ -f "$output_PATH/Coherences/${previous_scene:15:8}--${current_scene:15:8}-coherence.grd" ]; then status_coh=1; else status_coh=0; fi
 
-mkdir -p $output_PATH/Interferograms
-cp ./$intf_dir/phasefilt_mask_ll.grd $output_PATH/Interferograms/${previous_scene:15:8}--${current_scene:15:8}-interferogram.grd
-if [ -f "$output_PATH/Interferograms/${previous_scene:15:8}--${current_scene:15:8}-interferogram.grd" ]; then status_pha=1; else status_pha=0; fi
+    mkdir -p $output_PATH/Interferograms
+    cp ./$intf_dir/phasefilt_mask_ll.grd $output_PATH/Interferograms/${previous_scene:15:8}--${current_scene:15:8}-interferogram.grd
+    if [ -f "$output_PATH/Interferograms/${previous_scene:15:8}--${current_scene:15:8}-interferogram.grd" ]; then status_pha=1; else status_pha=0; fi
 
-unwrapping_active=`grep threshold_snaphu $OSARIS_PATH/$gmtsar_config_file | awk '{ print $3 }'`
+    unwrapping_active=`grep threshold_snaphu $OSARIS_PATH/$gmtsar_config_file | awk '{ print $3 }'`
 
-if (( $(echo "$unwrapping_active > 0" | bc -l ) )); then
-    mkdir -p $output_PATH/Interf-unwrpd
-    cp ./$intf_dir/unwrap_mask_ll.grd $output_PATH/Interf-unwrpd/${previous_scene:15:8}--${current_scene:15:8}-interf_unwrpd.grd
-    if [ -f "$output_PATH/Interf-unwrpd/${previous_scene:15:8}--${current_scene:15:8}-interf_unwrpd.grd" ]; then status_unw=1; else status_unw=0; fi
+    if (( $(echo "$unwrapping_active > 0" | bc -l ) )); then
+	mkdir -p $output_PATH/Interf-unwrpd
+	cp ./$intf_dir/unwrap_mask_ll.grd $output_PATH/Interf-unwrpd/${previous_scene:15:8}--${current_scene:15:8}-interf_unwrpd.grd
+	if [ -f "$output_PATH/Interf-unwrpd/${previous_scene:15:8}--${current_scene:15:8}-interf_unwrpd.grd" ]; then status_unw=1; else status_unw=0; fi
+    else
+	status_unw=2
+    fi
 else
-    status_unw=2
+    mkdir -p $output_PATH/Interf-unwrpd-rev
+    cp ./$intf_dir/unwrap_mask_ll.grd $output_PATH/Interf-unwrpd-rev/${previous_scene:15:8}--${current_scene:15:8}-interf_unwrpd.grd
+    if [ -f "$output_PATH/Interf-unwrpd-rev/${previous_scene:15:8}--${current_scene:15:8}-interf_unwrpd.grd" ]; then status_unw=1; else status_unw=0; fi
 fi
-
 
 end=`date +%s`
 runtime=$((end-start))

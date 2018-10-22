@@ -12,11 +12,11 @@
 # Requires processed GMTSAR coherence files (corr_ll.grd) as input.
 #
 # Output files will be written to $output_PATH/SGPI:
-#   - sgp_coords-F$swath.xy    -> Coordinates of max. coherence the stack.
+#   - sgp-coords.xy    -> Coordinates of max. coherence the stack.
 #                                 Input file for other modules, including
 #                                 'Harmonize Grids' and 'GACOS Correction'
-#   - corr_sum-F$swath.grd     -> Sum of coherences from stack (grid)
-#   - corr_arithmean-F$swath   -> Arith. mean of coherences (grid)
+#   - coherence-sum.grd     -> Sum of coherences from stack (grid)
+#   - cohehernce-arithmean.grd   -> Arith. mean of coherences (grid)
 #
 #
 # David Loibl, 2018
@@ -75,28 +75,29 @@ else
     cd $sgpi_work_PATH/cut
     rm *-cut.grd
     cut_files=($(ls *.grd))
-    cut_files_count=1
+    cut_files_count=0
     for cut_file in "${cut_files[@]}"; do
-	if [ "$cut_files_count" -eq 1 ]; then
+	if [ "$cut_files_count" -eq 0 ]; then
 	    if [ $debug -gt 1 ]; then echo "First file $cut_file"; fi
-	elif [ "$cut_files_count" -eq 2 ]; then	
-	    if [ $debug -gt 0 ]; then echo "Addition of coherence from $cut_file and $prev_cut_file ..."; fi
-	    gmt grdmath $cut_file $prev_cut_file ADD -V = $sgpi_work_PATH/coherence-sum.grd
+	    cp $cut_file $sgpi_work_PATH/coherence-sum.grd
+	# elif [ "$cut_files_count" -eq 2 ]; then	
+	#     if [ $debug -gt 0 ]; then echo "Addition of coherence from $cut_file and $prev_cut_file ..."; fi
+	#     gmt grdmath $cut_file $prev_cut_file ADD -V = $sgpi_work_PATH/coherence-sum.grd
 	else
 	    if [ $debug -gt 0 ]; then echo "Adding coherence from $cut_file ..."; fi
 	    gmt grdmath $cut_file $sgpi_work_PATH/coherence-sum.grd ADD -V = $sgpi_work_PATH/coherence-sum.grd
 	fi
 
-	prev_cut_file=$cut_file
+	# prev_cut_file=$cut_file
 	cut_files_count=$((cut_files_count+1))
     done
 
     # Calculate the arithmetic mean of all coherences files
-    gmt grdmath $sgpi_work_PATH/coherence-sum.grd $sgpi_count DIV -V = $sgpi_output_PATH/corr_arithmean-F$swath.grd
+    gmt grdmath $sgpi_work_PATH/coherence-sum.grd $cut_files_count DIV -V = $sgpi_output_PATH/coherence-arithmean.grd
     cp $sgpi_work_PATH/coherence-sum.grd $sgpi_output_PATH/coherence-sum.grd
 
     # Write coords of max coherence points to file for further processing ..
-    gmt grdinfo -M -V $sgpi_work_PATH/coherence-sum.grd | grep z_max | awk '{ print $16,$19 }' > $sgpi_output_PATH/ps_coords-F$swath.xy
+    gmt grdinfo -M -V $sgpi_work_PATH/coherence-sum.grd | grep z_max | awk '{ print $16,$19 }' > $sgpi_output_PATH/sgp-coords.xy
 
 
     if [ $clean_up -gt 0 ]; then

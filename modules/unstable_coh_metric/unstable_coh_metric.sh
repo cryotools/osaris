@@ -23,7 +23,6 @@ else
 
     source $OSARIS_PATH/config/unstable_coh_metric.config   
  
-
     rm -rf $work_PATH/UCM
 
     mkdir -p $work_PATH/UCM/cut_files
@@ -31,56 +30,48 @@ else
     mkdir -p $output_PATH/UCM/
     mkdir -p $work_PATH/UCM/input
 
-    base_PATH=$output_PATH/Pairs-forward
+    base_PATH=$output_PATH/Coherences
     cd $base_PATH
 
-    folders=($( ls -d */ ))
-    for folder in "${folders[@]}"; do
-	folder=${folder::-1}
-	ln -s $base_PATH/$folder/corr_ll.grd $work_PATH/UCM/input/corr_${folder}.grd
+    coh_files=($( ls *.grd ))
+    
+    for coh_file in "${coh_files[@]}"; do
+	ln -s $base_PATH/$coh_file $work_PATH/UCM/input/$coh_file
     done
 
     count=0
-    for swath in ${swaths_to_process[@]}; do
-	cd $base_PATH
 
-	# Obtain minimum boundary box for corr_ll.grd files
-	min_grd_extent_file=corr_ll.grd
-	min_bb=$( $OSARIS_PATH/lib/min_grd_extent.sh corr_ll.grd $base_PATH $swath )       
+    # Obtain minimum boundary box for coherence files   
+    min_bb=$( $OSARIS_PATH/lib/min_grd_extent.sh $base_PATH )           
+    echo "Minimum boundary box: $min_bb"
 
-	cd $work_PATH/UCM/input
+    for coh_file in "${coh_files[@]}"; do 
+	if [ "$count" -gt "0" ]; then
+	    prev_coh_file=${coh_files[$( bc <<< $count-1 )]}
 
-	corr_files=(*F$swath.grd)
+	    slurm_jobname="$slurm_jobname_prefix-UCM"		
 
-	for corr_file in ${corr_files[@]}; do
-	    if [ "$count" -gt "0" ]; then
-
-		prev_corr_file=${corr_files[$( bc <<< $count-1 )]}
-
-		slurm_jobname="$slurm_jobname_prefix-UCM"		
-
-		sbatch \
-		    --output=$log_PATH/UCM-%j.log \
-		    --error=$log_PATH/UCM-%j.log \
-		    --workdir=$input_PATH \
-		    --job-name=$slurm_jobname \
-		    --qos=$slurm_qos \
-		    --account=$slurm_account \
-		    --partition=$slurm_partition \
-		    --mail-type=$slurm_mailtype \
-		    $OSARIS_PATH/modules/unstable_coh_metric/UCM-batch.sh \
-		    $work_PATH/UCM \
-		    $output_PATH/UCM \
-		    $corr_file \
-		    $prev_corr_file \
-		    $high_corr_threshold \
-		    $min_bb \
-		    $swath
-		
-	    fi
-	    ((count++))
-	done
+	    sbatch \
+		--output=$log_PATH/UCM-%j.log \
+		--error=$log_PATH/UCM-%j.log \
+		--workdir=$input_PATH \
+		--job-name=$slurm_jobname \
+		--qos=$slurm_qos \
+		--account=$slurm_account \
+		--partition=$slurm_partition \
+		--mail-type=$slurm_mailtype \
+		$OSARIS_PATH/modules/unstable_coh_metric/UCM-batch.sh \
+		$work_PATH/UCM \
+		$output_PATH/UCM \
+		$coh_file \
+		$prev_coh_file \
+		$high_corr_threshold \
+		$min_bb
+	    
+	fi
+	((count++))
     done
+
 
 
     $OSARIS_PATH/lib/check-queue.sh $slurm_jobname 2 0

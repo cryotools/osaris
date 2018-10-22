@@ -302,21 +302,18 @@ else
     if [ "$process_reverse_intfs" -eq 1 ]; then
 	echo; echo - - - - - - - - - - - - - - - -; echo "Processing differences between forward and reverse pairs of unwrapped interferograms ...";	echo
 	
-	cd $output_PATH/Pairs-forward
+	cd $output_PATH/Interf-unwrpd
 	
-	for swath in ${swaths_to_process[@]}; do
-	    folders=($( ls -d *-F$swath/ ))
-	    for folder in "${folders[@]}"; do
-		folder=${folder::-1}
-		scene_id_1=${folder:0:8}
-		scene_id_2=${folder:10:8}
-		echo "Scene ID 1: $scene_id_1 \n Scene ID 2: $scene_id_2 "
-		$OSARIS_PATH/lib/unwrapping-sum.sh \
-		    $output_PATH/Pairs-forward/$folder/unwrap_mask_ll.grd \
-		    $output_PATH/Pairs-reverse/${scene_id_2}--${scene_id_1}-F$swath/unwrap_mask_ll.grd \
-		    $output_PATH/Unwrapping-sums \
-		    ${folder}-fwd-rev-sum 2>&1 >>$logfile
-	    done
+	intf_files=($( ls *.grd ))
+	for intf_file in "${intf_files[@]}"; do
+	    scene_id_1=${intf_file:0:8}
+	    scene_id_2=${intf_file:10:8}
+	    echo "Scene ID 1: $scene_id_1 \n Scene ID 2: $scene_id_2 "
+	    $OSARIS_PATH/lib/unwrapping-sum.sh \
+		$output_PATH/Interf-unwrpd/${scene_id_1}--${scene_id_2}-interf_unwrpd.grd \
+		$output_PATH/Interf-unwrpd-rev/${scene_id_2}--${scene_id_1}-interf_unwrpd.grd \
+		$output_PATH/Unwrapping-sums \
+		${scene_id_1}--${scene_id_2}-fwd-rev-sum 2>&1 >>$logfile
 	done
     fi
 
