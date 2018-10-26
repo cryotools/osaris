@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 convertsecs() {
     ((h=${1}/3600))

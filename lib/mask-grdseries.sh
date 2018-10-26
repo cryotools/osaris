@@ -37,14 +37,13 @@ else
     ref_point_xy_coords=$2
     HG_output_PATH=$3
     HG_work_PATH="$work_PATH/Harmonize-Grids"
-   
-    mkdir -p $HG_output_PATH
-    mkdir -p $HG_work_PATH
-   
+    
     echo "Reference point is set to $ref_point_xy_coords"
     ref_point_array=(${ref_point_xy_coords//\// })
     echo "${ref_point_array[0]} ${ref_point_array[1]}" > $HG_work_PATH/ref_point.xy
 
+    mkdir -p $HG_output_PATH
+    mkdir -p $HG_work_PATH
                 
     if [ ! -d "$grid_input_PATH" ]; then
 	echo; echo "ERROR: Directory $grid_input_PATH does not exist. Skipping ..."
