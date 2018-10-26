@@ -10,7 +10,22 @@
 gacos_PATH="/path/to/GACOS-data"
 # Path to directory where the GACOS files are located
 
+unwrp_intf_PATH="$output_PATH/Interf-unwrpd"
+# Path to unwrapped interferograms
+# Default: $output_PATH/Interf-unwrpd
+
+referene_point="SGPI"
+# The 'stable ground' reference point to which data will be harmonized.
+# Options:
+# Coordinates   -> Manually define reference point (dec. degrees, format longitude/latitude)
+# SGPI          -> Write 'SGPI' to obtain coordinates from 'SGP Identification' result file.
+
+harmonize_input_grids=1
+# Harmonize input unwrapped interferograms relative to 'stable ground point' before
+# applying the GACOS correction. Required if the dataset was not harmonized in a prior step.
+# 0             -> Deactivate, no harmonization
+# 1             -> Activate harmonization, will use the reference defined in the 'reference_point' variable (default)
+
 gacos_extent="11.11/22.22/33.33/44.44"
 # The extent of the map window in decimal degrees 
 # Format: lon_min/lon_max/lat_min/lat_max
-

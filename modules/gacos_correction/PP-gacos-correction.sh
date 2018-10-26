@@ -122,14 +122,8 @@ gmt grdsample $GACOS_intf_input_PATH/$intf -G$GACOS_work_PATH/cut_intfs/$intf \
     `gmt grdinfo -I ${szpddm_file::-4}-cut.grd` -V
 
 
-corrected_phase_file="$GACOS_output_PATH/${slave_date}-${master_date}-intf.grd"
+corrected_phase_file="$GACOS_output_PATH/${slave_date}--${master_date}-gacoscorr.grd"
 gmt grdmath ${szpddm_file::-4}-cut.grd $GACOS_work_PATH/cut_intfs/$intf SUB = $corrected_phase_file -V
-
-# Step 4: Linear detrending (?)
-
-
-
-
 
 
 
