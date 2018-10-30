@@ -60,7 +60,7 @@ else
 	echo "in directory $MUE_input_PATH"
 	echo; echo "FWD-REV PATH: $MUE_fwdrev_sums_PATH"
 
-	input_match=$( ls ${grd_file:0:8}-${grd_file:10:8}*.grd )
+	input_match=$( ls ${grd_file:0:8}--${grd_file:10:8}*.grd )
 	
 	if [ ! -f "$input_match" ]; then
 	    echo "No matching unwrapped interferogram found for ${grd_file}. Skipping ..."

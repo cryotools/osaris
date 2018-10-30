@@ -27,6 +27,7 @@ else
     ############################
     # Module actions start here
     
+    echo; echo "Starting Detrend module ..."; echo
    
     RT_work_PATH="$work_PATH/Detrend"
     RT_output_PATH="$output_PATH/Detrend"
@@ -36,17 +37,24 @@ else
 	check_input=0
     else	    
 	cd "$RT_grid_input_PATH"
-	grid_files=$( ls *.grd )
+	grid_files=($( ls *.grd ))
 	if [ ! -z "$grid_files" ]; then	    
+	    echo "Found ${#grid_files[@]} grid files in ${RT_grid_input_PATH}."
 	    check_input=1
 	else
 	    echo; echo "ERROR: No grid files found in $RT_grid_input_PATH. Exiting ..."
 	    check_input=0
 	fi
     fi
+
+    if [ -z $RT_model ]; then
+	echo "Parameter RT_model not set in config/${module_name}.config ..."
+	echo "Setting RT_model to 10+r (bicubic + iterative processing)"
+	RT_model="10+r"
+    fi
     
     if [ "$check_input" -eq 1 ]; then
-	
+	echo "Input data looks good, initializing trend removal ..."
 	mkdir -p "$RT_work_PATH"
 	mkdir -p "$RT_output_PATH"
 
@@ -62,7 +70,7 @@ else
 
 
 	for grid_file in ${grid_files[@]}; do
-
+	    echo "Detrending $grid_file ..."
 	    if [ "$RT_safe_trend_files" -eq 1 ]; then
 		trend_export="-T${RT_output_PATH}/Trend-surfaces/${grid-file::-4}-trend.grd"
 	    else
@@ -70,11 +78,9 @@ else
 	    fi
 
 	    # Remove trends
-	    if [ ! -z $remove_trends ]; then
-		if [ ! "$remove_trends" == "none" ]; then
-		    gmt grdtrend "${RT_grid_input_PATH}/${grid_file}" -N$RT_model -D${RT_output_PATH}/${grid_file::-4}-detrend.grd $trend_export -V
-		fi
-	    fi
+
+	    gmt grdtrend "${RT_grid_input_PATH}/${grid_file}" -N$RT_model -D${RT_output_PATH}/${grid_file::-4}-detrend.grd $trend_export -V	    
+	    
 
 	done
     fi
