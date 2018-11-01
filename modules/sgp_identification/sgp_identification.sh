@@ -25,16 +25,31 @@
 
 module_name="sgp_identification"
 
-if [ ! -f "$OSARIS_PATH/config/${module_name}.config" ]; then
+
+if [ -z $module_config_PATH ]; then
+    echo "Parameter module_config_PATH not set in main config file. Setting to default:"
+    echo "  $OSARIS_PATH/config"
+    module_config_PATH="$OSARIS_PATH/config"
+elif [[ "$module_config_PATH" != /* ]] && [[ "$module_config_PATH" != "$OSARIS_PATH"* ]]; then
+    module_config_PATH="${OSARIS_PATH}/config/${module_config_PATH}"    
+fi
+
+if [ ! -d "$module_config_PATH" ]; then
+    echo "ERROR: $module_config_PATH is not a valid directory. Check parameter module_config_PATH in main config file. Exiting ..."
+    exit 2
+fi
+
+if [ ! -f "${module_config_PATH}/${module_name}.config" ]; then
     echo
-    echo "Cannot open ${module_name}.config in the OSARIS config folder. Please provide a valid config file."
+    echo "Cannot open ${module_name}.config in ${module_config_PATH}. Please provide a valid config file."
     echo
 else
     # Start runtime timer
-    module_start=`date +%s`
+    gacos_start=`date +%s`
 
     # Include the config file
-    source $OSARIS_PATH/config/${module_name}.config
+    source ${module_config_PATH}/${module_name}.config
+
 
 
 
