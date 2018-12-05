@@ -36,9 +36,9 @@ log_PATH=$base_PATH/$prefix/Output/Log
 
 job_ID=${previous_scene:15:8}--${current_scene:15:8}
 
-mkdir -pv $work_PATH/$folder/$job_ID/F$swath/raw 
-mkdir -pv $work_PATH/$folder/$job_ID/F$swath/topo 
-cd $work_PATH/$folder/$job_ID/F$swath/topo; ln -sf $topo_PATH/dem.grd .;
+mkdir -pv $work_PATH/$job_ID/F$swath/raw 
+mkdir -pv $work_PATH/$job_ID/F$swath/topo 
+cd $work_PATH/$job_ID/F$swath/topo; ln -sf $topo_PATH/dem.grd .;
 
 cd $work_PATH/raw/$job_ID-aligned/
 
@@ -61,10 +61,10 @@ else
     align_tops.csh $previous_scene $previous_orbit $current_scene $current_orbit dem.grd
 fi
 
-cd $work_PATH/$folder/$job_ID/F$swath/raw/
+cd $work_PATH/$job_ID/F$swath/raw/
 ln -sf $work_PATH/raw/$job_ID-aligned/*F$swath* .
     
-cd $work_PATH/$folder/$job_ID/F$swath/
+cd $work_PATH/$job_ID/F$swath/
 
 
 
@@ -90,17 +90,19 @@ else
     echo "S1A${previous_scene:15:8}_${previous_scene:24:6}_F$swath"
     echo "S1A${current_scene:15:8}_${current_scene:24:6}_F$swath"
     echo "$gmtsar_config_file" 
+    echo "Current directory: $( pwd )"
+    echo
 
     # p2p_S1A_TOPS.csh
     $OSARIS_PATH/lib/GMTSAR-mods/p2p_S1_OSARIS.csh \
-	S1A${previous_scene:15:8}_${previous_scene:24:6}_F$swath \
-	S1A${current_scene:15:8}_${current_scene:24:6}_F$swath \
+	S1_${previous_scene:15:8}_${previous_scene:24:6}_F$swath \
+	S1_${current_scene:15:8}_${current_scene:24:6}_F$swath \
 	$OSARIS_PATH/$gmtsar_config_file \
-	$OSARIS_PATH
+	$OSARIS_PATH 
 
 fi
 
-cd $work_PATH/$folder/$job_ID/F$swath/intf/
+cd $work_PATH/$job_ID/F$swath/intf/
 intf_dir=($( ls )) 
 
 echo; echo "Checking results and moving to files to Output directory ..."; echo
