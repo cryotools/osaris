@@ -61,21 +61,24 @@ else
 	    echo "Variable stats_input_PATH must be set to a valid directory in statistics.config. Exiting module Statistics."; echo
 	else
 
-	    cd $stats_input_PATH
-	    
-	    folder=${stats_input_PATH%/}
-	    folder=${folder##*/}
+	    cd $stats_input_PATH	    	    
 	    
 	    if [ "$stats_subdirs" -eq 0 ]; then
 
 		# List and stats all files of specified filename
 
-		for stats_input_filename in ${stats_input_filenames[@]}; do
-		    
-		    stats_filename_mod=${stats_input_filename/\*/_}
-		    stats_output_file="$stats_output_PATH/${folder}-${stats_input_filename_mod}.csv"
-		    
-		    echo "Start date,End date,Days,Min,Max,Median,Scale,Mean,Std. dev.,Mode" > $stats_output_file
+		# Prepare some general vars and filenames ..
+		folder=${stats_input_PATH%/}
+		folder=${folder##*/}
+
+		stats_filename_mod=${stats_input_filename/\*/_}
+		stats_output_file="$stats_output_PATH/${folder}-${stats_input_filename_mod}.csv"
+		
+		# Create the output file
+		echo "Start date,End date,Days,Min,Max,Median,Scale,Mean,Std. dev.,Mode" > $stats_output_file
+
+		# Loop through all files ...
+		for stats_input_filename in ${stats_input_filenames[@]}; do		    		    
 		    
 		    stats_files=($( ls $stats_input_filename ))
 
