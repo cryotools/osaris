@@ -4,8 +4,6 @@
 #
 # OSARIS module to crop grid files.
 #
-# 
-#
 # David Loibl, 2018
 #
 #####################################################################
@@ -58,7 +56,7 @@ else
 		crop_region_counter=0
 		for crop_region in ${crop_region_labels[@]}; do
 		    gmt grdcut $crop_file \
-			-G$crop_output_PATH/$crop_region/crop_$crop_file \
+			-G$crop_output_PATH/$crop_region/${crop_file::-4}-crop.grd \
 			-R${crop_regions[$crop_region_counter]} -V
 		    ((crop_region_counter++))
 		done

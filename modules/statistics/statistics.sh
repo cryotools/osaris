@@ -53,47 +53,53 @@ else
     stats_output_PATH=$output_PATH/Statistics
 
 
-    if [ ! -z $stats_input_filenames ]; then
-	if [ -d $stats_input_PATH ]; then
+    if [ "${#stats_input_filenames[@]}" -lt 1 ]; then
+	echo "Required variable stats_input_filesnames not set. Aborting statistics calculation ..."
+    else
+	if [ ! -d $stats_input_PATH ]; then
+	    echo; echo "Error: $stats_input_PATH does not exist."
+	    echo "Variable stats_input_PATH must be set to a valid directory in statistics.config. Exiting module Statistics."; echo
+	else
 
 	    cd $stats_input_PATH
-
+	    
+	    folder=${stats_input_PATH%/}
+	    folder=${folder##*/}
+	    
 	    if [ "$stats_subdirs" -eq 0 ]; then
 
 		# List and stats all files of specified filename
 
 		for stats_input_filename in ${stats_input_filenames[@]}; do
-
-			stats_filename_mod=${stats_input_filename/\*/_}
-			stats_output_file="$stats_output_PATH/${folder}-${stats_input_filename_mod}.csv"
-
-
-			
-			echo "Start date,End date,Days,Min,Max,Median,Scale,Mean,Std. dev.,Mode" > $stats_output_file
+		    
+		    stats_filename_mod=${stats_input_filename/\*/_}
+		    stats_output_file="$stats_output_PATH/${folder}-${stats_input_filename_mod}.csv"
+		    
+		    echo "Start date,End date,Days,Min,Max,Median,Scale,Mean,Std. dev.,Mode" > $stats_output_file
 		    
 		    stats_files=($( ls $stats_input_filename ))
 
 		    for stats_file in ${stats_files[@]}; do			
 
-			echo "Adding statistics for $folder/$stats_file ..."
+			echo "Adding statistics for $stats_file ..."
 		    	
 			stats_start_date=${stats_file:0:8}
 			stats_end_date=${stats_file:10:8}
 			take_diff=$(( ($(date --date="$stats_end_date" +%s) - $(date --date="$stats_start_date" +%s) )/(60*60*24) ))
-			if [ -f $folder/$stats_input_filename ]; then
-			    gmt grdinfo -La $folder/$stats_input_filename > $work_PATH/Statistics/${stats_input_filename}-$folder.txt
-			    stats_min=$( cat $work_PATH/Statistics/${stats_input_filename}-$folder.txt | grep z_min | awk '{ print $3 }' )
-			    stats_max=$( cat $work_PATH/Statistics/${stats_input_filename}-$folder.txt | grep z_min | awk '{ print $5 }' )
-			    stats_mean=$( cat $work_PATH/Statistics/${stats_input_filename}-$folder.txt | grep mean | awk '{ print $3 }' )
-			    stats_stddev=$( cat $work_PATH/Statistics/${stats_input_filename}-$folder.txt | grep mean | awk '{ print $5 }' )
-			    stats_median=$( cat $work_PATH/Statistics/${stats_input_filename}-$folder.txt | grep median | awk '{ print $3 }' )
-			    stats_scale=$( cat $work_PATH/Statistics/${stats_input_filename}-$folder.txt | grep median | awk '{ print $5 }' )
-			    stats_mode=$( cat $work_PATH/Statistics/${stats_input_filename}-$folder.txt | grep mode | awk '{ print $3 }' )
+			if [ -f $stats_input_filename ]; then
+			    gmt grdinfo -La $stats_input_filename > $work_PATH/Statistics/${stats_input_filename}.txt
+			    stats_min=$( cat $work_PATH/Statistics/${stats_input_filename}.txt | grep z_min | awk '{ print $3 }' )
+			    stats_max=$( cat $work_PATH/Statistics/${stats_input_filename}.txt | grep z_min | awk '{ print $5 }' )
+			    stats_mean=$( cat $work_PATH/Statistics/${stats_input_filename}.txt | grep mean | awk '{ print $3 }' )
+			    stats_stddev=$( cat $work_PATH/Statistics/${stats_input_filename}.txt | grep mean | awk '{ print $5 }' )
+			    stats_median=$( cat $work_PATH/Statistics/${stats_input_filename}.txt | grep median | awk '{ print $3 }' )
+			    stats_scale=$( cat $work_PATH/Statistics/${stats_input_filename}.txt | grep median | awk '{ print $5 }' )
+			    stats_mode=$( cat $work_PATH/Statistics/${stats_input_filename}.txt | grep mode | awk '{ print $3 }' )
 			    #{$stats_id},
 			    echo "${stats_start_date},${stats_end_date},${take_diff},${stats_min},${stats_max},${stats_median},${stats_scale},${stats_mean},${stats_stddev},${stats_mode}" >> $stats_output_file
 			    
 			else 
-			    echo "$stats_input_filename not found in folder ${folder}, setting values to NaN ..."
+			    echo "$stats_input_filename not found, setting values to NaN ..."
 			    echo "${stats_start_date},${stats_end_date},${take_diff},NaN,NaN,NaN,NaN,NaN,NaN,NaN" >> $stats_output_file
 			fi
 
@@ -109,6 +115,7 @@ else
 		cd $stats_input_PATH
 
 		folders=($( ls -d */ ))
+		echo; echo "Found ${#folders[@]} subdirectories: ${folders[@]}"; echo
 		stats_id=0
 		for folder in "${folders[@]}"; do           
 		    folder=${folder::-1}
@@ -157,18 +164,15 @@ else
 
 			    ((stats_id++))
 			done
-		    done
 
-		    cd ..
+			cd ..
+
+		    done		    
 
 		done
 	    fi
-	else
-	    echo; echo "Error: $stats_input_PATH does not exist."
-	    echo "Variable stats_input_PATH must be set to a valid directory in statistics.config. Exiting module Statistics."; echo
+	
 	fi
-    else
-	echo "Required variable stats_input_filesnames not set. Aborting statistics calculation ..."
     fi
 
 

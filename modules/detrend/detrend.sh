@@ -26,7 +26,7 @@ fi
 
 if [ ! -f "${module_config_PATH}/${module_name}.config" ]; then
     echo
-    echo "Cannot open ${module_name}.config in the OSARIS config folder. Please provide a valid config file."
+    echo "Cannot open ${module_name}.config in ${module_config_PATH}. Please provide a valid config file."
     echo
 else
     # Start runtime timer
