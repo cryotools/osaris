@@ -32,7 +32,7 @@ if [ ! -f "${module_config_PATH}/${module_name}.config" ]; then
     echo
 else
     # Start runtime timer
-    module_start=`date +%s`
+    displ_start=`date +%s`
 
     # Include the config file
     source ${module_config_PATH}/${module_name}.config
