@@ -85,7 +85,7 @@ else
 	for grid_file in ${grid_files[@]}; do
 	    echo "Detrending $grid_file ..."
 	    if [ "$RT_safe_trend_files" -eq 1 ]; then
-		trend_export="-T${RT_output_PATH}/Trend-surfaces/${grid-file::-4}-trend.grd"
+		trend_export="-T${RT_output_PATH}/Trend-surfaces/${grid_file::-4}-trend.grd"
 	    else
 		trend_export=""
 	    fi
