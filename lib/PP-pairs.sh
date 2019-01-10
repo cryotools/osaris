@@ -55,7 +55,7 @@ echo "align_tops.csh $previous_scene $previous_orbit $current_scene $current_orb
 echo
 echo
 
-if [ "$cut_to_aoi" -eq 1 ]; then
+if [ "$cut_to_aoi" -eq 1 ] && [ ! ${#swaths_to_process[@]} -gt 1 ]; then
     $OSARIS_PATH/lib/GMTSAR-mods/align_cut_tops.csh $previous_scene $previous_orbit $current_scene $current_orbit dem.grd
 else
     align_tops.csh $previous_scene $previous_orbit $current_scene $current_orbit dem.grd
@@ -77,12 +77,29 @@ cd $work_PATH/$job_ID/F$swath/
 
 if [ ${#swaths_to_process[@]} -gt 1 ]; then
     echo; echo "Multiple swaths mode (${#swaths_to_process[@]} swaths) ..."
+    echo 
+    echo "- - - - - - - - - - - - - - - - - - - - "
+    echo "Starting p2p_S1A_TOPS with options:"
+    echo "S1A${previous_scene:15:8}_${previous_scene:24:6}_F$swath"
+    echo "S1A${current_scene:15:8}_${current_scene:24:6}_F$swath"
+    echo "$gmtsar_config_file" 
+    echo "Current directory: $( pwd )"
+    echo
+
+    # p2p_S1A_TOPS.csh
+    $OSARIS_PATH/lib/GMTSAR-mods/p2p_S1_OSARIS.csh \
+	S1_${previous_scene:15:8}_${previous_scene:24:6}_F$swath \
+	S1_${current_scene:15:8}_${current_scene:24:6}_F$swath \
+	$OSARIS_PATH/$gmtsar_config_file \
+	$OSARIS_PATH 
+
+
     # Conduct merging of swaths
     # Step 1: check if swaths have the same count in azimuth
     # Step 2: merge swaths
     # Step 3: Cut to AOI extend
 else
-    echo "Single swath mode ..."
+    echo; echo "Single swath mode ..."
     # Proceed to phase unwrapping ....
     echo 
     echo "- - - - - - - - - - - - - - - - - - - - "

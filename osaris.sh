@@ -28,13 +28,24 @@ else
 	module_array=("${@}")
 	module_count=${#module_array[@]}
 	if [ $module_count -gt 0 ]; then
-	    for module in "${module_array[@]}"; do	   
+	    for module in "${module_array[@]}"; do
 		# Check if module exists		
 		if [ -d "$OSARIS_PATH/modules/$module" ]; then
 		    if [ -f "$OSARIS_PATH/modules/$module/$module.sh" ]; then
 			# Everthing looks fine, include the module
 			echo; echo "Starting module $module"; echo
+
+			# Start module time measurement
+			printf '\n\n$module\n' >> $output_PATH/Reports/$report_filename
+			module_timer_start=$( date +%s )
+			
 			source $OSARIS_PATH/modules/$module/$module.sh &>>$log_PATH/$module.log
+
+			# Finish time measurement and add to report
+			module_timer_end=$( date +%s )	    
+			module_walltime=$((module_timer_end-module_timer_start))	    	    
+			printf 'Wallclock time:\t %02dd %02dh:%02dm:%02ds\n' $(($module_walltime/86400)) $(($module_walltime%86400/3600)) $(($module_walltime%3600/60)) $(($module_walltime%60)) >> $output_PATH/Reports/$report_filename
+
 			echo "Log file will be written to $log_PATH/$module.log"
 		    else
 			echo; echo "WARNING: File $module.sh not found in module directory. Skipping."; echo
@@ -143,16 +154,29 @@ else
 
     # Update orbits when requested
     if [ "$update_orbits" -eq 1 ]; then
+
+	# Start orbit update time measurement
+	printf '\n\nOrbit download\n' >> $output_PATH/Reports/$report_filename
+	orbit_timer_start=$( date +%s )	
+
 	echo; echo - - - - - - - - - - - - - - - -; echo "Updating orbit data ..."; echo
 	
 	source $OSARIS_PATH/lib/s1-orbit-download.sh $orbits_PATH 5 &>>$logfile
 
 	echo; echo "Orbit update finished"; echo - - - - - - - - - - - - - - - - ; echo
+	
+	# Finish time measurement and add to report
+	orbit_timer_end=$( date +%s )	    
+	orbit_walltime=$((orbit_timer_end-orbit_timer_start))	    	    
+	printf 'Wallclock time:\t %02dd %02dh:%02dm:%02ds\n' $(($orbit_walltime/86400)) $(($orbit_walltime%86400/3600)) $(($orbit_walltime%3600/60)) $(($orbit_walltime%60)) >> $output_PATH/Reports/$report_filename
+
     fi	        
 
 
     #### HOOK 1: Post download modules
+
     include_modules "${post_download_mods[@]}"
+
 
 
     #### STEP 2: PREPARE DATA
@@ -174,7 +198,11 @@ else
 	fi
 	
 	if [ $PS_extract -eq 1 ]; then	
-	    
+
+	    # Strart extract time measurement
+	    printf '\n\nS1 File extraction' >> $output_PATH/Reports/$report_filename
+	    extract_timer_start=$( date +%s )
+
 	    mkdir -p $work_PATH/orig		
 	    echo
 	    echo - - - - - - - - - - - - - - - - 
@@ -206,6 +234,11 @@ else
 
 	    $OSARIS_PATH/lib/check-queue.sh $slurm_jobname 2 0
 
+	    # End extract time measurement and add to report
+	    extract_timer_end=$( date +%s )	    
+	    extract_walltime=$((extract_timer_end-extract_timer_start))	    	    
+	    printf 'Wallclock time:\t %02dd %02dh:%02dm:%02ds\n' $(($extract_walltime/86400)) $(($extract_walltime%86400/3600)) $(($extract_walltime%3600/60)) $(($extract_walltime%60)) >> $output_PATH/Reports/$report_filename
+
 	    cd $OSARIS_PATH
 	fi
 
@@ -214,7 +247,9 @@ else
 	echo; echo "SAR data set preparation finished"; echo - - - - - - - - - - - - - - - - ; echo
     fi
 
+
     #### HOOK 2: Post extract modules
+
     include_modules "${post_extract_mods[@]}"
 
 
@@ -225,9 +260,14 @@ else
     else
 	echo; echo - - - - - - - - - - - - - - - -; echo "Starting interferometric processing ..."; echo 
 	
+	# Start interferometric processing time measurement
+	printf '\n\nInterferometric Processing\n' >> $output_PATH/Reports/$report_filename
+	interf_timer_start=$( date +%s )
+
+	
 	case "$SAR_sensor" in
 	    Sentinel)	    
-
+		
 		if [ $process_intf_mode = "pairs" ]; then
 		    echo; echo "Initializing processing in 'chronologically moving pairs' mode."; echo
 		    cd $OSARIS_PATH
@@ -262,6 +302,13 @@ else
 		exit 1
 		
 	esac
+
+	# Finish time measurement and add to report
+	interf_timer_end=$( date +%s )	    
+	interf_walltime=$((interf_timer_end-interf_timer_start))	    	    
+	printf 'Wallclock time:\t %02dd %02dh:%02dm:%02ds\n' $(($interf_walltime/86400)) $(($interf_walltime%86400/3600)) $(($interf_walltime%3600/60)) $(($interf_walltime%60)) >> $output_PATH/Reports/$report_filename
+
+
     fi
 
     #### HOOK 3: Post processing modules
@@ -274,7 +321,7 @@ else
     # Move files from $work_PATH/Pairs-forward to directories in $output_PATH
     # as specified by the var $output_directory_map in the config file
 
-    echo; echo - - - - - - - - - - - - - - - -; echo "Moving files to output directories ...";	echo
+    # echo; echo - - - - - - - - - - - - - - - -; echo "Moving files to output directories ...";	echo
 
     # if [ -z "$output_directory_map" ]; then
     # 	echo "Variable output_directory_map not set in config file. Using default mapping ..."
@@ -300,6 +347,12 @@ else
 
     # TODO: Make module
     if [ "$process_reverse_intfs" -eq 1 ]; then
+	
+	# Start unwrapping sum time measurement
+	printf '\n\nFwd-Rev-Unwrapping sum calculation' >> $output_PATH/Reports/$report_filename
+	unwrsum_timer_start=$( date +%s )
+
+
 	echo; echo - - - - - - - - - - - - - - - -; echo "Processing differences between forward and reverse pairs of unwrapped interferograms ...";	echo
 	
 	cd $output_PATH/Interf-unwrpd
@@ -315,6 +368,13 @@ else
 		$output_PATH/Unwrapping-sums \
 		${scene_id_1}--${scene_id_2}-fwd-rev-sum 2>&1 >>$logfile
 	done
+
+	# Finish time measurement and add to report
+	unwrsum_timer_end=$( date +%s )	    
+	unwrsum_walltime=$((unwrsum_timer_end-unwrsum_timer_start))	    	    
+	printf 'Wallclock time:\t %02dd %02dh:%02dm:%02ds\n' $(($unwrsum_walltime/86400)) $(($unwrsum_walltime%86400/3600)) $(($unwrsum_walltime%3600/60)) $(($unwrsum_walltime%60)) >> $output_PATH/Reports/$report_filename
+
+
     fi
 
     # TODO: Make module
