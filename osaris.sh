@@ -71,8 +71,17 @@ else
     echo "Reading configuration file $config_file" 
     source $config_file
           
-    echo
-    echo "Data will be written to $base_PATH/$prefix/"
+    echo; echo "Data will be written to $base_PATH/$prefix/"
+    
+    if [ ! -f $credentials_file ]; then
+	echo; echo "WARNING: Login credentials file not found at ${credentials_file}" 
+	echo "Downloading will probably not work."
+	credentials_found=0
+    else
+	echo; echo "Loading login credentials from ${credentials_file}"
+	source $credentials_file
+	credentials_found=1
+    fi
 
 
     export work_PATH=$base_PATH/$prefix/Processing
@@ -108,15 +117,17 @@ else
     #### STEP 1: DOWNLOADS
 
     if [ $input_files = "download" ]; then
+	if [ "$credentials_found" -eq 1 ]; then
+	    echo; echo - - - - - - - - - - - - - - - -; echo "Downloading Sentinel-1 files"; echo
+	    input_PATH=$base_PATH/$prefix/Input/
+	    mkdir -p $input_PATH
 
-	echo; echo - - - - - - - - - - - - - - - -; echo Downloading Sentinel files; echo
-
-	input_PATH=$base_PATH/$prefix/Input/
-	mkdir -p $input_PATH
-
-	source $OSARIS_PATH/lib/s1-file-download.sh  2>&1 >>$logfile
-	
-	echo; echo Downloading finished; echo - - - - - - - - - - - - - - - -; echo
+	    source $OSARIS_PATH/lib/s1-file-download.sh  2>&1 >>$logfile	
+	    
+	    echo; echo Downloading finished; echo - - - - - - - - - - - - - - - -; echo
+	else
+	    echo "No login credentials found. Skipping file download."
+	fi
     else
 	if [ ! -d $input_files ]; then
 	    echo "CRITICAL CONFIGURAION ERROR:"
@@ -160,8 +171,17 @@ else
 	orbit_timer_start=$( date +%s )	
 
 	echo; echo - - - - - - - - - - - - - - - -; echo "Updating orbit data ..."; echo
-	
-	source $OSARIS_PATH/lib/s1-orbit-download.sh $orbits_PATH 5 &>>$logfile
+	if [ "$orbit_provider" = "ESA" ]; then
+	    source $OSARIS_PATH/lib/s1-orbit-download.sh $orbits_PATH 5 &>>$logfile
+	elif [ "$orbit_provider" = "ASF" ]; then
+            if [ -z "$ASF_username" ] || [ -z "$ASF_password" ]; then
+		echo; echo "ERROR: Missing ASF login credentials."
+		echo "Please review your login credentials file."		
+	    else
+		echo "Found ASF login credentials. Starting orbit download ..."
+		wget --http-user=$ASF_username --http-password=$ASF_password -r -nc -nd --no-check-certificate -nH --accept EOF -P $orbits_PATH https://s1qc.asf.alaska.edu/aux_poeorb/ &>>$logfile
+	    fi	    
+	fi
 
 	echo; echo "Orbit update finished"; echo - - - - - - - - - - - - - - - - ; echo
 	
