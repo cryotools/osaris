@@ -110,6 +110,11 @@ else
 
     log_PATH=$base_PATH/$prefix/Log
     # Path to directory where the log files will be written    
+
+    # Write coordinates file
+    echo "$lon_1 $lat_1 $elev_1" > $work_PATH/boundary-box.xyz
+    echo "$lon_2 $lat_2 $elev_2" >> $work_PATH/boundary-box.xyz
+   
     
     orbit_list=$( ls $orbits_PATH )
 
@@ -294,7 +299,7 @@ else
 			    
 			    # Generate LED files for assembled tops
 			    if [ "$debug" -ge 1 ]; then echo "Executing ext_orb_s1a with option ${stem_2}.PRM $orbit_match ../$prefix_2"; fi
-			    ext_orb_s1a S1A${prefix_2}.PRM $orbits_PATH/$orbit_match S1_$prefix_2
+			    ext_orb_s1a S1_${prefix_2}.PRM $orbits_PATH/$orbit_match S1_$prefix_2
 		    	    
 			    # Prepare data in raw folder for subsequent processing steps ...
 			    cd $work_PATH/raw/      		    		    

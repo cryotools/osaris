@@ -309,6 +309,13 @@ else
 		    $OSARIS_PATH/lib/process-pairs.sh $config_file CMP 2>&1 >>$logfile
 		    slurm_jobname="$slurm_jobname_prefix-CMP" 
 		    $OSARIS_PATH/lib/check-queue.sh $slurm_jobname 1
+		    
+		    # If more than one swath are to be considered, start the merging and unwrapping procedure ...
+		    if [ ${#swaths_to_process[@]} -gt 1 ]; then
+			$OSARIS_PATH/lib/process-multi-swath.sh $config_file 2>&1 >>$logfile
+			slurm_jobname="$slurm_jobname_prefix-MSP" 
+			$OSARIS_PATH/lib/check-queue.sh $slurm_jobname 1
+		    fi
 
 		elif [ $process_intf_mode = "single_master" ]; then
 		    echo; echo "Initializing processing in 'single master' mode."; echo
