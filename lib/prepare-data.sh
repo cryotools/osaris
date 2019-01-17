@@ -290,11 +290,11 @@ else
 			    cd ..
 
 			    # Generate new PRM files for assembled tops
-			    make_s1a_tops ${stem_2}.xml ${stem_2}.tiff S1A$prefix_2 0
+			    make_s1a_tops ${stem_2}.xml ${stem_2}.tiff S1_$prefix_2 0
 			    
 			    # Generate LED files for assembled tops
 			    if [ "$debug" -ge 1 ]; then echo "Executing ext_orb_s1a with option ${stem_2}.PRM $orbit_match ../$prefix_2"; fi
-			    ext_orb_s1a S1A${prefix_2}.PRM $orbits_PATH/$orbit_match S1A$prefix_2
+			    ext_orb_s1a S1A${prefix_2}.PRM $orbits_PATH/$orbit_match S1_$prefix_2
 		    	    
 			    # Prepare data in raw folder for subsequent processing steps ...
 			    cd $work_PATH/raw/      		    		    

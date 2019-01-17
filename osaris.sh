@@ -10,7 +10,7 @@ elif [ ! -f $1 ]; then
     echo
 else
     OSARIS_start_time=$( date +%s )
-    run_identifier=$( date +"%F_%H-%m_%Z" )
+    run_identifier=$( date +"%F_%H-%M_%Z" )
     echo
     echo
     echo " ╔══════════════════════════════════════════╗"
