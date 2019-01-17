@@ -56,8 +56,8 @@ set mtiff = ` echo $1.tiff `
 set mxml = ` echo $1.xml `
 set stiff = ` echo $3.tiff `
 set sxml = ` echo $3.xml `
-set mpre = ` echo $1 | awk '{ print "S1A"substr($1,16,8)"_"substr($1,25,6)"_F"substr($1,7,1)}'`
-set spre = ` echo $3 | awk '{ print "S1A"substr($1,16,8)"_"substr($1,25,6)"_F"substr($1,7,1)}'`
+set mpre = ` echo $1 | awk '{ print "S1_"substr($1,16,8)"_"substr($1,25,6)"_F"substr($1,7,1)}'`
+set spre = ` echo $3 | awk '{ print "S1_"substr($1,16,8)"_"substr($1,25,6)"_F"substr($1,7,1)}'`
 echo $mpre
 echo $spre
 #

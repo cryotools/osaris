@@ -9,7 +9,8 @@ elif [ ! -f $1 ]; then
     echo "Cannot open $1. Please provide a valid config file."
     echo
 else
-    OSARIS_start_time=`date +%s`
+    OSARIS_start_time=$( date +%s )
+    run_identifier=$( date +"%F-%T%Z" )
     echo
     echo
     echo " ╔══════════════════════════════════════════╗"
@@ -73,6 +74,7 @@ else
           
     echo; echo "Data will be written to $base_PATH/$prefix/"
     
+    # Check login credentials
     if [ ! -f $credentials_file ]; then
 	echo; echo "WARNING: Login credentials file not found at ${credentials_file}" 
 	echo "Downloading will probably not work."
@@ -82,7 +84,19 @@ else
 	source $credentials_file
 	credentials_found=1
     fi
-
+    
+    # Check module configuration directory
+    skip_modules=0
+    if [ ! -z $module_config_PATH ]; then	
+	if [ ! -d "${OSARIS_PATH}/config/$module_config_PATH" ]; then
+	    echo; echo "WARNING: ${OSARIS_PATH}/config/${module_config_PATH} is not a vaild directory." 
+	    echo "Please check the value of module_config_PATH in the main configuration file."
+	    echo "Modules integration was deactivated."
+	    skip_modules=1
+	else
+	    echo; echo "Found module configuration directory ${module_config_PATH}"	    
+	fi
+    fi
 
     export work_PATH=$base_PATH/$prefix/Processing
     # Path to working directory
@@ -100,15 +114,14 @@ else
     mkdir -p $log_PATH
 
     ln -sf $topo_PATH/dem.grd $work_PATH/raw/
-    ln -sf $topo_PATH/dem.grd $work_PATH/topo/
-    
-    run_identifier=$( date +"%Y-%m-%d_%Hh%mm" )
+    ln -sf $topo_PATH/dem.grd $work_PATH/topo/        
 
     log_filename=$prefix-$run_identifier.log
     report_filename=$prefix-$run_identifier.report
     
     logfile=$log_PATH/$log_filename
-
+    
+    printf "OSARIS log file for ${prefix}\n\nStart time: $run_identifier\n" > $logfile
     echo
     echo "Log will be written to $logfile"
     echo "Use tail -f $logfile to monitor overall progress"
@@ -179,7 +192,7 @@ else
 		echo "Please review your login credentials file."		
 	    else
 		echo "Found ASF login credentials. Starting orbit download ..."
-		wget --http-user=$ASF_username --http-password=$ASF_password -r -nc -nd --no-check-certificate -nH --accept EOF -P $orbits_PATH https://s1qc.asf.alaska.edu/aux_poeorb/ &>>$logfile
+		wget --http-user=$ASF_username --http-password=$ASF_password -r -l 1 -nc -nd --no-check-certificate -nH --accept EOF -P $orbits_PATH https://s1qc.asf.alaska.edu/aux_poeorb/ &>>$logfile
 	    fi	    
 	fi
 
@@ -194,8 +207,9 @@ else
 
 
     #### HOOK 1: Post download modules
-
-    include_modules "${post_download_mods[@]}"
+    if [ ! "$skip_modules" -eq 1 ]; then
+	include_modules "${post_download_mods[@]}"
+    fi
 
 
 
@@ -269,8 +283,9 @@ else
 
 
     #### HOOK 2: Post extract modules
-
-    include_modules "${post_extract_mods[@]}"
+    if [ ! "$skip_modules" -eq 1 ]; then
+	include_modules "${post_extract_mods[@]}"
+    fi
 
 
     #### STEP 3: INTERFEROMETRIC PROCESSING
@@ -332,7 +347,10 @@ else
     fi
 
     #### HOOK 3: Post processing modules
-    include_modules "${post_processing_mods[@]}"
+
+    if [ ! "$skip_modules" -eq 1 ]; then	
+	include_modules "${post_processing_mods[@]}"
+    fi
 
 
 
@@ -386,7 +404,7 @@ else
 		$output_PATH/Interf-unwrpd/${scene_id_1}--${scene_id_2}-interf_unwrpd.grd \
 		$output_PATH/Interf-unwrpd-rev/${scene_id_2}--${scene_id_1}-interf_unwrpd.grd \
 		$output_PATH/Unwrapping-sums \
-		${scene_id_1}--${scene_id_2}-fwd-rev-sum 2>&1 >>$logfile
+		${scene_id_1}--${scene_id_2}-fwd-rev-sum &>>$logfile
 	done
 
 	# Finish time measurement and add to report
@@ -404,7 +422,7 @@ else
 	echo Processing stack + SBAS
 	echo
 	
-	$OSARIS_PATH/lib/process-stack.sh $config_file 2>&1 >>$logfile
+	$OSARIS_PATH/lib/process-stack.sh $config_file &>>$logfile
     fi
 
     if [ $clean_up -gt 0 ]; then
@@ -423,7 +441,10 @@ else
     fi
 
     #### HOOK 4: Post post-postprocessing modules
-    include_modules "${post_postprocessing_mods[@]}"
+    
+    if [ ! "$skip_modules" -eq 1 ]; then
+	include_modules "${post_postprocessing_mods[@]}"
+    fi
 
     #### STEP 5: CALCULATE STATS AND WRITE REPORTS
 

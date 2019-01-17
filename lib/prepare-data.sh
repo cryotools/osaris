@@ -114,7 +114,7 @@ else
     orbit_list=$( ls $orbits_PATH )
 
     
-    if [ "$cut_to_aoi" -eq 1 ] && [ "${#swaths_to_process[@]}" -eq 1 ]; then
+    if [ "$cut_to_aoi" -eq 1 ]; then #&& [ "${#swaths_to_process[@]}" -eq 1 ]
        	mkdir -p $work_PATH/orig_cut/temp/
 	rm -f $work_PATH/orig_cut/temp/filelist.txt
 
