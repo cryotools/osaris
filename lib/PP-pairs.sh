@@ -79,7 +79,7 @@ if [ ${#swaths_to_process[@]} -gt 1 ]; then
     echo
 
     # p2p_S1A_TOPS.csh
-    $OSARIS_PATH/lib/GMTSAR-mods/p2p_S1_OSARIS_no_unwrap.csh \
+    $OSARIS_PATH/lib/GMTSAR-mods/p2p_OSARIS_no_unwrap.csh \
 	S1_${previous_scene:15:8}_${previous_scene:24:6}_F$swath \
 	S1_${current_scene:15:8}_${current_scene:24:6}_F$swath \
 	$OSARIS_PATH/$gmtsar_config_file \
