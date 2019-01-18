@@ -38,7 +38,7 @@ echo
 echo
 
 $OSARIS_PATH/lib/GMTSAR-mods/merge_unwrap_geocode.csh \
-    $work_PATH/merge-files/${s1_pair} \
+    $work_PATH/merge-files/${s1_pair}.list \
     $OSARIS_PATH/$gmtsar_config_file \
     $work_PATH/boundary-box.xyz
 

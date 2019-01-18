@@ -54,6 +54,8 @@ else
 	s1_pair=${s1_pair::-1}
 	echo "Working on $s1_pair"
 
+	ln -s $work_PATH/topo/dem.grd $work_PATH/$s1_pair
+
 	master_date=${s1_pair:0:8}
 	slave_date=${s1_pair:10:8}	
 	
@@ -69,6 +71,21 @@ else
 	    cd $work_PATH/$s1_pair
 	    echo "F${swath}/intf/${s1_code}/:${master_PRM}:${slave_PRM}" >> $work_PATH/merge-files/${s1_pair}.list
 	done
+
+	# Setup preferred and alternative partition configuration
+	slurm_partition_pref=$slurm_partition
+	slurm_ntasks_pref=$slurm_ntasks
+
+	if [ ! -z $slurm_partition_alt ] && [ ! -z $slurm_ntasks_alt ]; then
+	    # Check for available cores on the preferred slurm partition.
+	    sleep 2
+	    cores_available=$( sinfo -o "%P %C" | grep $slurm_partition | awk '{ print $2 }' | awk 'BEGIN { FS="/?[ \t]*"; } { print $2 }' )
+	    echo "Cores available on partition ${slurm_partition}: $cores_available"
+	    if [ "$cores_available" -lt "$slurm_ntasks" ]; then
+		slurm_partition_pref=$slurm_partition_alt
+		slurm_ntasks_pref=$slurm_ntasks_alt
+	    fi
+	fi
 
 	sbatch \
     	    --ntasks=$slurm_ntasks_pref \
