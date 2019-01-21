@@ -32,8 +32,6 @@ output_PATH=$base_PATH/$prefix/Output
 log_PATH=$base_PATH/$prefix/Output/Log
 # Path to directory where the log files will be written    
 
-
-
 job_ID=${previous_scene:15:8}--${current_scene:15:8}
 
 mkdir -pv $work_PATH/$job_ID/F$swath/raw 
@@ -42,107 +40,118 @@ cd $work_PATH/$job_ID/F$swath/topo; ln -sf $topo_PATH/dem.grd .;
 
 cd $work_PATH/raw/$job_ID-aligned/
 
+proc_mode=$( cat $work_PATH/proc_mode.txt )
+echo "Processing mode: $proc_mode"
+
 echo
 echo "- - - - - - - - - - - - - - - - - - - - "
-echo "Starting align_tops.csh with options:"
-echo "Scene 1: $previous_scene"
-echo "Orbit 1: $previous_orbit"
-echo "Scene 2: $current_scene"
-echo "Orbit 2: $current_orbit"    	
-echo 
-echo "Current path: $( pwd )"
-echo "align_tops.csh $previous_scene $previous_orbit $current_scene $current_orbit dem.grd"
-echo
-echo
 
-if [ "$cut_to_aoi" -eq 1 ] && [ ! ${#swaths_to_process[@]} -gt 1 ]; then
+if [ "$proc_mode" = "multislice" ]; then
+    echo "Starting align_cut_tops.csh with options:"
+    echo "Scene 1: $previous_scene"
+    echo "Orbit 1: $previous_orbit"
+    echo "Scene 2: $current_scene"
+    echo "Orbit 2: $current_orbit"    
+    echo
+
     $OSARIS_PATH/lib/GMTSAR-mods/align_cut_tops.csh $previous_scene $previous_orbit $current_scene $current_orbit dem.grd
 else
+    echo "Starting align_cut_tops.csh with options:"
+    echo "Scene 1: $previous_scene"
+    echo "Orbit 1: $previous_orbit"
+    echo "Scene 2: $current_scene"
+    echo "Orbit 2: $current_orbit"    
+    echo
+
     align_tops.csh $previous_scene $previous_orbit $current_scene $current_orbit dem.grd
 fi
 
-cd $work_PATH/$job_ID/F$swath/raw/
-ln -sf $work_PATH/raw/$job_ID-aligned/*F$swath* .
-    
-cd $work_PATH/$job_ID/F$swath/
-
-
-if [ ${#swaths_to_process[@]} -gt 1 ]; then
-    echo; echo "Multiple swaths mode (${#swaths_to_process[@]} swaths) ..."
-    echo 
-    echo "- - - - - - - - - - - - - - - - - - - - "
-    echo "Starting p2p_S1A_TOPS with options:"
-    echo "S1_${previous_scene:15:8}_${previous_scene:24:6}_F$swath"
-    echo "S1_${current_scene:15:8}_${current_scene:24:6}_F$swath"
-    echo "$gmtsar_config_file" 
-    echo "Current directory: $( pwd )"
-    echo
-
-    # p2p_S1A_TOPS.csh
-    $OSARIS_PATH/lib/GMTSAR-mods/p2p_OSARIS_no_unwrap.csh \
-	S1_${previous_scene:15:8}_${previous_scene:24:6}_F$swath \
-	S1_${current_scene:15:8}_${current_scene:24:6}_F$swath \
-	$OSARIS_PATH/$gmtsar_config_file \
-	$OSARIS_PATH 
-
+if [ ! -f $work_PATH/raw/$job_ID-aligned/a.grd ] || [ ! -f $work_PATH/raw/$job_ID-aligned/r.grd ]; then
+    echo; echo "ERROR: Scene alignment failed. Aborting interferometric processing ..."; echo
 else
-    echo; echo "Single swath mode ..."
-    # Proceed to phase unwrapping ....
-    echo 
-    echo "- - - - - - - - - - - - - - - - - - - - "
-    echo "Starting p2p_S1A_TOPS with options:"
-    echo "S1_${previous_scene:15:8}_${previous_scene:24:6}_F$swath"
-    echo "S1_${current_scene:15:8}_${current_scene:24:6}_F$swath"
-    echo "$gmtsar_config_file" 
-    echo "Current directory: $( pwd )"
-    echo
 
-    # p2p_S1A_TOPS.csh
-    $OSARIS_PATH/lib/GMTSAR-mods/p2p_S1_OSARIS.csh \
-	S1_${previous_scene:15:8}_${previous_scene:24:6}_F$swath \
-	S1_${current_scene:15:8}_${current_scene:24:6}_F$swath \
-	$OSARIS_PATH/$gmtsar_config_file \
-	$OSARIS_PATH 
+    cd $work_PATH/$job_ID/F$swath/raw/
+    ln -sf $work_PATH/raw/$job_ID-aligned/*F$swath* .
+    
+    cd $work_PATH/$job_ID/F$swath/
 
-    cd $work_PATH/$job_ID/F$swath/intf/
-    intf_dir=($( ls )) 
 
-    echo; echo "Checking results and moving to files to Output directory ..."; echo
+    if [ ${#swaths_to_process[@]} -gt 1 ]; then
+	echo; echo "Multiple swaths mode (${#swaths_to_process[@]} swaths) ..."
+	echo 
+	echo "- - - - - - - - - - - - - - - - - - - - "
+	echo "Starting p2p_S1A_TOPS with options:"
+	echo "S1_${previous_scene:15:8}_${previous_scene:24:6}_F$swath"
+	echo "S1_${current_scene:15:8}_${current_scene:24:6}_F$swath"
+	echo "$gmtsar_config_file" 
+	echo "Current directory: $( pwd )"
+	echo
 
-    if [ ! "$direction" == "reverse" ]; then
-	mkdir -p $output_PATH/Amplitudes
-	cp ./$intf_dir/display_amp_ll.grd $output_PATH/Amplitudes/${previous_scene:15:8}--${current_scene:15:8}-amplitude.grd
-	if [ -f "$output_PATH/Amplitudes/${previous_scene:15:8}--${current_scene:15:8}-amplitude.grd" ]; then status_amp=1; else status_amp=0; fi
+	# p2p_S1A_TOPS.csh
+	$OSARIS_PATH/lib/GMTSAR-mods/p2p_OSARIS_no_unwrap.csh \
+	    S1_${previous_scene:15:8}_${previous_scene:24:6}_F$swath \
+	    S1_${current_scene:15:8}_${current_scene:24:6}_F$swath \
+	    $OSARIS_PATH/$gmtsar_config_file \
+	    $OSARIS_PATH 
 
-	mkdir -p $output_PATH/Conn-comps
-	cp ./$intf_dir/con_comp_ll.grd $output_PATH/Conn-comps/${previous_scene:15:8}--${current_scene:15:8}-conn_comp.grd
-	if [ -f "$output_PATH/Conn-comps/${previous_scene:15:8}--${current_scene:15:8}-conn_comp.grd" ]; then status_ccp=1; else status_ccp=0; fi
-
-	mkdir -p $output_PATH/Coherences
-	cp ./$intf_dir/corr_ll.grd $output_PATH/Coherences/${previous_scene:15:8}--${current_scene:15:8}-coherence.grd
-	if [ -f "$output_PATH/Coherences/${previous_scene:15:8}--${current_scene:15:8}-coherence.grd" ]; then status_coh=1; else status_coh=0; fi
-
-	mkdir -p $output_PATH/Interferograms
-	cp ./$intf_dir/phasefilt_mask_ll.grd $output_PATH/Interferograms/${previous_scene:15:8}--${current_scene:15:8}-interferogram.grd
-	if [ -f "$output_PATH/Interferograms/${previous_scene:15:8}--${current_scene:15:8}-interferogram.grd" ]; then status_pha=1; else status_pha=0; fi
-
-	unwrapping_active=`grep threshold_snaphu $OSARIS_PATH/$gmtsar_config_file | awk '{ print $3 }'`
-
-	if (( $(echo "$unwrapping_active > 0" | bc -l ) )); then
-	    mkdir -p $output_PATH/Interf-unwrpd
-	    cp ./$intf_dir/unwrap_mask_ll.grd $output_PATH/Interf-unwrpd/${previous_scene:15:8}--${current_scene:15:8}-interf_unwrpd.grd
-	    if [ -f "$output_PATH/Interf-unwrpd/${previous_scene:15:8}--${current_scene:15:8}-interf_unwrpd.grd" ]; then status_unw=1; else status_unw=0; fi
-	else
-	    status_unw=2
-	fi
     else
-	mkdir -p $output_PATH/Interf-unwrpd-rev
-	cp ./$intf_dir/unwrap_mask_ll.grd $output_PATH/Interf-unwrpd-rev/${previous_scene:15:8}--${current_scene:15:8}-interf_unwrpd.grd
-	if [ -f "$output_PATH/Interf-unwrpd-rev/${previous_scene:15:8}--${current_scene:15:8}-interf_unwrpd.grd" ]; then status_unw=1; else status_unw=0; fi
+	echo; echo "Single swath mode ..."
+	# Proceed to phase unwrapping ....
+	echo 
+	echo "- - - - - - - - - - - - - - - - - - - - "
+	echo "Starting p2p_S1A_TOPS with options:"
+	echo "S1_${previous_scene:15:8}_${previous_scene:24:6}_F$swath"
+	echo "S1_${current_scene:15:8}_${current_scene:24:6}_F$swath"
+	echo "$gmtsar_config_file" 
+	echo "Current directory: $( pwd )"
+	echo
+
+	# p2p_S1A_TOPS.csh
+	$OSARIS_PATH/lib/GMTSAR-mods/p2p_S1_OSARIS.csh \
+	    S1_${previous_scene:15:8}_${previous_scene:24:6}_F$swath \
+	    S1_${current_scene:15:8}_${current_scene:24:6}_F$swath \
+	    $OSARIS_PATH/$gmtsar_config_file \
+	    $OSARIS_PATH 
+
+	cd $work_PATH/$job_ID/F$swath/intf/
+	intf_dir=($( ls )) 
+
+	echo; echo "Checking results and moving to files to Output directory ..."; echo
+
+	if [ ! "$direction" == "reverse" ]; then
+	    mkdir -p $output_PATH/Amplitudes
+	    cp ./$intf_dir/display_amp_ll.grd $output_PATH/Amplitudes/${previous_scene:15:8}--${current_scene:15:8}-amplitude.grd
+	    if [ -f "$output_PATH/Amplitudes/${previous_scene:15:8}--${current_scene:15:8}-amplitude.grd" ]; then status_amp=1; else status_amp=0; fi
+
+	    mkdir -p $output_PATH/Conn-comps
+	    cp ./$intf_dir/con_comp_ll.grd $output_PATH/Conn-comps/${previous_scene:15:8}--${current_scene:15:8}-conn_comp.grd
+	    if [ -f "$output_PATH/Conn-comps/${previous_scene:15:8}--${current_scene:15:8}-conn_comp.grd" ]; then status_ccp=1; else status_ccp=0; fi
+
+	    mkdir -p $output_PATH/Coherences
+	    cp ./$intf_dir/corr_ll.grd $output_PATH/Coherences/${previous_scene:15:8}--${current_scene:15:8}-coherence.grd
+	    if [ -f "$output_PATH/Coherences/${previous_scene:15:8}--${current_scene:15:8}-coherence.grd" ]; then status_coh=1; else status_coh=0; fi
+
+	    mkdir -p $output_PATH/Interferograms
+	    cp ./$intf_dir/phasefilt_mask_ll.grd $output_PATH/Interferograms/${previous_scene:15:8}--${current_scene:15:8}-interferogram.grd
+	    if [ -f "$output_PATH/Interferograms/${previous_scene:15:8}--${current_scene:15:8}-interferogram.grd" ]; then status_pha=1; else status_pha=0; fi
+
+	    unwrapping_active=`grep threshold_snaphu $OSARIS_PATH/$gmtsar_config_file | awk '{ print $3 }'`
+
+	    if (( $(echo "$unwrapping_active > 0" | bc -l ) )); then
+		mkdir -p $output_PATH/Interf-unwrpd
+		cp ./$intf_dir/unwrap_mask_ll.grd $output_PATH/Interf-unwrpd/${previous_scene:15:8}--${current_scene:15:8}-interf_unwrpd.grd
+		if [ -f "$output_PATH/Interf-unwrpd/${previous_scene:15:8}--${current_scene:15:8}-interf_unwrpd.grd" ]; then status_unw=1; else status_unw=0; fi
+	    else
+		status_unw=2
+	    fi
+	else
+	    mkdir -p $output_PATH/Interf-unwrpd-rev
+	    cp ./$intf_dir/unwrap_mask_ll.grd $output_PATH/Interf-unwrpd-rev/${previous_scene:15:8}--${current_scene:15:8}-interf_unwrpd.grd
+	    if [ -f "$output_PATH/Interf-unwrpd-rev/${previous_scene:15:8}--${current_scene:15:8}-interf_unwrpd.grd" ]; then status_unw=1; else status_unw=0; fi
+	fi
+
     fi
-
 fi
-
 
 end=`date +%s`
 runtime=$((end-start))

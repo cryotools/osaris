@@ -73,10 +73,10 @@ echo $spre
 
 # Copy LED and PRM file created at preprocessing stage
 pwd
-cp ../../orig_cut/$mpre".PRM" .
-cp ../../orig_cut/$mpre".LED" .
-cp ../../orig_cut/$spre".PRM" .
-cp ../../orig_cut/$spre".LED" .
+cp ../../preprocessing/$mpre".PRM" .
+cp ../../preprocessing/$mpre".LED" .
+cp ../../preprocessing/$spre".PRM" .
+cp ../../preprocessing/$spre".LED" .
 
 # cp $mpre".LED" $1".LED"
 # cp $spre".LED" $3".LED"
