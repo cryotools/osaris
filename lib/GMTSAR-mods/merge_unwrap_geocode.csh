@@ -33,6 +33,7 @@
   if (-f tmp_phaselist) rm tmp_phaselist
   if (-f tmp_corrlist) rm tmp_corrlist
   if (-f tmp_masklist) rm tmp_masklist
+  if (-f tmp_amplist) rm tmp_amplist
 
   if (! -f dem.grd ) then
     echo "Please link dem.grd to current folder"
@@ -59,6 +60,7 @@
     echo $pth"tmp.PRM:"$pth"phasefilt.grd" >> tmp_phaselist
     echo $pth"tmp.PRM:"$pth"corr.grd" >> tmp_corrlist
     echo $pth"tmp.PRM:"$pth"mask.grd" >> tmp_masklist
+    echo $pth"tmp.PRM:"$pth"display_amp.grd" >> tmp_amplist
   end 
 
   set pth = `awk -F: 'NR==1 {print $1}' $1`
@@ -70,6 +72,7 @@
   merge_swath tmp_phaselist phasefilt.grd $stem
   merge_swath tmp_corrlist corr.grd
   merge_swath tmp_masklist mask.grd
+  merge_swath tmp_amplist display_amp.grd
   echo "Merging END"
   echo ""
   
@@ -110,7 +113,6 @@
     endif
   endif
   
-  # example 300/5900/0/25000 (xmin/xmax/ymin/ymax)
 
   set region_cut = $range_min"/"$range_max"/"$azimu_min"/"$azimu_max
   echo "Var region_cut set to "$region_cut
@@ -139,11 +141,16 @@
     echo ""
     echo "SNAPHU.CSH - START"
     echo "threshold_snaphu: $threshold_snaphu"
-    if ($near_interp == 1) then
-      snaphu_interp.csh $threshold_snaphu $defomax $region_cut
-    else
-      snaphu.csh $threshold_snaphu $defomax $region_cut
-    endif
+
+    $OSARIS_PATH/lib/GMTSAR-mods/snaphu_OSARIS.csh $threshold_snaphu $defomax $region_cut
+
+
+    # if ($near_interp == 1) then
+    #   snaphu_interp.csh $threshold_snaphu $defomax $region_cut
+    # else
+    #   snaphu.csh $threshold_snaphu $defomax $region_cut
+    # endif
+
     echo "SNAPHU.CSH - END"
   else
     echo ""
@@ -157,24 +164,33 @@
   if ($threshold_geocode != 0) then
     echo ""
     echo "GEOCODE-START"
-    proj_ra2ll.csh trans.dat phasefilt.grd phasefilt_ll.grd
-    proj_ra2ll.csh trans.dat corr.grd corr_ll.grd
-    gmt makecpt -Crainbow -T-3.15/3.15/0.05 -Z > phase.cpt
-    set BT = `gmt grdinfo -C corr.grd | awk '{print $7}'`
-    gmt makecpt -Cgray -T0/$BT/0.05 -Z > corr.cpt
-    grd2kml.csh phasefilt_ll phase.cpt
-    grd2kml.csh corr_ll corr.cpt
 
-    if (-f unwrap.grd) then
-      gmt grdmath unwrap.grd mask.grd MUL = unwrap_mask.grd
-      proj_ra2ll.csh trans.dat unwrap.grd unwrap_ll.grd
-      proj_ra2ll.csh trans.dat unwrap_mask.grd unwrap_mask_ll.grd
-      set BT = `gmt grdinfo -C unwrap.grd | awk '{print $7}'`
-      set BL = `gmt grdinfo -C unwrap.grd | awk '{print $6}'`
-      gmt makecpt -T$BL/$BT/0.5 -Z > unwrap.cpt
-      grd2kml.csh unwrap_mask_ll unwrap.cpt
-      grd2kml.csh unwrap_ll unwrap.cpt
-    endif
+    gmt grdmath phasefilt.grd mask.grd MUL = phasefilt_mask.grd -V
+
+    $OSARIS_PATH/lib/GMTSAR-mods/geocode_OSARIS.csh $threshold_geocode
+
+
+    # 
+    # proj_ra2ll.csh trans.dat phasefilt.grd phasefilt_ll.grd
+    # proj_ra2ll.csh trans.dat phasefilt_mask.grd phasefilt_mask_ll.grd
+    # proj_ra2ll.csh trans.dat corr.grd corr_ll.grd
+    # proj_ra2ll.csh trans.dat con_comp.grd con_comp_ll.grd
+    # # gmt makecpt -Crainbow -T-3.15/3.15/0.05 -Z > phase.cpt
+    # # set BT = `gmt grdinfo -C corr.grd | awk '{print $7}'`
+    # # gmt makecpt -Cgray -T0/$BT/0.05 -Z > corr.cpt
+    # # grd2kml.csh phasefilt_ll phase.cpt
+    # # grd2kml.csh corr_ll corr.cpt
+
+    # if (-f unwrap.grd) then
+    #   gmt grdmath unwrap.grd mask.grd MUL = unwrap_mask.grd -V
+    #   proj_ra2ll.csh trans.dat unwrap.grd unwrap_ll.grd
+    #   proj_ra2ll.csh trans.dat unwrap_mask.grd unwrap_mask_ll.grd
+    #   # set BT = `gmt grdinfo -C unwrap.grd | awk '{print $7}'`
+    #   # set BL = `gmt grdinfo -C unwrap.grd | awk '{print $6}'`
+    #   # gmt makecpt -T$BL/$BT/0.5 -Z > unwrap.cpt
+    #   # grd2kml.csh unwrap_mask_ll unwrap.cpt
+    #   # grd2kml.csh unwrap_ll unwrap.cpt
+    # endif
     
     echo "GEOCODE END"
   endif 

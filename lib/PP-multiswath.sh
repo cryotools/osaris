@@ -59,14 +59,14 @@ cp ./corr_ll.grd $output_PATH/Coherences/${s1_pair}-coherence.grd
 if [ -f "$output_PATH/Coherences/${s1_pair}-coherence.grd" ]; then status_coh=1; else status_coh=0; fi
 
 mkdir -p $output_PATH/Interferograms
-cp ./phasefilt_mask_ll.grd $output_PATH/Interferograms/${s1_pair}-interferogram.grd
+cp ./phasefilt_ll.grd $output_PATH/Interferograms/${s1_pair}-interferogram.grd
 if [ -f "$output_PATH/Interferograms/${s1_pair}-interferogram.grd" ]; then status_pha=1; else status_pha=0; fi
 
 unwrapping_active=`grep threshold_snaphu $OSARIS_PATH/$gmtsar_config_file | awk '{ print $3 }'`
 
 if (( $(echo "$unwrapping_active > 0" | bc -l ) )); then
     mkdir -p $output_PATH/Interf-unwrpd
-    cp ./unwrap_mask_ll.grd $output_PATH/Interf-unwrpd/${s1_pair}-interf_unwrpd.grd
+    cp ./unwrap_ll.grd $output_PATH/Interf-unwrpd/${s1_pair}-interf_unwrpd.grd
     if [ -f "$output_PATH/Interf-unwrpd/${s1_pair}-interf_unwrpd.grd" ]; then status_unw=1; else status_unw=0; fi
 else
     status_unw=2
