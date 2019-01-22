@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 start=`date +%s`
 
@@ -10,9 +10,19 @@ corr_file=$3
 high_corr_file=$4
 high_corr_threshold=$5
 boundary_box=$6
-swath=$7
 
 cd $UCM_work_PATH/input
+
+
+echo "Input variables:"
+echo "UCM_work_PATH: $UCM_work_PATH"
+echo "UCM_output_PATH: $UCM_output_PATH"
+echo "corr_file: $corr_file"
+echo "high_corr_file: $high_corr_file"
+echo "high_corr_threshold: $high_corr_threshold"
+echo "boundary_box: $boundary_box"
+
+
 
 echo; echo "Grdinfo high corr file:"
 gmt grdinfo $high_corr_file
@@ -30,7 +40,7 @@ gmt grdcut HC_$high_corr_file -G$UCM_work_PATH/cut_files/HC_$high_corr_file -R$b
 
 echo; echo "Processing Unstable Coherence Metric ..."
 cd $UCM_work_PATH/cut_files
-UCM_file="${high_corr_file:5:8}-${high_corr_file:15:8}---${corr_file:5:8}-${corr_file:15:8}_F${swath}-UCM.grd"
+UCM_file="${high_corr_file:0:8}-${high_corr_file:10:8}---${corr_file:0:8}-${corr_file:10:8}-UCM.grd"
 echo "gmt grdmath $high_corr_file $corr_file SUB -V1 = $work_PATH/UCM/temp/$UCM_file"
 gmt grdmath HC_$high_corr_file $corr_file SUB -V1 = $UCM_work_PATH/temp/$UCM_file
 

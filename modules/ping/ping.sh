@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 ######################################################################
 #
@@ -12,13 +12,31 @@
 #
 #####################################################################
 
-if [ ! -f "$OSARIS_PATH/config/ping.config" ]; then
+module_name="ping"
+
+
+if [ -z $module_config_PATH ]; then
+    echo "Parameter module_config_PATH not set in main config file. Setting to default:"
+    echo "  $OSARIS_PATH/config"
+    module_config_PATH="$OSARIS_PATH/config"
+elif [[ "$module_config_PATH" != /* ]] && [[ "$module_config_PATH" != "$OSARIS_PATH"* ]]; then
+    module_config_PATH="${OSARIS_PATH}/config/${module_config_PATH}"    
+fi
+
+if [ ! -d "$module_config_PATH" ]; then
+    echo "ERROR: $module_config_PATH is not a valid directory. Check parameter module_config_PATH in main config file. Exiting ..."
+    exit 2
+fi
+
+if [ ! -f "${module_config_PATH}/${module_name}.config" ]; then
     echo
-    echo "Cannot open ping.config in the OSARIS config folder. Please provide a valid config file."
+    echo "Cannot open ${module_name}.config in ${module_config_PATH}. Please provide a valid config file."
     echo
 else
-    # Ping it on!
-    source $OSARIS_PATH/config/ping.config
+
+    # Include the config file
+    source ${module_config_PATH}/${module_name}.config
+
     i=0
     while [ $i -lt $ping_count ]; do
 	sbatch \

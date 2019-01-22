@@ -14,7 +14,7 @@ unset noclobber
 #
   if ($#argv < 4) then
     echo ""
-    echo "Usage: p2p_S1A_TOPS.csh master_image slave_image configuration_file osaris_path region_cut"
+    echo "Usage: p2p_S1A_TOPS.csh master_image slave_image configuration_file osaris_path"
     echo ""
     echo "Example: p2p_S1A_TOPS.csh S1A20150526_F1 S1A20150607_F1 config.tsx.slc.txt home/user/osaris"
     echo ""
@@ -74,62 +74,9 @@ set OSARIS_PATH = $4
   set dec = `grep dec_factor $3 | awk '{print $3}'` 
   set threshold_snaphu = `grep threshold_snaphu $3 | awk '{print $3}'`
   set threshold_geocode = `grep threshold_geocode $3 | awk '{print $3}'`
-  # set region_cut = `grep region_cut $3 | awk '{print $3}'`
+  set region_cut = `grep region_cut $3 | awk '{print $3}'`
   set switch_land = `grep switch_land $3 | awk '{print $3}'`
   set defomax = `grep defomax $3 | awk '{print $3}'`
-
-
-
-  # TODO: Check which range and azimuth coordinates are actually representing the boundary box
-  #       -> Check all 4 lon/lat combinations
-  #       -> Set negative values to 0
-  #       -> Set values > the maximum (see PRM files) to maximum
-  #       -> This must be applied to both p2p...csh and merge_unwrap...csh
-
-set region_cut = 0
-
-if (-e ../../cut_to_aoi.flag) then
-  set cut_to_aoi = `cat ../../cut_to_aoi.flag`
-  if ($cut_to_aoi == 1) then
-    echo "Cutting to area of interest active"
-    if (! -f $5) then
-      echo; echo "No valid boundary box file provided. Phase unwrapping will be conducted on the whole scene extent."
-    else
-      cd raw
-      echo; echo "Boundary box file found."
-      echo "Obtaining area of interest coordinates and converting to radar coordinates ..."
-      SAT_llt2rat $1".PRM" 1 < $5 > boundary_box_ra.xyz
-      set bb_range_1 = `awk 'NR==1{ print $1 }' boundary_box_ra.xyz`
-      set bb_range_2 = `awk 'NR==2{ print $1 }' boundary_box_ra.xyz`
-      set bb_azimu_1 = `awk 'NR==1{ print $2 }' boundary_box_ra.xyz`
-      set bb_azimu_2 = `awk 'NR==2{ print $2 }' boundary_box_ra.xyz`
-      if (`echo "$bb_range_1 > $bb_range_2" | bc -l` == 1) then
-        set range_max = $bb_range_1
-        set range_min = $bb_range_2
-      else
-        set range_max = $bb_range_2
-        set range_min = $bb_range_1
-      endif
-      if (`echo "$bb_azimu_1 > $bb_azimu_2" | bc -l` == 1) then
-        set azimu_max = $bb_azimu_1
-        set azimu_min = $bb_azimu_2
-      else
-        set azimu_max = $bb_azimu_2
-        set azimu_min = $bb_azimu_1
-      endif
-      cd ..
-      set region_cut = $range_min"/"$range_max"/"$azimu_min"/"$azimu_max
-      echo "Variable region_cut set to "$region_cut
-    endif  
-  else 
-    echo "No cutting to area of interest"
-  endif
-else
-  echo "Flag cut_to_aoi not set."  
-endif
-  
-
-
 #
 # read file names of raw data
 #
@@ -347,71 +294,6 @@ endif
 
 
 
-################################
-# 5 - start from unwrap phase  #
-################################
-
-  if ($stage <= 5 ) then
-    if ($threshold_snaphu != 0 ) then
-      cd intf
-      set ref_id  = `grep SC_clock_start ../SLC/$master.PRM | awk '{printf("%d",int($3))}' `
-      set rep_id  = `grep SC_clock_start ../SLC/$slave.PRM | awk '{printf("%d",int($3))}' `
-      cd $ref_id"_"$rep_id
-      if ((! $?region_cut) || ($region_cut == "")) then
-        set region_cut = `grdinfo phase.grd -I- | cut -c3-20`
-      endif
-
-#
-# landmask
-#
-      if ($switch_land == 1) then
-        cd ../../topo
-        if (! -f landmask_ra.grd) then
-          landmask.csh $region_cut
-        endif
-        cd ../intf
-        cd $ref_id"_"$rep_id
-        ln -s ../../topo/landmask_ra.grd .
-      endif
-
-      echo " "
-      echo "SNAPHU.CSH - START"
-      echo "threshold_snaphu: $threshold_snaphu"
-      
-      $OSARIS_PATH/lib/GMTSAR-mods/snaphu_OSARIS.csh $threshold_snaphu $defomax $region_cut
-
-      echo "SNAPHU.CSH - END"
-      cd ../..
-    else 
-      echo ""
-      echo "SKIP UNWRAP PHASE"
-    endif
-  endif
-
-###########################
-# 6 - start from geocode  #
-###########################
-
-    if ($stage <= 6) then
-    cd intf
-    set ref_id  = `grep SC_clock_start ../SLC/$master.PRM | awk '{printf("%d",int($3))}' `
-    set rep_id  = `grep SC_clock_start ../SLC/$slave.PRM | awk '{printf("%d",int($3))}' `
-    cd $ref_id"_"$rep_id
-    echo " "
-    echo "GEOCODE.CSH - START"
-    rm raln.grd ralt.grd
-    if ($topo_phase == 1) then
-      rm trans.dat
-      ln -s  ../../topo/trans.dat . 
-      echo "threshold_geocode: $threshold_geocode"
-      $OSARIS_PATH/lib/GMTSAR-mods/geocode_OSARIS.csh $threshold_geocode $5 $cut_to_aoi
-    else 
-      echo "topo_ra is needed to geocode"
-      exit 1
-    endif
-    echo "GEOCODE.CSH - END"
-    cd ../..
-  endif
 
 # end
 

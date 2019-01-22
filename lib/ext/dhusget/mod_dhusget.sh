@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #-------------------------------------------------------------------------------------------	#
 # Demo script illustrating some examples using the OData interface	#

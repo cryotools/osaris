@@ -1,10 +1,8 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 ######################################################################
 #
 # OSARIS module to crop grid files.
-#
-# 
 #
 # David Loibl, 2018
 #
@@ -12,16 +10,29 @@
 
 module_name="crop"
 
-if [ ! -f "$OSARIS_PATH/config/${module_name}.config" ]; then
+if [ -z $module_config_PATH ]; then
+    echo "Parameter module_config_PATH not set in main config file. Setting to default:"
+    echo "  $OSARIS_PATH/config"
+    module_config_PATH="$OSARIS_PATH/config"
+elif [[ "$module_config_PATH" != /* ]] && [[ "$module_config_PATH" != "$OSARIS_PATH"* ]]; then
+    module_config_PATH="${OSARIS_PATH}/config/${module_config_PATH}"    
+fi
+
+if [ ! -d "$module_config_PATH" ]; then
+    echo "ERROR: $module_config_PATH is not a valid directory. Check parameter module_config_PATH in main config file. Exiting ..."
+    exit 2
+fi
+
+if [ ! -f "${module_config_PATH}/${module_name}.config" ]; then
     echo
-    echo "Cannot open ${module_name}.config in the OSARIS config folder. Please provide a valid config file."
+    echo "Cannot open ${module_name}.config in ${module_config_PATH}. Please provide a valid config file."
     echo
 else
     # Start runtime timer
     module_start=`date +%s`
 
     # Include the config file
-    source $OSARIS_PATH/config/${module_name}.config
+    source ${module_config_PATH}/${module_name}.config
     
     crop_output_PATH=$output_PATH/Crop
     mkdir -p $crop_output_PATH
@@ -45,7 +56,7 @@ else
 		crop_region_counter=0
 		for crop_region in ${crop_region_labels[@]}; do
 		    gmt grdcut $crop_file \
-			-G$crop_output_PATH/$crop_region/crop_$crop_file \
+			-G$crop_output_PATH/$crop_region/${crop_file::-4}-crop.grd \
 			-R${crop_regions[$crop_region_counter]} -V
 		    ((crop_region_counter++))
 		done

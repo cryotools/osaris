@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 start=`date +%s`
 echo "SLURM stack processing started"

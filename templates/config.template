@@ -25,20 +25,37 @@ swaths_to_process=(1 2 3)
 base_PATH="/my/path/OSARIS-results/"
 # Path to directory where OSARIS will put all files
 
+topo_PATH="/my/path/DEM/"
+# Path to directory containing topo data (dem.grd file)
+# Generate at http://topex.ucsd.edu/gmtsar/demgen/
+
 input_files="download"
 # Options:
 # download - use the DHuS script to obtain data, configure, below
 # full path to a directory containing the S1 scene to process, e.g. /data/S1-scenes 
 
-topo_PATH="/my/path/DEM/"
-# Path to directory containing topo data (dem.grd file)
-# Generate at http://topex.ucsd.edu/gmtsar/demgen/
+orig_files="extract"
+# Options:
+# extract - Unizp files from input folder
+# keep - recommended when files were already extracted in a previous run
 
 orbits_PATH="/path/to/orbits_folder"
 # Path to S1 orbit data
 # Existing orbits will be used
 # If folder does not exist or is empty, orbits will be downloaded here
 # --> make sure to set $update_orbits to "1"
+
+update_orbits=0
+# Activate (1) or deactivate (0) automatic orbit retrieval
+
+module_config_PATH=""
+# Optionally, provide a path to where module configuration for this run is stored.
+# If not set and modules are activated (see section MODULES below), OSARIS will
+# look for module configuration in the directory config/ within the OSARIS installation
+# directory.
+# Relative pathes will be interpreted as subdirectories of the config directory.
+# Alternatively, you may the global variable $OSARIS_PATH to indicate directories
+# below the OSARIS installation directory, e.g. "$OSARIS_PATH/config/central-alps
 
 
 # - - - - - GMTSAR CONFIG FILE - - - - - - - - - - - - - 

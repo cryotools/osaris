@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #################################################################
 #
@@ -9,9 +9,15 @@
 
 # Create input file list
 cd $input_PATH
-for inputfile in $( ls -1 ); do echo $inputfile >> $output_PATH/Reports/input_files.list; done
+for inputfile in $( ls -1 ); do 
+    echo $inputfile >> $output_PATH/Reports/input_files.list
+    echo ${inputfile:18:8} >> $output_PATH/Reports/input_dates.tmp    
+done
 input_file_count=$( ls -l | grep -v ^d | wc -l )
 echo "Total input file count: $input_file_count" >> $output_PATH/Reports/input_files.list
+
+sort $output_PATH/Reports/input_dates.tmp | uniq > $output_PATH/Reports/input_dates.list
+rm $output_PATH/Reports/input_dates.tmp
 
 
 # Create report for file extraction
@@ -31,6 +37,8 @@ if [ $PS_extract -eq 1 ]; then
     done < "$output_PATH/Reports/PP-extract-stats.list"
     
     printf 'Total processing time:\t %02dd %02dh:%02dm:%02ds\n' $(($PP_extract_total_runtime/86400)) $(($PP_extract_total_runtime%86400/3600)) $(($PP_extract_total_runtime%3600/60)) $(($PP_extract_total_runtime%60)) >> $output_PATH/Reports/PP-extract.report
+
+    printf 'Total processing time:\t %02dd %02dh:%02dm:%02ds\n' $(($PP_extract_total_runtime/86400)) $(($PP_extract_total_runtime%86400/3600)) $(($PP_extract_total_runtime%3600/60)) $(($PP_extract_total_runtime%60)) >> $output_PATH/Reports/processing-time.report
     
     rm $output_PATH/Reports/PP-extract-stats.list $output_PATH/Reports/PP-extract-stats.tmp
 fi
@@ -85,12 +93,15 @@ while read -r PP_job; do
     fi
     
     PP_runtime=$(echo $PP_job | awk '{ print $4}')
-    printf '  Processing time:\t\t %02dd %02dh:%02dm:%02ds\n' $(($PP_runtime/86400)) $(($PP_runtime%86400/3600)) $(($PP_runtime%3600/60)) $(($PP_runtime%60)) >> $output_PATH/Reports/PP-pairs.report
+    printf '  Processing time:\t\t %02dd %02dh:%02dm:%02ds\n' $(($PP_runtime/86400)) $(($PP_runtime%86400/3600)) $(($PP_runtime%3600/60)) $(($PP_runtime%60)) >> $output_PATH/Reports/PP-pairs.report     
+
     PP_total_runtime=$((PP_total_runtime + PP_runtime))
     printf "\n \n" >> $output_PATH/Reports/PP-pairs.report
 done < "$output_PATH/Reports/PP-pairs-stats.list"
 
 printf 'Total processing time:\t %02dd %02dh:%02dm:%02ds\n' $(($PP_total_runtime/86400)) $(($PP_total_runtime%86400/3600)) $(($PP_total_runtime%3600/60)) $(($PP_total_runtime%60)) >> $output_PATH/Reports/PP-pairs.report
+
+printf 'Total processing time:\t %02dd %02dh:%02dm:%02ds\n' $(($PP_total_runtime/86400)) $(($PP_total_runtime%86400/3600)) $(($PP_total_runtime%3600/60)) $(($PP_total_runtime%60)) >> $output_PATH/Reports/processing-time.report
 
 rm $output_PATH/Reports/PP-pairs-stats.list $output_PATH/Reports/PP-pairs-stats.tmp
 

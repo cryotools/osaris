@@ -92,6 +92,42 @@ mv templates/module-config/<module_name>.config.template config/<module_name>.co
 ```
 
 ### <a name="available-modules"></a> Available modules
+
+#### Crop
+Cut geocoded grids to extend given min/max longitude/latitude coordinates.
+Call: crop
+Status: beta
+
+#### Displacement
+Convert unwrapped phase (radians) to line-of-sight displacement (mm)
+Call: displacement
+Status: beta
+
+#### Detrend
+Remove large-scale trends from grid stacks using polynomial surfaces, cf. [GMT grdtrend](https://gmt.soest.hawaii.edu/doc/5.4.5/grdtrend.html).
+Call: detrend
+Status: beta
+
+#### GACOS correction
+Correct interferogram time series for atmospheric delays of the SAR signal using [GACOS](http://ceg-research.ncl.ac.uk/v2/gacos/) data.
+Call: gacos_correction
+Status: beta
+
+#### Grid Difference
+Calculate the difference between OSARIS result grid files throughout the timeseries.
+Call: grid_difference
+Status: beta
+
+#### Harmonize Grids 
+Shift grid files relative to 'stable ground points'. Typically used to harmonize time series of interferograms and LOS displacement files.
+Call: harmonize_grids
+Status: beta
+
+#### PDF Summary
+Preview key processing results in a single graphic overview. Requires ImageMagick.
+Call: create_pdf_summary
+Status: beta
+
 #### Ping
 Wake up sleeping nodes.
 Call: ping
@@ -102,24 +138,9 @@ Identify stable ground points based on consitently high coherences throughout th
 Call: sgp_identification
 Status: beta
 
-#### GACOS correction
-Correct interferogram time series for atmospheric delays of the SAR signal using [GACOS](http://ceg-research.ncl.ac.uk/v2/gacos/) data.
-Call: gacos_correction
-Status: alpha
-
-#### Harmonize Grids 
-Shift grid files relative to 'stable ground points'. Typically used to harmonize time series of interferograms and LOS displacement files.
-Call: harmonize_grids
-Status: beta
-
-#### Grid Difference
-Calculate the difference between OSARIS result grid files throughout the timeseries.
-Call: grid_difference
-Status: beta
-
-#### Unstable Coherence Metric
-Identify regions where high coherence values drop substantially between two data takes.
-Call: unstable_coh_metric
+#### Statistics
+Calculate statistics for a series of grid files.
+Call: statistics
 Status: beta
 
 #### Timeseries xy
@@ -127,20 +148,12 @@ Extract values for particular coordinates throughout a series of grids (e.g. coh
 Call: timerseries_xy
 Status: beta
 
-#### Create PDF Summary
-Preview key processing results in a single graphic overview. Requires ImageMagick.
-Call: create_pdf_summary
+#### Unstable Coherence Metric
+Identify regions where high coherence values drop substantially between two data takes.
+Call: unstable_coh_metric
 Status: beta
 
-#### Crop
-Cut geocoded grids to extend given min/max longitude/latitude coordinates.
-Call: crop
-Status: beta
 
-#### Statistics
-Calculate statistics for a series of grid files.
-Call: statistics
-Status: beta
 
 
 ### <a name="module-development"></a> Module development
@@ -164,7 +177,7 @@ The following constants will be set by the OSARIS main program upon initializati
 | $output\_PATH   | Full path to the Output directory. |
 | $log\_PATH      | Full path to the Log directory. |
 | $topo\_PATH     | Full path to directory with dem.grd used by GMTSAR. |
-| $oribts\_PATH   | Full path to directory containing the oribt files. |
+| $orbits\_PATH   | Full path to directory containing the oribt files. |
 
 All values set in the main config file can be accessed by their respective variable name.
 
