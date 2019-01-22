@@ -89,35 +89,49 @@
     update_PRM $stem".PRM" rshift $rshift
   endif
 
-  if (! -f $3) then
-    echo "No valid boundary box file provided. Phase unwrapping will be conducted on the whole scene extent."
-  else
-    SAT_llt2rat $stem".PRM" 1 < $3 > boundary_box_ra.xyz
-    set bb_range_1 = `awk 'NR==1{ print $1 }' boundary_box_ra.xyz`
-    set bb_range_2 = `awk 'NR==2{ print $1 }' boundary_box_ra.xyz`
-    set bb_azimu_1 = `awk 'NR==1{ print $2 }' boundary_box_ra.xyz`
-    set bb_azimu_2 = `awk 'NR==2{ print $2 }' boundary_box_ra.xyz`
-    if (`echo "$bb_range_1 > $bb_range_2" | bc -l` == 1) then
-      set range_max = $bb_range_1
-      set range_min = $bb_range_2
+
+  # TODO: Check which range and azimuth coordinates are actually representing the boundary box
+  #       -> Check all 4 lon/lat combinations
+  #       -> Set negative values to 0
+  #       -> Set values > the maximum (see PRM files) to maximum
+  #       -> This must be applied to both p2p...csh and merge_unwrap...csh
+
+if (-e ../cut_to_aoi.flag) then
+  set cut_to_aoi = `cat ../cut_to_aoi.flag`
+  if ($cut_to_aoi == 1) then
+
+    if (! -f $3) then
+      echo "No valid boundary box file provided. Phase unwrapping will be conducted on the whole scene extent."
     else
-      set range_max = $bb_range_2
-      set range_min = $bb_range_1
+      SAT_llt2rat $stem".PRM" 1 < $3 > boundary_box_ra.xyz
+      set bb_range_1 = `awk 'NR==1{ print $1 }' boundary_box_ra.xyz`
+      set bb_range_2 = `awk 'NR==2{ print $1 }' boundary_box_ra.xyz`
+      set bb_azimu_1 = `awk 'NR==1{ print $2 }' boundary_box_ra.xyz`
+      set bb_azimu_2 = `awk 'NR==2{ print $2 }' boundary_box_ra.xyz`
+      if (`echo "$bb_range_1 > $bb_range_2" | bc -l` == 1) then
+        set range_max = $bb_range_1
+        set range_min = $bb_range_2
+      else
+        set range_max = $bb_range_2
+        set range_min = $bb_range_1
+      endif
+      if (`echo "$bb_azimu_1 > $bb_azimu_2" | bc -l` == 1) then
+        set azimu_max = $bb_azimu_1
+        set azimu_min = $bb_azimu_2
+      else
+        set azimu_max = $bb_azimu_2
+        set azimu_min = $bb_azimu_1
+      endif
+      set region_cut = $range_min"/"$range_max"/"$azimu_min"/"$azimu_max
+      echo "Var region_cut set to "$region_cut
     endif
-    if (`echo "$bb_azimu_1 > $bb_azimu_2" | bc -l` == 1) then
-      set azimu_max = $bb_azimu_1
-      set azimu_min = $bb_azimu_2
-    else
-      set azimu_max = $bb_azimu_2
-      set azimu_min = $bb_azimu_1
-    endif
+  else 
+    echo "No cutting to area of interest"
+    set region_cut = 0
   endif
-  
+endif
 
-  set region_cut = $range_min"/"$range_max"/"$azimu_min"/"$azimu_max
-  echo "Var region_cut set to "$region_cut
 
-  # set region_cut = `grep region_cut $2 | awk '{print $3}'`
 
   # Read in parameters
   set threshold_snaphu = `grep threshold_snaphu $2 | awk '{print $3}'`
@@ -160,14 +174,14 @@
   # Geocoding 
   #if (-f raln.grd) rm raln.grd
   #if (-f ralt.grd) rm ralt.grd
- 
-  if ($threshold_geocode != 0) then
-    echo ""
-    echo "GEOCODE-START"
+    
+  # if ($threshold_geocode != 0) then
+  echo ""
+  echo "GEOCODE-START"
 
-    gmt grdmath phasefilt.grd mask.grd MUL = phasefilt_mask.grd -V
+  gmt grdmath phasefilt.grd mask.grd MUL = phasefilt_mask.grd -V
 
-    $OSARIS_PATH/lib/GMTSAR-mods/geocode_OSARIS.csh $threshold_geocode
+  $OSARIS_PATH/lib/GMTSAR-mods/geocode_OSARIS.csh $threshold_geocode $3 $cut_to_aoi
 
 
     # 
@@ -192,7 +206,7 @@
     #   # grd2kml.csh unwrap_ll unwrap.cpt
     # endif
     
-    echo "GEOCODE END"
-  endif 
+  echo "GEOCODE END"
+    
 
   rm tmp_phaselist tmp_corrlist tmp_masklist *.eps *.bb

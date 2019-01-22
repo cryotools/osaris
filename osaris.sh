@@ -126,7 +126,7 @@ else
     echo "Log will be written to $logfile"
     echo "Use tail -f $logfile to monitor overall progress"
 
-
+    
     #### STEP 1: DOWNLOADS
 
     if [ $input_files = "download" ]; then
@@ -323,17 +323,24 @@ else
 		    $OSARIS_PATH/lib/process-pairs.sh $config_file SM 2>&1 >>$logfile		
 		    slurm_jobname="$slurm_jobname_prefix-SM" 
 		    $OSARIS_PATH/lib/check-queue.sh $slurm_jobname 1
+		    
+		    # If more than one swath are to be considered, start the merging and unwrapping procedure ...
+		    if [ ${#swaths_to_process[@]} -gt 1 ]; then
+			$OSARIS_PATH/lib/process-multi-swath.sh $config_file 2>&1 >>$logfile
+			slurm_jobname="$slurm_jobname_prefix-MSP" 
+			$OSARIS_PATH/lib/check-queue.sh $slurm_jobname 1
+		    fi
 
-		elif [ $process_intf_mode = "both" ]; then
-		    echo; echo "Initializing processing in both 'single master' and 'chronologically moving pairs' modes.";	echo
-		    cd $OSARIS_PATH
-		    $OSARIS_PATH/lib/process-pairs.sh $config_file SM 2>&1 >>$logfile
-		    slurm_jobname="$slurm_jobname_prefix-SM" 
-		    $OSARIS_PATH/lib/check-queue.sh $slurm_jobname 1
-		    cd $OSARIS_PATH
-		    $OSARIS_PATH/lib/process-pairs.sh $config_file CMP 2>&1 >>$logfile
-		    slurm_jobname="$slurm_jobname_prefix-CMP" 
-		    $OSARIS_PATH/lib/check-queue.sh $slurm_jobname 1
+		# elif [ $process_intf_mode = "both" ]; then
+		#     echo; echo "Initializing processing in both 'single master' and 'chronologically moving pairs' modes.";	echo
+		#     cd $OSARIS_PATH
+		#     $OSARIS_PATH/lib/process-pairs.sh $config_file SM 2>&1 >>$logfile
+		#     slurm_jobname="$slurm_jobname_prefix-SM" 
+		#     $OSARIS_PATH/lib/check-queue.sh $slurm_jobname 1
+		#     cd $OSARIS_PATH
+		#     $OSARIS_PATH/lib/process-pairs.sh $config_file CMP 2>&1 >>$logfile
+		#     slurm_jobname="$slurm_jobname_prefix-CMP" 
+		#     $OSARIS_PATH/lib/check-queue.sh $slurm_jobname 1
 
 		fi  	   	    	    
 		

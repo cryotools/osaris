@@ -92,7 +92,8 @@ else
 	    S1_${previous_scene:15:8}_${previous_scene:24:6}_F$swath \
 	    S1_${current_scene:15:8}_${current_scene:24:6}_F$swath \
 	    $OSARIS_PATH/$gmtsar_config_file \
-	    $OSARIS_PATH 
+	    $OSARIS_PATH \
+	    $work_PATH/boundary-box.xyz
 
     else
 	echo; echo "Single swath mode ..."
@@ -111,7 +112,8 @@ else
 	    S1_${previous_scene:15:8}_${previous_scene:24:6}_F$swath \
 	    S1_${current_scene:15:8}_${current_scene:24:6}_F$swath \
 	    $OSARIS_PATH/$gmtsar_config_file \
-	    $OSARIS_PATH 
+	    $OSARIS_PATH \
+	    $work_PATH/boundary-box.xyz
 
 	cd $work_PATH/$job_ID/F$swath/intf/
 	intf_dir=($( ls )) 

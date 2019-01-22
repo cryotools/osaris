@@ -40,9 +40,14 @@ else
     # Path to directory where the log files will be written    
 
     # Write coordinates file
-    echo "$lon_1 $lat_1 $elev_1" > $work_PATH/boundary-box.xyz
-    echo "$lon_2 $lat_2 $elev_2" >> $work_PATH/boundary-box.xyz
+    echo "$lon_1 $lat_1 " > $work_PATH/boundary-box.xy
+    echo "$lon_2 $lat_2 " >> $work_PATH/boundary-box.xy
+    echo "$lon_1 $lat_2 " >> $work_PATH/boundary-box.xy
+    echo "$lon_2 $lat_1 " >> $work_PATH/boundary-box.xy
    
+    gmt grdtrack $work_PATH/boundary-box.xy -G$work_PATH/topo/dem.grd > $work_PATH/boundary-box.xyz
+
+    echo "$cut_to_aoi" > $work_PATH/cut_to_aoi.flag
     
     orbit_list=$( ls $orbits_PATH )
 
@@ -66,7 +71,7 @@ else
     for scene_date in ${scene_dates_sorted[@]}; do
 	if [ "$i" -gt 0 ]; then
 	    if [ "${scene_dates_sorted[$i]}" -eq $prev_scene_date ]; then
-		echo "Found two matching scenes for $prev_scene_date." 
+		echo; echo "Found two matching scenes for $prev_scene_date." 
 		multiple_slices+=($prev_scene_date)
 		find . -maxdepth 1 -name "*$prev_scene_date*.SAFE"
 		find . -maxdepth 1 -name "*$prev_scene_date*.SAFE" >> $work_PATH/preprocessing/filelists/filelist-multislice.txt	    
@@ -137,11 +142,9 @@ else
 		    echo "Skipping scene $target_scene ..."
 		else		    
 		    target_date=$( date -d "${target_scene:17:8} ${target_scene:26:2}:${target_scene:28:2}:${target_scene:30:2}" '+%s'  ) 
-		    echo "Target date: $target_date"
+		    echo "Target date raw: ${target_scene:17:8} ${target_scene:26:2}:${target_scene:28:2}:${target_scene:30:2}"
+		    echo "Target date sec: $target_date"
 		fi
-
-
-
 
 		
 
@@ -182,13 +185,7 @@ else
 		    ln -sf $work_PATH/orig/${S1_file[$i]}SAFE/annotation/*.xml .
 		    ln -sf $work_PATH/orig/${S1_file[$i]}SAFE/measurement/*.tiff .
 		    
-
 		fi
-
-
-
-
-
 		
 		orbit_counter=1
 		orbit_match="none"
@@ -250,9 +247,8 @@ else
 			    cd $work_PATH/orig/$current_file/annotation/
 			    name_stem=$(ls *iw$swath*); name_stem=${name_stem::-4}
 			    cd $work_PATH/orig/$prev_file/annotation/
-			    prev_name_stem=$(ls *iw$swath*); prev_name_stem=${prev_name_stem::-4}
-			    cd ..			
-			    
+			    prev_name_stem=$(ls *iw$swath*); prev_name_stem=${prev_name_stem::-4} 			    
+
 			    if [ ${name_stem:24:6} -gt ${prev_name_stem:24:6} ]; then			    			    
 				stem_1=$name_stem
 				file_1=$current_file
@@ -264,8 +260,9 @@ else
 				stem_2=$name_stem
 				file_2=$current_file
 			    fi			
+			    			    
+			    cd $work_PATH/orig
 			    
-			    cd $work_PATH/preprocessing/filelists
 			    # Obtain radar coordinates for area of interest coordinates (s. config file)		
 
 			    ln -sf $work_PATH/orig/$file_1/measurement/${stem_1}.tiff .
@@ -273,36 +270,36 @@ else
 			    ln -sf $work_PATH/orig/$file_2/measurement/${stem_2}.tiff .
 			    ln -sf $work_PATH/orig/$file_2/annotation/${stem_2}.xml .
 			    
-			    # Generate PRM files
 			    make_s1a_tops ${stem_1}.xml ${stem_1}.tiff ${stem_1} 0
 			    make_s1a_tops ${stem_2}.xml ${stem_2}.tiff ${stem_2} 0
-			    
+
+		    
 			    # Read radar coordinates for AoI
-			    azimuth_1=$( echo "$lon_1 $lat_1 $elev_1" | SAT_llt2rat ${stem_2}.PRM 0 | awk '{print $2}' )
-			    azimuth_2=$( echo "$lon_2 $lat_2 $elev_2" | SAT_llt2rat ${stem_2}.PRM 0 | awk '{print $2}' )
+			    azimuth_1=$( awk 'NR==1' $work_PATH/boundary-box.xyz | SAT_llt2rat ${stem_2}.PRM 0 | awk '{print $2}' )
+			    azimuth_2=$( awk 'NR==2' $work_PATH/boundary-box.xyz | SAT_llt2rat ${stem_2}.PRM 0 | awk '{print $2}' )
 
 			    if [ "$debug" -ge 1 ]; then 
 				echo "Stem 1: $stem_1"		
 				echo "Stem 2: $stem_2"; echo
 				echo "current id: ${name_stem:24:6}"
 				echo "previous id: ${prev_name_stem:24:6}"; echo
-				echo "Azimuth for $lon_1 $lat_1 $elev_1 is $azimuth_1"
-				echo "Azimuth for $lon_2 $lat_2 $elev_2 is $azimuth_2"
+				echo "Azimuth for $( awk 'NR==1' $work_PATH/boundary-box.xyz ) is $azimuth_1"
+				echo "Azimuth for $( awk 'NR==2' $work_PATH/boundary-box.xyz ) is $azimuth_2"
 			    fi
 			    
 			    # Assemble and cut scenes
 			    if [ "${azimuth_1%.*}" -gt "${azimuth_2%.*}" ]; then
 				# echo "Az 1 > Az 2 - Executing assemble_tops $azimuth_2 $azimuth_1 $stem_1 $stem_2 ../$stem_2"
-				assemble_tops $azimuth_2 $azimuth_1 $stem_2 $stem_1 ../$stem_2
+				assemble_tops $azimuth_2 $azimuth_1 $stem_2 $stem_1 $work_PATH/preprocessing/$stem_2
 			    else
 				# echo "Az 2 >= Az 1 - Executing assemble_tops $azimuth_1 $azimuth_2 $stem_1 $stem_2 ../$stem_2"
-				assemble_tops $azimuth_1 $azimuth_2 $stem_2 $stem_1 ../$stem_2
+				assemble_tops $azimuth_1 $azimuth_2 $stem_2 $stem_1 $work_PATH/preprocessing/$stem_2
 			    fi
 
 			    prefix_1="${stem_1:15:8}_${stem_1:24:6}_F${swath}"
 			    prefix_2="${stem_2:15:8}_${stem_2:24:6}_F${swath}"
 			    
-			    cd ..
+			    cd $work_PATH/preprocessing/
 
 			    # Generate new PRM files for assembled tops
 			    make_s1a_tops ${stem_2}.xml ${stem_2}.tiff S1_$prefix_2 0
