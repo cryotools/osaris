@@ -1,0 +1,11 @@
+######################################################################
+#
+# Template configuration for the 'Displacement' module
+#
+# Copy to 'config' folder, rename to 'displacement.config' 
+# and fit to your machine's configuration.
+#
+######################################################################
+
+unwrapped_intf_PATH=( "$output_PATH/Interf-unwrpd" )
+# Paths to unwrapped intergferogram files

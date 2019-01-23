@@ -1,0 +1,30 @@
+##################################################################
+#
+# Template configuration for the 'Crop' module
+#
+# Copy to 'config' folder, rename to 'crop.config' 
+# and fit to your demands.
+#
+#################################################################
+
+crop_input_PATH="$output_PATH/Coherences"
+# Path to where the input files are located
+
+crop_subdirs=0
+# 0 -> Files are located directly in the dir specified in crop_input_PATH
+# 1 -> Scan through direct subdirs of crop_input_PATH for files
+
+crop_input_filenames=( "*.grd" )
+# Filename(s) of files to crop.
+# Wildcards are allowed but must be escaped, e.g. "*.grd"
+
+crop_regions=( 12.34/34.56/56.78/78.90 )
+# Extent(s) to crop the image to in decimal degrees 
+# Format: lon_min/lon_max/lat_min/lat_max
+# You may enter multiple regions separated by spaces.
+
+crop_region_labels=( Crop_region_label )
+# Labels for regions.
+# Will also be used for directory names, so avoid special chars.
+# When using multiple regions, make sure to provide the same number
+# of labels, separated by spaces.

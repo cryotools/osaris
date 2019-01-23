@@ -7,7 +7,15 @@
 #
 #################################################################
 
-stats_input_filenames=( corr_ll.grd display_amp_ll.grd )
-# Files to process, e.g. 'display_amp_ll.grd' for amplitudes.
+stats_input_filenames=( "*.grd" )
+# Filename(s) of files to crop.
 # You may provide multiple file names, seperated by spaces.
+# Wildcards are allowed, e.g. *.grd or corr*
 # Input files shall reside in sub-directories of input directory (s. below)
+
+stats_input_PATH="$output_PATH/Coherences"
+# Path to where the input files are located
+
+stats_subdirs=0
+# 0 -> Files are located directly in the dir specified in crop_input_PATH
+# 1 -> Scan through direct subdirs of crop_input_PATH for files

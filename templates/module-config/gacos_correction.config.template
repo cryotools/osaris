@@ -9,6 +9,7 @@
 
 gacos_PATH="/path/to/GACOS-data"
 # Path to directory where the GACOS files are located
+# GACOS files can be obtained via http://ceg-research.ncl.ac.uk/v2/gacos/
 
 unwrp_intf_PATH="$output_PATH/Interf-unwrpd"
 # Path to unwrapped interferograms
@@ -29,3 +30,5 @@ harmonize_input_grids=1
 gacos_extent="11.11/22.22/33.33/44.44"
 # The extent of the map window in decimal degrees 
 # Format: lon_min/lon_max/lat_min/lat_max
+
+
