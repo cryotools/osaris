@@ -9,7 +9,6 @@
 # Input:
 # - Path where files reside in subdirs, e.g. Output/Pairs-forward/
 # - File name, e.g. corr_ll.grd (optional, will acitvate multi-directory mode)
-# - Swath number (optional to consider only specific swathes)
 #
 # Output:
 # - String z_min z_max z_min_file z_max_file
@@ -22,7 +21,7 @@
 
 if [ $# -lt 1 ]; then
     echo
-    echo "Usage: z_min_max.sh path [file_name] [swath]"  
+    echo "Usage: z_min_max.sh path [file_name]"  
     echo
 else
     mmz_PATH=$1

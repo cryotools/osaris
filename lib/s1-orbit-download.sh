@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+echo; echo "Updating S1 Orbits"; echo
+
 # wget -nH -l1 --no-parent --no-check-certificate -nc --reject-regex '\?' -r -nd -R *.txt,*.html* -P $1 https://s1qc.asf.alaska.edu/aux_poeorb/
 
 if [ "$2" -ge 1 ]; then

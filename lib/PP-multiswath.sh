@@ -8,7 +8,7 @@ s1_pair=$1
 config_file=$2
 gmtsar_config_file=$3
 OSARIS_PATH=$4
-
+direction=$5
 
 echo "Reading configuration file $config_file" 
 if [ ${config_file:0:2} = "./" ]; then
@@ -42,34 +42,38 @@ $OSARIS_PATH/lib/GMTSAR-mods/merge_unwrap_geocode.csh \
     $OSARIS_PATH/$gmtsar_config_file \
     $work_PATH/boundary-box.xyz
 
-# example 300/5900/0/25000 (xmin/xmax/ymin/ymax)
 echo; echo "Checking results and moving to files to Output directory ..."; echo
 
+if [ ! "$direction" == "reverse" ]; then
+    mkdir -p $output_PATH/Amplitudes
+    cp ./display_amp_ll.grd $output_PATH/Amplitudes/${s1_pair}-amplitude.grd
+    if [ -f "$output_PATH/Amplitudes/${s1_pair}-amplitude.grd" ]; then status_amp=1; else status_amp=0; fi
 
-mkdir -p $output_PATH/Amplitudes
-cp ./display_amp_ll.grd $output_PATH/Amplitudes/${s1_pair}-amplitude.grd
-if [ -f "$output_PATH/Amplitudes/${s1_pair}-amplitude.grd" ]; then status_amp=1; else status_amp=0; fi
+    mkdir -p $output_PATH/Conn-comps
+    cp ./con_comp_ll.grd $output_PATH/Conn-comps/${s1_pair}-conn_comp.grd
+    if [ -f "$output_PATH/Conn-comps/${s1_pair}-conn_comp.grd" ]; then status_ccp=1; else status_ccp=0; fi
 
-mkdir -p $output_PATH/Conn-comps
-cp ./con_comp_ll.grd $output_PATH/Conn-comps/${s1_pair}-conn_comp.grd
-if [ -f "$output_PATH/Conn-comps/${s1_pair}-conn_comp.grd" ]; then status_ccp=1; else status_ccp=0; fi
+    mkdir -p $output_PATH/Coherences
+    cp ./corr_ll.grd $output_PATH/Coherences/${s1_pair}-coherence.grd
+    if [ -f "$output_PATH/Coherences/${s1_pair}-coherence.grd" ]; then status_coh=1; else status_coh=0; fi
 
-mkdir -p $output_PATH/Coherences
-cp ./corr_ll.grd $output_PATH/Coherences/${s1_pair}-coherence.grd
-if [ -f "$output_PATH/Coherences/${s1_pair}-coherence.grd" ]; then status_coh=1; else status_coh=0; fi
+    mkdir -p $output_PATH/Interferograms
+    cp ./phasefilt_ll.grd $output_PATH/Interferograms/${s1_pair}-interferogram.grd
+    if [ -f "$output_PATH/Interferograms/${s1_pair}-interferogram.grd" ]; then status_pha=1; else status_pha=0; fi
 
-mkdir -p $output_PATH/Interferograms
-cp ./phasefilt_ll.grd $output_PATH/Interferograms/${s1_pair}-interferogram.grd
-if [ -f "$output_PATH/Interferograms/${s1_pair}-interferogram.grd" ]; then status_pha=1; else status_pha=0; fi
+    unwrapping_active=`grep threshold_snaphu $OSARIS_PATH/$gmtsar_config_file | awk '{ print $3 }'`
 
-unwrapping_active=`grep threshold_snaphu $OSARIS_PATH/$gmtsar_config_file | awk '{ print $3 }'`
-
-if (( $(echo "$unwrapping_active > 0" | bc -l ) )); then
-    mkdir -p $output_PATH/Interf-unwrpd
-    cp ./unwrap_ll.grd $output_PATH/Interf-unwrpd/${s1_pair}-interf_unwrpd.grd
-    if [ -f "$output_PATH/Interf-unwrpd/${s1_pair}-interf_unwrpd.grd" ]; then status_unw=1; else status_unw=0; fi
+    if (( $(echo "$unwrapping_active > 0" | bc -l ) )); then
+	mkdir -p $output_PATH/Interf-unwrpd
+	cp ./unwrap_ll.grd $output_PATH/Interf-unwrpd/${s1_pair}-interf_unwrpd.grd
+	if [ -f "$output_PATH/Interf-unwrpd/${s1_pair}-interf_unwrpd.grd" ]; then status_unw=1; else status_unw=0; fi
+    else
+	status_unw=2
+    fi
 else
-    status_unw=2
+    mkdir -p $output_PATH/Interf-unwrpd-rev
+    cp ./unwrap_mask_ll.grd $output_PATH/Interf-unwrpd-rev/${s1_pair}-interf_unwrpd.grd
+    if [ -f "$output_PATH/Interf-unwrpd-rev/${s1_pair}-interf_unwrpd.grd" ]; then status_unw=1; else status_unw=0; fi
 fi
 
 

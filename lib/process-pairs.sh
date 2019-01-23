@@ -125,12 +125,13 @@ else
 		    orbit_2=$current_orbit
 		fi
 		
-		if [ "$mode" = "CMP" ] && [ "${scene_1:15:8}" -gt "${scene_2:15:8}" ]; then
+		if [ "${scene_1:15:8}" -gt "${scene_2:15:8}" ]; then
 		    echo "Scenes ${scene_1:15:8} and ${scene_2:15:8} seem not to make a senseful pair. Skipping ..."
 		else
 		    scene_pair_name=${scene_1:15:8}--${scene_2:15:8}
+		    echo "$scene_pair_name" >> $work_PATH/pairs-forward.list
 		    
-		    echo "Creating directory $scene_pair_name"
+		    echo "Creating directory ${scene_pair_name}-aligned"
 		    mkdir -pv $work_PATH/raw/$scene_pair_name-aligned; cd $work_PATH/raw/$scene_pair_name-aligned
 		    ln -sf $topo_PATH/dem.grd .
 		    ln -sf $work_PATH/raw/${scene_1:15:8}_manifest.safe .
@@ -186,6 +187,7 @@ else
 			# Process reverse pairs ...
 
 			scene_pair_name=${scene_2:15:8}--${scene_1:15:8}
+			echo "$scene_pair_name" >> $work_PATH/pairs-reverse.list
 			
 			echo "Creating directory $scene_pair_name"
 			mkdir -pv $work_PATH/raw/${scene_pair_name}-aligned; cd $work_PATH/raw/${scene_pair_name}-aligned

@@ -47,12 +47,25 @@ else
     mkdir -p merge-files
     
     s1_pairs=($( ls -d *20*/ ))
+    if [ -f $work_PATH/pairs-forward.list ]; then pairs_forward=($( cat $work_PATH/pairs-forward.list )); fi
+    if [ -f $work_PATH/pairs-reverse.list ]; then pairs_reverse=($( cat $work_PATH/pairs-reverse.list )); fi
+    
 
     slurm_jobname="$slurm_jobname_prefix-MSP"
 
     for s1_pair in ${s1_pairs[@]}; do	
 	s1_pair=${s1_pair::-1}
 	echo "Working on $s1_pair"
+
+	if [[ " ${pairs_forward[@]} " =~ " ${s1_pair} " ]]; then
+	    direction="forward"
+	    if [ $debug -ge 1 ]; then echo "Forward scene pair"; fi
+	elif [[ " ${pairs_reverse[@]} " =~ " ${s1_pair} " ]]; then
+	    direction="reverse"
+	    if [ $debug -ge 1 ]; then echo "Reverse scene pair"; fi
+	else
+	    if [ $debug -ge 1 ]; then echo "Scene pair found in neither forward nor reverse list. Strange."; fi
+	fi
 
 	ln -s $work_PATH/topo/dem.grd $work_PATH/$s1_pair
 
@@ -101,7 +114,8 @@ else
     	    $s1_pair \
     	    $config_file \
     	    $OSARIS_PATH/$gmtsar_config_file \
-    	    $OSARIS_PATH 
+    	    $OSARIS_PATH \
+	    $direction
 
 	# step 3: launch PP jobs
 	cd $work_PATH

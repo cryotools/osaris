@@ -18,7 +18,11 @@ if [ $# -lt 2 ]; then
 else
     min=$1
     max=$2
-    center_zero=$3
+    if [ $# -eq 3 ]; then
+	center_zero=$3
+    else
+	center_zero=0
+    fi
 
     diff=$( echo "$max - $min" | bc )
     if [ $( echo "$diff > 5000" | bc ) -eq 1 ]; then
@@ -81,13 +85,15 @@ else
     max_remainder=$( echo "${max} % $step" | bc )
     upper_boundary=$( echo "${max} - ${max_remainder} + $step" | bc )
     
-    if [ "$center_zero" -eq 1 ]; then
-	if [ $( echo "$lower_boundary < 0" | bc ) -eq 1 ] && [ $( echo "$upper_boundary > 0" | bc ) -eq 1 ]; then
-	    lower_boundary_pos=$( echo "$lower_boundary * -1" | bc )
-	    if [ $( echo "$lower_boundary_pos < $upper_boundary" | bc ) -eq 1 ]; then
-		lower_boundary=$( echo "$upper_boundary * -1" | bc )
-	    else
-		upper_boundary=$( echo "$lower_boundary * -1" | bc )
+    if [ ! -z $center_zero ]; then
+	if [ "$center_zero" -eq "1" ]; then
+	    if [ $( echo "$lower_boundary < 0" | bc ) -eq 1 ] && [ $( echo "$upper_boundary > 0" | bc ) -eq 1 ]; then
+		lower_boundary_pos=$( echo "$lower_boundary * -1" | bc )
+		if [ $( echo "$lower_boundary_pos < $upper_boundary" | bc ) -eq 1 ]; then
+		    lower_boundary=$( echo "$upper_boundary * -1" | bc )
+		else
+		    upper_boundary=$( echo "$lower_boundary * -1" | bc )
+		fi
 	    fi
 	fi
     fi

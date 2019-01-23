@@ -25,7 +25,7 @@
 #
 #####################################################################
 
-module_name="detrend"
+module_name="_choose_a_module_name_"
 
 if [ -z $module_config_PATH ]; then
     echo "Parameter module_config_PATH not set in main config file. Setting to default:"

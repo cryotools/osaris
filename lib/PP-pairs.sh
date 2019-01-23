@@ -4,6 +4,8 @@ start=`date +%s`
 
 echo; echo "Starting GMTSAR interferometric processing ..."
 
+# SETUP ENVIRONMENT
+
 previous_scene=$1
 previous_orbit=$2
 current_scene=$3
@@ -14,14 +16,12 @@ gmtsar_config_file=$7
 OSARIS_PATH=$8
 direction=$9
 
-
 echo "Reading configuration file $config_file" 
 if [ ${config_file:0:2} = "./" ]; then
     config_file=$OSARIS_PATH/${config_file:2:${#config_file}}
 fi
 
 source $config_file
-
 
 work_PATH=$base_PATH/$prefix/Processing
 # Path to working directory
@@ -34,37 +34,38 @@ log_PATH=$base_PATH/$prefix/Output/Log
 
 job_ID=${previous_scene:15:8}--${current_scene:15:8}
 
+proc_mode=$( cat $work_PATH/proc_mode.txt )
+echo "Processing mode: $proc_mode"
+
 mkdir -pv $work_PATH/$job_ID/F$swath/raw 
 mkdir -pv $work_PATH/$job_ID/F$swath/topo 
 cd $work_PATH/$job_ID/F$swath/topo; ln -sf $topo_PATH/dem.grd .;
 
 cd $work_PATH/raw/$job_ID-aligned/
 
-proc_mode=$( cat $work_PATH/proc_mode.txt )
-echo "Processing mode: $proc_mode"
 
-echo
-echo "- - - - - - - - - - - - - - - - - - - - "
+# ALIGN SCENE PAIRS
+
+echo; echo "- - - - - - - - - - - - - - - - - - - - "
 
 if [ "$proc_mode" = "multislice" ]; then
     echo "Starting align_cut_tops.csh with options:"
     echo "Scene 1: $previous_scene"
     echo "Orbit 1: $previous_orbit"
     echo "Scene 2: $current_scene"
-    echo "Orbit 2: $current_orbit"    
-    echo
-
+    echo "Orbit 2: $current_orbit"; echo
     $OSARIS_PATH/lib/GMTSAR-mods/align_cut_tops.csh $previous_scene $previous_orbit $current_scene $current_orbit dem.grd
 else
     echo "Starting align_cut_tops.csh with options:"
     echo "Scene 1: $previous_scene"
     echo "Orbit 1: $previous_orbit"
     echo "Scene 2: $current_scene"
-    echo "Orbit 2: $current_orbit"    
-    echo
-
+    echo "Orbit 2: $current_orbit"; echo
     align_tops.csh $previous_scene $previous_orbit $current_scene $current_orbit dem.grd
 fi
+
+
+# INTERFEROMETRIC PROCESSING
 
 if [ ! -f $work_PATH/raw/$job_ID-aligned/a.grd ] || [ ! -f $work_PATH/raw/$job_ID-aligned/r.grd ]; then
     echo; echo "ERROR: Scene alignment failed. Aborting interferometric processing ..."; echo
@@ -75,7 +76,6 @@ else
     
     cd $work_PATH/$job_ID/F$swath/
 
-
     if [ ${#swaths_to_process[@]} -gt 1 ]; then
 	echo; echo "Multiple swaths mode (${#swaths_to_process[@]} swaths) ..."
 	echo 
@@ -84,10 +84,8 @@ else
 	echo "S1_${previous_scene:15:8}_${previous_scene:24:6}_F$swath"
 	echo "S1_${current_scene:15:8}_${current_scene:24:6}_F$swath"
 	echo "$gmtsar_config_file" 
-	echo "Current directory: $( pwd )"
-	echo
+	echo "Current directory: $( pwd )"; echo
 
-	# p2p_S1A_TOPS.csh
 	$OSARIS_PATH/lib/GMTSAR-mods/p2p_OSARIS_no_unwrap.csh \
 	    S1_${previous_scene:15:8}_${previous_scene:24:6}_F$swath \
 	    S1_${current_scene:15:8}_${current_scene:24:6}_F$swath \
@@ -96,18 +94,14 @@ else
 	    $work_PATH/boundary-box.xyz
 
     else
-	echo; echo "Single swath mode ..."
-	# Proceed to phase unwrapping ....
-	echo 
+	echo; echo "Single swath mode ..."; echo 
 	echo "- - - - - - - - - - - - - - - - - - - - "
 	echo "Starting p2p_S1A_TOPS with options:"
 	echo "S1_${previous_scene:15:8}_${previous_scene:24:6}_F$swath"
 	echo "S1_${current_scene:15:8}_${current_scene:24:6}_F$swath"
 	echo "$gmtsar_config_file" 
-	echo "Current directory: $( pwd )"
-	echo
+	echo "Current directory: $( pwd )"; echo
 
-	# p2p_S1A_TOPS.csh
 	$OSARIS_PATH/lib/GMTSAR-mods/p2p_S1_OSARIS.csh \
 	    S1_${previous_scene:15:8}_${previous_scene:24:6}_F$swath \
 	    S1_${current_scene:15:8}_${current_scene:24:6}_F$swath \
