@@ -1,4 +1,5 @@
-# OSARIS
+![OSARIS](https://cryo-tools.org/wp-content/uploads/2019/01/OSARIS-logo-600px.png)
+
 ### Open Source SAR Investigation System
 OSARIS provides a framework to process large stacks of synthetic aperture radar (SAR) data in High Performance Computing (HPC) environments.
 
@@ -21,6 +22,22 @@ OSARIS provides a framework to process large stacks of synthetic aperture radar 
 
 ## <a name="introduction"></a> Introduction
 With the advent of the two Sentinel 1 satellites, high-quality Synthetic Aperture Radar (SAR) data with high temporal and spatial resolution became freely available. This provides a promising framework to facilitate broad applications of detailed SAR- and interferometry- based surface change and motion timeseries. OSARIS aims to provide a toolkit to process large stacks of SAR secenes in parallel on HPC clusters to foster analysis of such extensive datasets. The idea behind OSARIS is to join the benefits of high-performance C programs with parallelization, flexibile processing schemes, and straight-forward configuration, by combining GMTSAR with the workload manager Slurm in a shell-script-based open and modular system.
+
+Key features of OSARIS are:
+- Convenient configuration (only one main config file, documented templates for all configuration)
+- Modular structure for flexible processing schemes, modules for a variety of tasks readily available
+- Minimal software requirements (bash, csh, GMT, GMTSAR, Slurm)
+- Automatic download of relevant Sentinel-1 scenes based on area of interest (AOI) and time interval
+- Automatic download and assignment of orbits
+- Merging of multiple swaths
+- Merging of bursts from multiple slices, omission of bursts that are outside the AOI
+- Single-master and pair-wise processing schemes
+- Clear and simple directory structure and file naming
+- Output files in the form of analysis-ready geocoded stacks of grid files, optionally also cut to AOI
+- Processing time measurements (wall clock versus total processing time)
+- Detailed report and log files
+- Summary PDF showing key processing results for each time step (see module Summary PDF)
+
 
 ## <a name="setup"></a> Setup
 
@@ -123,9 +140,9 @@ Shift grid files relative to 'stable ground points'. Typically used to harmonize
 Call: harmonize_grids
 Status: beta
 
-#### PDF Summary
+#### Summary PDF
 Preview key processing results in a single graphic overview. Requires ImageMagick.
-Call: create_pdf_summary
+Call: summary_pdf
 Status: beta
 
 #### Ping
@@ -165,7 +182,7 @@ mv modules/<my_new_module>/__module_template__.sh <my_new_module>.sh
 cp templates/module-config/__module_template.config.template config/<my_new_module>.config
 ```
 Many typical processing steps are implemented in the existing modules, copy as much as you can. 
-When your module works and you think it mi
+When your module works and you think it might be useful to others please get in touch or create a merge request from a forked copy.
 
 ### <a name="constants"> Constants you can use
 The following constants will be set by the OSARIS main program upon initialization and are available in all modules that get included:
@@ -177,7 +194,7 @@ The following constants will be set by the OSARIS main program upon initializati
 | $output\_PATH   | Full path to the Output directory. |
 | $log\_PATH      | Full path to the Log directory. |
 | $topo\_PATH     | Full path to directory with dem.grd used by GMTSAR. |
-| $orbits\_PATH   | Full path to directory containing the oribt files. |
+| $orbits\_PATH   | Full path to directory containing the orbit files. |
 
 All values set in the main config file can be accessed by their respective variable name.
 
