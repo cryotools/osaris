@@ -106,22 +106,57 @@ if (-e ../cut_to_aoi.flag) then
       SAT_llt2rat $stem".PRM" 1 < $3 > boundary_box_ra.xyz
       set bb_range_1 = `awk 'NR==1{ print $1 }' boundary_box_ra.xyz`
       set bb_range_2 = `awk 'NR==2{ print $1 }' boundary_box_ra.xyz`
+      set bb_range_3 = `awk 'NR==3{ print $1 }' boundary_box_ra.xyz`
+      set bb_range_4 = `awk 'NR==4{ print $1 }' boundary_box_ra.xyz`
       set bb_azimu_1 = `awk 'NR==1{ print $2 }' boundary_box_ra.xyz`
       set bb_azimu_2 = `awk 'NR==2{ print $2 }' boundary_box_ra.xyz`
-      if (`echo "$bb_range_1 > $bb_range_2" | bc -l` == 1) then
-        set range_max = $bb_range_1
-        set range_min = $bb_range_2
-      else
+      set bb_azimu_3 = `awk 'NR==3{ print $2 }' boundary_box_ra.xyz`
+      set bb_azimu_4 = `awk 'NR==4{ print $2 }' boundary_box_ra.xyz`
+
+      set range_max = $bb_range_1
+      if (`echo "$bb_range_2 > $range_max" | bc -l` == 1) then
         set range_max = $bb_range_2
-        set range_min = $bb_range_1
       endif
-      if (`echo "$bb_azimu_1 > $bb_azimu_2" | bc -l` == 1) then
-        set azimu_max = $bb_azimu_1
-        set azimu_min = $bb_azimu_2
-      else
+      if (`echo "$bb_range_3 > $range_max" | bc -l` == 1) then
+        set range_max = $bb_range_3
+      endif
+      if (`echo "$bb_range_4 > $range_max" | bc -l` == 1) then
+        set range_max = $bb_range_4
+      endif
+
+      set range_min = $bb_range_1
+      if (`echo "$bb_range_2 < $range_min" | bc -l` == 1) then
+        set range_min = $bb_range_2
+      endif
+      if (`echo "$bb_range_3 < $range_min" | bc -l` == 1) then
+        set range_min = $bb_range_3
+      endif
+      if (`echo "$bb_range_4 < $range_min" | bc -l` == 1) then
+        set range_min = $bb_range_4
+      endif
+
+      set azimu_max = $bb_azimu_1
+      if (`echo "$bb_azimu_2 > $azimu_max" | bc -l` == 1) then
         set azimu_max = $bb_azimu_2
-        set azimu_min = $bb_azimu_1
       endif
+      if (`echo "$bb_azimu_3 > $azimu_max" | bc -l` == 1) then
+        set azimu_max = $bb_azimu_3
+      endif
+      if (`echo "$bb_azimu_3 > $azimu_max" | bc -l` == 1) then
+        set azimu_max = $bb_azimu_3
+      endif
+
+      set azimu_min = $bb_azimu_1
+      if (`echo "$bb_azimu_2 < $azimu_min" | bc -l` == 1) then
+        set azimu_min = $bb_azimu_2
+      endif
+      if (`echo "$bb_azimu_3 < $azimu_min" | bc -l` == 1) then
+        set azimu_min = $bb_azimu_3
+      endif
+      if (`echo "$bb_azimu_3 < $azimu_min" | bc -l` == 1) then
+        set azimu_min = $bb_azimu_3
+      endif
+
       set region_cut = $range_min"/"$range_max"/"$azimu_min"/"$azimu_max
       echo "Var region_cut set to "$region_cut
     endif

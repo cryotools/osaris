@@ -277,24 +277,32 @@ else
 			    # Read radar coordinates for AoI
 			    azimuth_1=$( awk 'NR==1' $work_PATH/boundary-box.xyz | SAT_llt2rat ${stem_2}.PRM 0 | awk '{print $2}' )
 			    azimuth_2=$( awk 'NR==2' $work_PATH/boundary-box.xyz | SAT_llt2rat ${stem_2}.PRM 0 | awk '{print $2}' )
+			    azimuth_3=$( awk 'NR==3' $work_PATH/boundary-box.xyz | SAT_llt2rat ${stem_2}.PRM 0 | awk '{print $2}' )
+			    azimuth_4=$( awk 'NR==4' $work_PATH/boundary-box.xyz | SAT_llt2rat ${stem_2}.PRM 0 | awk '{print $2}' )
+
+			    azimuth_min=$azimuth_1
+			    if [ $( echo "$azimuth_2 < $azimuth_min" | bc -l ) -eq 1 ]; then azimuth_min=$azimuth_2; fi
+			    if [ $( echo "$azimuth_3 < $azimuth_min" | bc -l ) -eq 1 ]; then azimuth_min=$azimuth_3; fi
+			    if [ $( echo "$azimuth_4 < $azimuth_min" | bc -l ) -eq 1 ]; then azimuth_min=$azimuth_4; fi
+				
+			    azimuth_max=$azimuth_1
+			    if [ $( echo "$azimuth_2 > $azimuth_max" | bc -l ) -eq 1 ]; then azimuth_max=$azimuth_2; fi
+			    if [ $( echo "$azimuth_3 > $azimuth_max" | bc -l ) -eq 1 ]; then azimuth_max=$azimuth_3; fi
+			    if [ $( echo "$azimuth_4 > $azimuth_max" | bc -l ) -eq 1 ]; then azimuth_max=$azimuth_4; fi
+
 
 			    if [ "$debug" -ge 1 ]; then 
 				echo "Stem 1: $stem_1"		
 				echo "Stem 2: $stem_2"; echo
 				echo "current id: ${name_stem:24:6}"
 				echo "previous id: ${prev_name_stem:24:6}"; echo
-				echo "Azimuth for $( awk 'NR==1' $work_PATH/boundary-box.xyz ) is $azimuth_1"
-				echo "Azimuth for $( awk 'NR==2' $work_PATH/boundary-box.xyz ) is $azimuth_2"
+				echo "Minimum azimuth in AOI is $azimuth_min"
+				echo "Maximum azimuth in AOI is $azimuth_max"
 			    fi
 			    
-			    # Assemble and cut scenes
-			    if [ "${azimuth_1%.*}" -gt "${azimuth_2%.*}" ]; then
-				# echo "Az 1 > Az 2 - Executing assemble_tops $azimuth_2 $azimuth_1 $stem_1 $stem_2 ../$stem_2"
-				assemble_tops $azimuth_2 $azimuth_1 $stem_2 $stem_1 $work_PATH/preprocessing/$stem_2
-			    else
-				# echo "Az 2 >= Az 1 - Executing assemble_tops $azimuth_1 $azimuth_2 $stem_1 $stem_2 ../$stem_2"
-				assemble_tops $azimuth_1 $azimuth_2 $stem_2 $stem_1 $work_PATH/preprocessing/$stem_2
-			    fi
+			    # Assemble TOPS, omit burst outside AOI
+			    assemble_tops $azimuth_min $azimuth_max $stem_2 $stem_1 $work_PATH/preprocessing/$stem_2
+		    			   
 
 			    prefix_1="${stem_1:15:8}_${stem_1:24:6}_F${swath}"
 			    prefix_2="${stem_2:15:8}_${stem_2:24:6}_F${swath}"
