@@ -1,0 +1,20 @@
+######################################################################
+#
+# Template configuration for the 'Harmonize grids' module
+#
+# Copy to 'config' folder, rename to 'harmonize_grids.config' 
+# and fit to your machine's configuration.
+#
+# Activate the module in the main config file using the postprocessing
+# hook. 
+#
+######################################################################
+
+grid_input_PATH=( "$output_PATH/Displacement" ) #"$output_PATH/GACOS-corrected" "$output_PATH/Displacement"
+# Path(s) to grid files
+# Multiple paths can be provided, seperated by spaces.
+
+# ref_point_xy_coords=""
+# Optional: XY coordinates of reference point in decimal degrees. 
+# Format: longitude/latidue
+# Will override the default usage of 'SGP Identification' module result.

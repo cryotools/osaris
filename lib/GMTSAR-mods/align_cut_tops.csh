@@ -16,7 +16,7 @@ unset noclobber
 #
 if ($#argv < 5) then
  echo " "
- echo "Usage: align_tops.csh master_prefix master_orb_file slave_s1a_prefix slave_orb_file dem.grd" 
+ echo "Usage: align_cut_tops.csh master_prefix master_orb_file slave_s1a_prefix slave_orb_file dem.grd" 
  echo " "
  echo "Be sure the tiff, xml, orbit and dem files are available in the local directory."
  echo " "
@@ -56,8 +56,8 @@ set mtiff = ` echo $1.tiff `
 set mxml = ` echo $1.xml `
 set stiff = ` echo $3.tiff `
 set sxml = ` echo $3.xml `
-set mpre = ` echo $1 | awk '{ print "S1A"substr($1,16,8)"_"substr($1,25,6)"_F"substr($1,7,1)}'`
-set spre = ` echo $3 | awk '{ print "S1A"substr($1,16,8)"_"substr($1,25,6)"_F"substr($1,7,1)}'`
+set mpre = ` echo $1 | awk '{ print "S1_"substr($1,16,8)"_"substr($1,25,6)"_F"substr($1,7,1)}'`
+set spre = ` echo $3 | awk '{ print "S1_"substr($1,16,8)"_"substr($1,25,6)"_F"substr($1,7,1)}'`
 echo $mpre
 echo $spre
 #
@@ -73,10 +73,10 @@ echo $spre
 
 # Copy LED and PRM file created at preprocessing stage
 pwd
-cp ../../orig_cut/$mpre".PRM" .
-cp ../../orig_cut/$mpre".LED" .
-cp ../../orig_cut/$spre".PRM" .
-cp ../../orig_cut/$spre".LED" .
+cp ../../preprocessing/$mpre".PRM" .
+cp ../../preprocessing/$mpre".LED" .
+cp ../../preprocessing/$spre".PRM" .
+cp ../../preprocessing/$spre".LED" .
 
 # cp $mpre".LED" $1".LED"
 # cp $spre".LED" $3".LED"
@@ -161,10 +161,10 @@ awk '{ printf("%.6f %.6f %.6f \n",$1,$3,$4) }' < offset.dat > a.xyz
 #
 #  fit a surface to the range and azimuth offsets
 #
-gmt blockmedian r.xyz -R0/$rmax/0/$amax -I16/8 -r -bo3d > rtmp.xyz
-gmt blockmedian a.xyz -R0/$rmax/0/$amax -I16/8 -r -bo3d > atmp.xyz
-gmt surface rtmp.xyz -bi3d -R0/$rmax/0/$amax -I16/8 -T0.3 -Grtmp.grd -N1000  -r &
-gmt surface atmp.xyz -bi3d -R0/$rmax/0/$amax -I16/8 -T0.3 -Gatmp.grd -N1000  -r &
+gmt blockmedian r.xyz -R0/$rmax/0/$amax -I16/8 -r -bo3d -V > rtmp.xyz
+gmt blockmedian a.xyz -R0/$rmax/0/$amax -I16/8 -r -bo3d -V > atmp.xyz
+gmt surface rtmp.xyz -bi3d -R0/$rmax/0/$amax -I16/8 -T0.3 -Grtmp.grd -N1000  -r -V &
+gmt surface atmp.xyz -bi3d -R0/$rmax/0/$amax -I16/8 -T0.3 -Gatmp.grd -N1000  -r -V &
 wait
 gmt grdmath rtmp.grd FLIPUD = r.grd
 gmt grdmath atmp.grd FLIPUD = a.grd

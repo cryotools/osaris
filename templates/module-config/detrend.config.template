@@ -1,0 +1,26 @@
+##################################################################
+#
+# Template configuration for the 'Detrend' module
+#
+# Copy to 'config' folder, rename to 'detrend.config' 
+# and fit to your machine's configuration.
+#
+#################################################################
+
+RT_grid_input_PATH="$output_PATH/Interf-unwrpd"
+# Path to directory where the input grid files are located, e.g.
+# $output_PATH/Interf-unwrpd
+# $output_PATH/GACOS-corrected
+# $output_PATH/Displacement
+
+RT_model="10+r"
+# The model used for trend removal. Default: 10+r
+# Options:
+# 3    -> bilinear
+# 6    -> quadratic
+# 10   -> bicubic
+# +r may be added to each of the models to perform a iterative robust fitting.
+# More info: http://gmt.soest.hawaii.edu/doc/5.4.4/grdtrend.html
+
+RT_safe_trend_files=1
+# Save calculated trend surface to a subdirectory.

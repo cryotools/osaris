@@ -1,0 +1,102 @@
+##################################################################
+#
+# Template configuration for the 'Create PDF Summary' module
+#
+# Copy to 'config' folder, rename to 'create_pdf_summary.config' 
+# and fit to your machine's configuration.
+#
+#################################################################
+
+page_orientation=1
+# 1: portrait
+# 2: landscape
+
+images_per_page=5
+# Number of image rows to be displayed on each page of the summary PDF.
+# Default is 5
+
+resolution=300
+# Image resolution in dpi.
+# Default is 300 (print quality).
+
+
+# Datasets to display
+
+DIRECTORY_1="$output_PATH/Amplitudes"
+LABEL_1="Amplitude"
+HIST_EQ_1=1
+CPT_1="gray"
+RANGE_1="0/0.0015/0.0001"
+SHOW_SUPPL_1=1
+
+DIRECTORY_2="$output_PATH/Coherences"
+LABEL_2="Coherence"
+HIST_EQ_2=0
+CPT_2="jet"
+RANGE_2="0/1/0.1"
+SHOW_SUPPL_2=0
+
+DIRECTORY_3="$output_PATH/Conn-comps"
+LABEL_3="Connected Components"
+HIST_EQ_3=0
+CPT_3="gray"
+RANGE_3="auto"
+SHOW_SUPPL_3=0
+
+DIRECTORY_4="$output_PATH/Interf-unwrpd"
+LABEL_4="Unwrapped Interferogram"
+HIST_EQ_4=0
+CPT_4="cyclic"
+RANGE_4="-20/20/2"
+SHOW_SUPPL_4=0
+
+# In case harmonized displacements were generated, these are a much nicer dataset to display here:
+# DIRECTORY_4="$output_PATH/Harmonized-grids/Displacement"
+# LABEL_4="LOS Displacement"
+# HIST_EQ_4=0
+# CPT_4="cyclic"
+# RANGE_4="-49/40/5"
+# SHOW_SUPPL_4=0
+
+
+# All default GMT cpt files can be used
+# Range must be provided as "minimum_value/maximum_value/step"
+dem_cpt="#376a4e,#fae394,#8a5117,#7c7772,#ffffff"
+# dem_range=""
+
+AOI_REGION="11.22/22.22/33.33/44.44"
+# The extent of the detail maps in decimal degrees 
+# Optional. If not set, the coordinates defined in the main config file will be used
+# Format: lon_min/lon_max/lat_min/lat_max
+ 
+
+overview_dem="/path/to/overview/dem.grd"
+# A DEM of the wider study region.
+# If not set, the DEM used by GMTSAR will be used.
+
+OVERVIEW_REGION="11/22/33/44"
+# The extent of the map window in decimal degrees 
+# Format: lon_min/lon_max/lat_min/lat_max
+
+# Supplementary vector data for map output
+# Shapefile and GMT files are valid as input
+reference_polygon="/path/to/reference_polygon.gmt"
+aux_polygon_1="/path/to/another_polygon.gmt"
+aux_polygon_2="/path/to/another_polygon2.shp"
+aux_line_1="/path/to/some_lines.shp"
+aux_line_2="/path/to/more_lines.shp"
+aux_point_1="/path/to/here_are_points.shp"
+aux_point_2="/path/to/more_points.grd"
+
+# Styling for suppl. vector data sets in GMT syntax.
+# More info: http://gmt.soest.hawaii.edu/doc/5.4.3/psxy.html
+reference_polygon_style="-Wthin,red"
+aux_polygon_1_style="-Wthinnest,lightblue -Glightblue"
+aux_polygon_2_style="-Wthinnest,lightred -Glightred"
+aux_line_1_style="-Wthick,dotted,white"
+aux_line_2_style="-Wthinnest,black"
+aux_point_1_style="-Sc0.5c -Wred -Gorange"
+aux_point_2_style="-Sd0.5c -Wblack -Gwhite"
+
+
+

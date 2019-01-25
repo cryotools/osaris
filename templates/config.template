@@ -19,26 +19,53 @@ SAR_sensor="Sentinel"
 SAR_datatype="TOPS"
 swaths_to_process=(1 2 3)
 
+# Area of interest
+# Coordinates and elevation of upper-left and lower-right corner 
+# points of area of interest in decimal degrees (-180 to 180 notation for longitude values).
+
+lon_1=12.34
+lat_1=34.56
+
+lon_2=56.78
+lat_2=78.90
+
+
+# Activate cutting of result grids to the extent of area of interest
+# (0 = no, 1 = yes).
+cut_to_aoi=1
+
 
 # - - - - - BASE DATA PATHES - - - - - - - - - - - - - - -
 
 base_PATH="/my/path/OSARIS-results/"
 # Path to directory where OSARIS will put all files
 
+topo_PATH="/my/path/DEM/"
+# Path to directory containing topo data (dem.grd file)
+# Generate at http://topex.ucsd.edu/gmtsar/demgen/
+
 input_files="download"
 # Options:
 # download - use the DHuS script to obtain data, configure, below
 # full path to a directory containing the S1 scene to process, e.g. /data/S1-scenes 
 
-topo_PATH="/my/path/DEM/"
-# Path to directory containing topo data (dem.grd file)
-# Generate at http://topex.ucsd.edu/gmtsar/demgen/
+orig_files="extract"
+# Options:
+# extract - Unizp files from input folder
+# keep - recommended when files were already extracted in a previous run
 
 orbits_PATH="/path/to/orbits_folder"
 # Path to S1 orbit data
 # Existing orbits will be used
 # If folder does not exist or is empty, orbits will be downloaded here
 # --> make sure to set $update_orbits to "1"
+
+update_orbits=0
+# Activate (1) or deactivate (0) automatic orbit retrieval
+
+credentials_file="$OSARIS_PATH/config/login.credentials"
+# File containing login credentials for file downloads
+# To create a new file please use the login.credentials file in the templates directory.
 
 
 # - - - - - GMTSAR CONFIG FILE - - - - - - - - - - - - - 
@@ -54,7 +81,6 @@ process_intf_mode=pairs
 # Mode to process interferograms.
 # pairs -> Chronologicallay moving pairs (A-B, B-C, C-D, ...)
 # single_master -> Fixed master (A-B, A-C, A-D, ...)
-# both -> process in both modes
 
 # master_scene_date=20160217
 # Optionally specify the scene to use as Master in single_master mode
@@ -82,6 +108,15 @@ skip_intf_processing=0
 # 'module_name.config' is located in the config folder. Copy the 
 # template file from the module folder and fit it to your needs.
 
+module_config_PATH=""
+# Optionally, provide a path to where module configuration for this run is stored.
+# If not set and modules are activated (see section MODULES below), OSARIS will
+# look for module configuration in the directory config/ within the OSARIS installation
+# directory.
+# Relative pathes will be interpreted as subdirectories of the config directory.
+# Alternatively, you may the global variable $OSARIS_PATH to indicate directories
+# below the OSARIS installation directory, e.g. "$OSARIS_PATH/config/central-alps
+
 post_download_mods=( )
 # Modules to be run after downloading the S1 datasets
 # Recommended for:
@@ -90,55 +125,25 @@ post_download_mods=( )
 post_extract_mods=( )
 # Modules to be run after extracting the data S1 scenes
 
-post_processing_mods=( create_pdf_summary )
+post_processing_mods=( summary_pdf )
 # Modules to be run after GMTSAR processing
 # Recommended for:
-#   - simple_psi 
-#   - homogenize_intfs 
+#   - sgp_identification
+#   - harmonize_grids
 #   - unstable_coh_metric 
 #   - timeseries_xy 
 #   - statistics 
 #   - grid_difference 
-#   - create_pdf_summary
+#   - summary_pdf
 
 post_postprocessing_mods=( )
 # Modules to be run after calculating statistics and preparing summary reports
-
-
-
-# - - - - - CUTTING AND MERGING - - - - - - - - - - - - - 
-
-# Activate cutting of scenes to the extent of an area of interest
-# (0 = no, 1 = yes).
-cut_to_aoi=0
-
-# Coordinates and elevation of upper-left and lower-right corner 
-# points of area of interest. In case the area of interest crosses
-# the edge of two scenes along the flight path, make sure you have
-# pairs with equal dates in the input folder. Scenes with equal dates
-# will be matched and merged automatically.
-# Only needed when cut_to_aoi=1
-
-# lon_1=11.11 
-# lat_1=22.22
-# elev_1=1234
-
-# lon_2=33.33
-# lat_2=44.44
-# elev_2=1234
-
-# Merge swathes (0 = no, 1 = yes)
-# merge_swathes=1
-# TODO, not yet implemented
 
 
 # - - - - - SLURM CONFIGURATION - - - - - - - - - - - - - -
 
 slurm_account=your_account
 # SLURM account name
-
-slurm_qos=your_qos
-# Job type
 
 slurm_partition=your_partition
 # Partition used for computing.
@@ -176,57 +181,41 @@ slurm_mailtype=ALL
 
 # - - - - - DOWNLOADS AND DATA - - - - - - - - - - - - 
 
-update_orbits=1
-# Activate (1) or deactivate (0) automatic orbit retrieval
 
-orig_files="extract"
-# Options:
-# extract - Unizp files from input folder
-# keep - recommended when files were already extracted in a previous run
+scene_provider=ESA
+# Provider from which to download Sentinel-1 scenes
+# ESA -> Use ESA DHuS API
+# ASF -> Use the EarthData platform by the University of Alaska in Fairbanks
 
-clean_up=0
-# Delete files used for processing after finishing the job
-# 0 or not set -> Keep all files
-# 1 -> Delete files solely used for this run (will keep extracted S1 files for subsequent jobs
-# 2 -> Delete the whole processing folder
+orbit_provider=ASF
+# Provider from which to download Sentinel-1 scenes
+# ESA -> Use ESA DHuS API
+# ASF -> Use the EarthData platform by the University of Alaska in Fairbanks
 
 
-### DHUS download configuration
+### S1 scene download configuration
 ### Only required when $input_files is set to 'download'
 
-# Login credentials for your ESA DHuS account
-username="my_DHUS_user"
-password="my_DHUS_pass"
-
-# Coordinates of area of interest 
-# Provide coords of a bounding box in decimal degree using the following syntax:
-# lon1,lat1:lon2,lat2
-area_of_interest="74.1,42.92:74.83,42.27"
+# relative_orbit=
+# Set a relative orbit to constrain your processing to ascending or descending data takes.
+# The right orbit number can be identified via 'View product details' (eye icon) in search 
+# results at https://scihub.copernicus.eu/dhus/
 
 # Timing configuration
 # Date format is ISO 8601, YYYY-MM-DDThh:mm:ss.cccZ (e.g. -s 2016-10-02T06:00:00.000Z)
 sensing_period_start="2015-01-01T00:00:00.000Z"
 sensing_period_end="NOW"
-
 ingestion_period_start="2015-01-01T00:00:00.000Z"
 ingestion_period_end="NOW"
 
-search_string=""
-# Additional configuration (see DHUS for documentation and examples).
-# Use e.g., use "relativeorbitnumber:27" to limit results to orbit 27.
 
-mission="Sentinel-1"
 
-#instrument="SAR"
+# - - - - - CLEAN UP - - - - - - - - - - - - - - - - 
 
-product_type="SLC"
+clean_up=0
+# Delete files used for processing after finishing the job
+# 0 or not set -> Keep all files
+# 1 -> Delete files solely used for this run (will keep extracted S1 files for subsequent jobs)
+# 2 -> Delete the whole processing folder
 
-info_file_destination=""
 
-max_results_per_page=100
-# Values > 100 will lead to an error
-
-download_option="product"
-# Options: product - manifest - all
-
-concurrent_downloads=2

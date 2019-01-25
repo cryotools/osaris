@@ -1,22 +1,23 @@
 ##################################################################
 #
-# Template configuration for the simple_PSI module
+# Template configuration for the 'Stable Ground Point Identification' module
 #
-# Copy to 'config' folder, rename to 'simple_PSI.config' 
+# Copy to 'config' folder, rename to 'sgp_identification.config', 
 # and fit to your setup and needs.
 #
 #################################################################
 
-psi_threshold="0.2"
+sgpi_threshold="0.2"
 # Minimum coherence value. 
 # If unwrapping is acitve, psi_theshold should be >= the unwrapping
 # threshold as provided in the GMTSAR config file.
 
-psi_input_PATH="$output_PATH/Pairs-forward/F3"
+sgpi_input_PATH="$output_PATH/Coherences"
 # Path where the input data resides.
-# You may provide a full path or use the $output_PATH variable, e.g.
-# psi_input_PATH="$output_PATH/Pairs-forward/F3"
+# You may provide a full path or use the $output_PATH variable
+# Default: $output_PATH/Coherences
 
-# psi_region="11.1/22.2/33.3/44.4"
+sgpi_region="11.1/22.2/33.3/44.4"
 # Limit the analysis to a subregion instead of whole scene extents (optional).
 # Format: lon_min/lon_max/lat_min/lat_max (each in decimal degrees).
+

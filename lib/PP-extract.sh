@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 extract_start=`date +%s`
 echo

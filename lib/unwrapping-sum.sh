@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 
 #################################################################
@@ -178,6 +178,6 @@ else
    gmt grdmath $cut_filename_2 $cut_filename_1 ADD = $output_PATH/${diff_filename}.grd -V
 
    cd ..
-   # rm -r Temp
+   rm -r Temp
 
 fi
