@@ -142,8 +142,8 @@ if (-e ../cut_to_aoi.flag) then
       if (`echo "$bb_azimu_3 > $azimu_max" | bc -l` == 1) then
         set azimu_max = $bb_azimu_3
       endif
-      if (`echo "$bb_azimu_3 > $azimu_max" | bc -l` == 1) then
-        set azimu_max = $bb_azimu_3
+      if (`echo "$bb_azimu_4 > $azimu_max" | bc -l` == 1) then
+        set azimu_max = $bb_azimu_4
       endif
 
       set azimu_min = $bb_azimu_1
@@ -153,8 +153,8 @@ if (-e ../cut_to_aoi.flag) then
       if (`echo "$bb_azimu_3 < $azimu_min" | bc -l` == 1) then
         set azimu_min = $bb_azimu_3
       endif
-      if (`echo "$bb_azimu_3 < $azimu_min" | bc -l` == 1) then
-        set azimu_min = $bb_azimu_3
+      if (`echo "$bb_azimu_4 < $azimu_min" | bc -l` == 1) then
+        set azimu_min = $bb_azimu_4
       endif
 
       set region_cut = $range_min"/"$range_max"/"$azimu_min"/"$azimu_max
