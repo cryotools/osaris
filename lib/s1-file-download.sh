@@ -26,7 +26,7 @@ else
     aoi_ok=1
 fi
 
-if [ "$scene_provider" = "ESA"]; then
+if [ "$scene_provider" = "ESA" ]; then
     echo; echo "Data provider set to ESA's DHuS API"
 
     if [ -z "$ESA_username" ] || [ -z "$ESA_password" ]; then
@@ -37,7 +37,7 @@ if [ "$scene_provider" = "ESA"]; then
 	echo "Found ESA login credentials"
 	login_ok=1
     fi
-elif [ "$scene_provider" = "ASF"]; then
+elif [ "$scene_provider" = "ASF" ]; then
     echo; echo "Data provider set to ASF EarthData API"
 
     if [ -z "$ASF_username" ] || [ -z "$ASF_password" ]; then
@@ -58,8 +58,8 @@ if [ "$aoi_ok" -eq 1 ] && [ "$login_ok" -eq 1 ]; then
 	dhusget_config="-u $ESA_username -p $ESA_password"
 
 	area_of_interest="${lon_1},${lat_1}:${lon_2},${lat_2}"
-
-	if [ ! -z "$download_option" ]; then dhusget_config="$dhusget_config -o $download_option"; fi
+	
+	if [ ! -z "$download_option" ]; then dhusget_config="$dhusget_config -o $download_option"; else dhusget_config="$dhusget_config -o product"; fi
 	if [ ! -z "$mission" ]; then dhusget_config="$dhusget_config -m $mission"; else dhusget_config="$dhusget_config -m Sentinel-1"; fi
 	if [ ! -z "$instrument" ]; then dhusget_config="$dhusget_config -i $instrument"; fi # else dhusget_config="$dhusget_config -i SAR"; fi
 	if [ ! -z "$sensing_period_start" ]; then dhusget_config="$dhusget_config -S $sensing_period_start"; fi
@@ -89,23 +89,36 @@ if [ "$aoi_ok" -eq 1 ] && [ "$login_ok" -eq 1 ]; then
 	echo "Downloading from ASF"
 		
 	cd $input_PATH
-	ASF_call="https://api.daac.asf.alaska.edu/services/search/param?platform=Sentinel-1A,Sentinel-1B"
-
+	ASF_call="https://api.daac.asf.alaska.edu/services/search/param?"
+	ASF_call="${ASF_call}polygon=${lon_1},${lat_1},${lon_1},${lat_2},${lon_2},${lat_2},${lon_2},${lat_1},${lon_1},${lat_1}"
+	ASF_call="${ASF_call}&platform=Sentinel-1A,Sentinel-1B"
+# polygon=-57.1,-17.83,-57.1,-18.8,-56.6,-18.8,-56.6,-17.83,-57.1,-17.83\
+# &platform=Sentinel-1A,Sentinel-1B\
+# &start=2017-10-01T00:00:00UTC\&end=2019-01-01T00:00:00UTC\&processingLevel=SLC\&relativeOrbit=141\&maxResults=10\&output=csv
 
 	if [ ! -z "$sensing_period_start" ]; then ASF_call="${ASF_call}&start=${sensing_period_start::-5}UTC"; fi
 	if [ ! -z "$sensing_period_end" ]; then ASF_call="${ASF_call}&end=${sensing_period_end::-5}UTC"; fi
-	if [ ! -z "$ingestion_period_start" ]; then ASF_call="${ASF_call}&processingDate=${ingestion_period_start::-5}UTC"; fi
+	# if [ ! -z "$ingestion_period_start" ]; then ASF_call="${ASF_call}&processingDate=${ingestion_period_start::-5}UTC"; fi
 	# if [ ! -z "$ingestion_period_end" ]; then ASF_call="${ASF_call}&____=${ingestion_period_end}UTC"; fi
-	
-
-	ASF_call="${ASF_call}&polygon=${lon_1},${lat_1},${lon_1},${lat_2},${lon_2},${lat_1},${lon_2},${lat_2}"
+       
 	ASF_call="${ASF_call}&processingLevel=SLC"
 	if [ ! -z "$relative_orbit" ]; then ASF_call="${ASF_call}&relativeOrbit=${relative_orbit}"; fi
 	ASF_call="${ASF_call}&output=csv"
 
+	if [ $debug -ge 1 ]; then
+	    echo; echo "ASF call:"
+	    echo "$ASF_call"
+	fi
 	echo $ASF_call | xargs curl  > asf.csv
 
 	ASF_files=($( cat asf.csv | awk -F"," '{if (NR>1) print $27}' | awk -F'"' '{print $2}' ))
+
+	if [ $debug -ge 1 ]; then
+	    echo; echo "Files to download:"
+	    for ASF_file in ${ASF_files[@]} ]; do
+		echo "${ASF_files[@]}"; echo
+	    done
+	fi
 
 	for ASF_file in ${ASF_files[@]}; do	    
 	    wget --http-user=$ASF_username --http-password=$ASF_password -nc $ASF_file	    

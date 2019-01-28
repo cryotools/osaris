@@ -204,7 +204,8 @@ For all reports and inquiries please contact [David Loibl](https://hu.berlin/dav
 
 
 ## <a name="crediting"></a> Crediting OSARIS
-As stated in the license file, you are free to use OSARIS in whatever way you like. If you publish OSARIS results, e.g. in scientific publications, please credit the website cryo-tools.org/tools/osaris .
+As stated in the license file, you are free to use OSARIS in whatever way you like. If you publish OSARIS results, e.g. in scientific publications, please credit OSARIS using the Zenodo DOI:
+[![DOI](https://zenodo.org/badge/108271075.svg)](https://zenodo.org/badge/latestdoi/108271075)
 
 
 ## <a name="credits-contributors"></a> Credits / Contributors
