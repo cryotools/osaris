@@ -129,6 +129,9 @@ else
 		orbit_1=$previous_orbit
 		scene_2=$current_scene
 		orbit_2=$current_orbit
+		if [ $debug -ge 1 ]; then 
+		    echo; echo "Scene 1: ${scene_1:15:8} - Scene 2: ${scene_2:15:8}"
+		fi
 		if [ "${scene_1:15:8}" -gt "${scene_2:15:8}" ]; then
 		    start_processing=0
 		    echo "Scenes ${scene_1:15:8} is equal or greater than ${scene_2:15:8}. Skipping ..."
