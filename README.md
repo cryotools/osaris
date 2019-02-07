@@ -201,6 +201,7 @@ The following constants will be set by the OSARIS main program upon initializati
 
 All values set in the main config file can be accessed by their respective variable name.
 
+
 ## <a name="contributing"></a> Contributing
 Your participation in the development of OSARIS is strongly encouraged! In case you want to add a feature, module, etc., please fork your copy, code your additions, and open a merge request when finished. If you are using OSARIS, it would be very helpful if you could prepare a short report with general information about your OS and hardware setup and your experience with the software, so that we can evaluate compatibility over different configurations.
 For all reports and inquiries please contact [David Loibl](https://hu.berlin/davidloibl).
