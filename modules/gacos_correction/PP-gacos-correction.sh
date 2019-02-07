@@ -127,11 +127,11 @@ gmt grdmath $GACOS_work_PATH/cut_intfs/$intf ${szpddm_file::-4}-cut.grd SUB = $c
 
 
 
-if [ -f $UCM_output_PATH/$UCM_file ]; then status_UCM=1; else status_UCM=0; fi
+if [ -f $corrected_phase_file ]; then status_GACOS=1; else status_GACOS=0; fi
 
 end=`date +%s`
 runtime=$((end-start))
 
-echo "${high_corr_file:7:8}-${high_corr_file:30:8} ${corr_file:7:8}-${corr_file:30:8} $SLURM_JOB_ID $runtime $status_UCM" >> $output_PATH/Reports/PP-UCM-stats.tmp
+echo "${intf:0:8} ${intf:10:8} $SLURM_JOB_ID $runtime $status_GACOS" >> $output_PATH/Reports/PP-GACOS-stats.tmp
 
 printf 'Processing finished in %02dd %02dh:%02dm:%02ds\n' $(($runtime/86400)) $(($runtime%86400/3600)) $(($runtime%3600/60)) $(($runtime%60))

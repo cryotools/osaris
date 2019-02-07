@@ -19,6 +19,10 @@ resolution=300
 # Image resolution in dpi.
 # Default is 300 (print quality).
 
+activate_PP=0
+# Activate Slurm-based parallel processing.
+# Caution: This requires ImageMagick to be installed on the processing nodes.
+
 
 # Datasets to display
 
