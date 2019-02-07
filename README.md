@@ -77,7 +77,7 @@ Go to the OSARIS folder. Launch your run with
 ```
 
 ## <a name="tutorial"></a> Tutorial
-If you are new to Sentinel-1 processing, take a look at the [OSARIS Tutorial at CryTools.org](https://cryo-tools.org/tools/osaris/osaris-tutorial-1/) that will guide you through an example, starting from the very basics of finding data.
+If you are new to Sentinel-1 processing, take a look at the [OSARIS Tutorial at CryoTools.org](https://cryo-tools.org/tools/osaris/osaris-tutorial-1/) that will guide you through an example, starting from the very basics of finding data.
 
 ## <a name="tipps"></a> Tipps
 - Launch OSARIS from within a [tmux](https://github.com/tmux/tmux/wiki) or [screen](https://www.gnu.org/software/screen/) session to detach your terminal session from the process. Doing this will prevent the OSARIS processing to fail in case you lose connection, your terminal crashes, etc. Tmux' feature to arrange multiple windows and panes is extremely handy to monitor log files during processing (see below).
