@@ -254,129 +254,152 @@ else
 	slave_date=${intf_pair:10:8}
 	printf "\n \n Now working on results for \n Master date: $master_date \n Slave date: $slave_date \n \n"
 
-	PS_BASE="$work_PATH/Summary/${master_date}-${slave_date}-grd"	
-	HISTEQ_BASE="$work_PATH/Summary/${master_date}-${slave_date}-hiq"
-	PDF_MERGED="$work_PATH/Summary/${master_date}-${slave_date}-combined.pdf"
-	PDF_MERGED_ROT90=${PDF_MERGED::-4}_rot90.png
-	
-	if [ ! -f "$PDF_MERGED_ROT90" ]; then
+	if [ "$activate_PP" -eq 1 ]; then
+	    echo; echo "Starting parallel processing job for Summary PDF of:"
+	    echo "$intf_pair"
 
-	    GRD_FAIL=( 0 0 0 0 )
+	    slurm_jobname="$slurm_jobname_prefix-GACOS"		
 
-	    for counter in 0 1 2 3; do 
-		echo "Preparing ${LABELS[$counter]} ..."
-		# echo "${DIRECTORIES[$counter]}"
-		cd ${DIRECTORIES[$counter]}
-		ls_result=$( ls ${intf_pair}*.grd )
-		if [ -f $ls_result ]; then		    	    
-		    GRD[$counter]="${DIRECTORIES[$counter]}/$ls_result"
-		    echo "${LABELS[$counter]} file found: ${GRD[$counter]}"		
-		    
-		    echo "HISTEQS $counter : ${HISTEQS[$counter]}"
+	    sbatch \
+		--output=$log_PATH/summary-%j.log \
+		--error=$log_PATH/summary-%j.log \
+		--workdir=$work_PATH/Summary \
+		--job-name=$slurm_jobname \
+		--qos=$slurm_qos \
+		--account=$slurm_account \
+		--partition=$slurm_partition \
+		--mail-type=$slurm_mailtype \
+		$OSARIS_PATH/modules/summary_pdf/PP-summary-pdf.sh \
+		${module_config_PATH}/${module_name}.config \
+		$work_PATH \
+		$intf_pair	    
 
-		    if [ ${HISTEQS[$counter]} -eq "1" ]; then
-			if [ ! -f ${HISTEQ_BASE}-$counter.grd ]; then
-    			    echo; echo "Calculate histogram equalization for ${GRD[$counter]}"
-    			    gmt grdhisteq ${GRD[$counter]} -G${HISTEQ_BASE}-$counter.grd -N -V
-    			    gmt grd2cpt -E15 ${HISTEQ_BASE}-$counter.grd -C${CPTS[$counter]} -V > $work_PATH/Summary/grd_${counter}.cpt
-			else
-			    echo; echo "${LABELS[$counter]} histogram exists, skipping ..."; echo
-			fi
-		    fi
-		else
-		    echo "No ${LABELS[$counter]} file found"
-		    GRD_FAIL[$counter]=1
-		    GRD_MESSAGE[$counter]="No ${LABELS[$counter]} file"
-		fi
-	    done
+	else
 
-
+	    PS_BASE="$work_PATH/Summary/${master_date}-${slave_date}-grd"	
+	    HISTEQ_BASE="$work_PATH/Summary/${master_date}-${slave_date}-hiq"
+	    PDF_MERGED="$work_PATH/Summary/${master_date}-${slave_date}-combined.pdf"
+	    PDF_MERGED_ROT90=${PDF_MERGED::-4}_rot90.png
 	    
-	    cd $work_PATH/Summary
+	    if [ ! -f "$PDF_MERGED_ROT90" ]; then
 
-	    SCALE=18  
-	    XSTEPS=0.5
-	    YSTEPS=0.5	
+		GRD_FAIL=( 0 0 0 0 )
 
-	    if [ ! -e $PDF_MERGED ]; then
-		for counter in 0 1 2 3; do
-    		    if [ ! -e ${PS_BASE}-$counter.ps ]; then
-			echo; echo "Creating ${LABELS[$counter]} in ${PS_BASE}-$counter.ps"		
-			TITLE="${LABELS[$counter]} {master_date}"			
-			if [ ! "${GRD_FAIL[$counter]}" -eq 1 ]; then
-			    if [ ${HISTEQS[$counter]} -eq 1 ]; then
-				echo; echo "${LABELS[$counter]}: ${HISTEQ_BASE}-$counter.grd"; echo
-				gmt grdimage ${HISTEQ_BASE}-$counter.grd  \
-				    -C$work_PATH/Summary/grd_${counter}.cpt -R$AOI_REGION -JM$SCALE -B+t"$TITLE" -Q \
-				    -Bx$XSTEPS -By$YSTEPS -V -K -Yc -Xc > ${PS_BASE}-$counter.ps
-			    else
-				gmt grdimage ${GRD[$counter]}  \
-				    -C${CPT_FILES[$counter]} -R$AOI_REGION -JM$SCALE -B+t"$TITLE" -Q \
-				    -Bx$XSTEPS -By$YSTEPS -V -K -Yc -Xc > ${PS_BASE}-$counter.ps
-			    fi
-			    
-			    if [ ${SHOW_SUPPLS[$counter]} -eq 1 ]; then
-				for vector_file in ${vector_files[@]}; do
-				    style_name=${vector_file}_style
-				    vector_style=$( echo "${!style_name}" | tr -d "'" )
-				    gmt psxy $vector_style -JM$SCALE -R$AOI_REGION ${!vector_file::-4}.gmt -O -K -V >> ${PS_BASE}-$counter.ps			    				
-				done
-			    fi
-			else			
-			    gmt grdimage $CPDFS_dem_HS -C#ffffff,#eeeeee \
-				-R$AOI_REGION -JM$SCALE -B+t"${GRD_MESSAGE[$counter]}" -Q -Bx$XSTEPS -By$YSTEPS -V -K -Yc -Xc > ${PS_BASE}-$counter.ps
-			    			    
-			    
-			    if [ $page_orientation -eq 1 ]; then
-				convert -density $resolution -fill red -pointsize 18 -gravity center \
-				    -trim -verbose label:"${GRD_MESSAGE[$counter]}" \
-				    ${PS_BASE}-$counter.ps -quality 100  ${PS_BASE}-$counter.ps
-			    else
-				convert -rotate 90 -density $resolution -fill red -pointsize 18 -gravity center \
-				    -trim -verbose label:"${GRD_MESSAGE[$counter]}" \
-				    ${PS_BASE}-$counter.ps -quality 100  ${PS_BASE}-$counter.ps
-			    fi
-			fi
+		for counter in 0 1 2 3; do 
+		    echo; echo "Preparing ${LABELS[$counter]} ..."
 		    
-			if [ $page_orientation -eq 1 ]; then
-			    convert -verbose -density $resolution -trim  ${PS_BASE}-$counter.ps -quality 100 ${PS_BASE}-$counter.png
-			else
-			    convert -verbose -rotate 90 -density $resolution -trim  ${PS_BASE}-$counter.ps -quality 100 ${PS_BASE}-$counter.png
+		    cd ${DIRECTORIES[$counter]}
+		    ls_result=$( ls ${intf_pair}*.grd )
+		    if [ -f $ls_result ]; then		    	    
+			GRD[$counter]="${DIRECTORIES[$counter]}/$ls_result"
+			echo "${LABELS[$counter]} file found: ${GRD[$counter]}"		
+			
+			echo "HISTEQS $counter : ${HISTEQS[$counter]}"
+
+			if [ ${HISTEQS[$counter]} -eq "1" ]; then
+			    if [ ! -f ${HISTEQ_BASE}-$counter.grd ]; then
+    				echo; echo "Calculate histogram equalization for ${GRD[$counter]}"
+    				gmt grdhisteq ${GRD[$counter]} -G${HISTEQ_BASE}-$counter.grd -N -V
+    				gmt grd2cpt -E15 ${HISTEQ_BASE}-$counter.grd -C${CPTS[$counter]} -V > $work_PATH/Summary/grd_${counter}.cpt
+			    else
+				echo; echo "${LABELS[$counter]} histogram exists, skipping ..."; echo
+			    fi
 			fi
 		    else
-			echo; echo "${LABELS[$counter]} in ${PS_BASE}-$counter.ps exists, skipping ..."
-    		    fi
+			echo "No ${LABELS[$counter]} file found"
+			GRD_FAIL[$counter]=1
+			GRD_MESSAGE[$counter]="No ${LABELS[$counter]} file"
+		    fi
 		done
 
+
 		
-    		echo "Merging PS into $PDF_MERGED_ROT90"
-		take_diff=$(( ($(date --date="$slave_date" +%s) - $(date --date="$master_date" +%s) )/(60*60*24) ))
-		if [ "$page_orientation" -eq 1 ]; then
-    		    montage ${PS_BASE}-0.png ${PS_BASE}-1.png ${PS_BASE}-2.png ${PS_BASE}-3.png  \
-			-rotate 90 -geometry +100+150 -density $resolution -title "${master_date}-${slave_date} (${take_diff} days)" \
-			-quality 100 -tile 4x1 -mode concatenate -verbose $PDF_MERGED_ROT90
-		else
-		    montage -tile 1x4 -geometry +20+30 \
-			${PS_BASE}-0.png ${PS_BASE}-1.png ${PS_BASE}-2.png ${PS_BASE}-3.png  \
-			-title "${master_date}-${slave_date} (${take_diff} days)" \
-			-density $resolution -quality 100 -mode concatenate -verbose $PDF_MERGED_ROT90
-		fi
+		cd $work_PATH/Summary
+
+		SCALE=18  
+		XSTEPS=0.5
+		YSTEPS=0.5	
+
+		if [ ! -e $PDF_MERGED ]; then
+		    for counter in 0 1 2 3; do
+    			if [ ! -e ${PS_BASE}-$counter.ps ]; then
+			    echo; echo "Creating ${LABELS[$counter]} in ${PS_BASE}-$counter.ps"		
+			    TITLE="${LABELS[$counter]} {master_date}"			
+			    if [ ! "${GRD_FAIL[$counter]}" -eq 1 ]; then
+				if [ ${HISTEQS[$counter]} -eq 1 ]; then
+				    echo; echo "${LABELS[$counter]}: ${HISTEQ_BASE}-$counter.grd"; echo
+				    gmt grdimage ${HISTEQ_BASE}-$counter.grd  \
+					-C$work_PATH/Summary/grd_${counter}.cpt -R$AOI_REGION -JM$SCALE -B+t"$TITLE" -Q \
+					-Bx$XSTEPS -By$YSTEPS -V -K -Yc -Xc > ${PS_BASE}-$counter.ps
+				else
+				    gmt grdimage ${GRD[$counter]}  \
+					-C${CPT_FILES[$counter]} -R$AOI_REGION -JM$SCALE -B+t"$TITLE" -Q \
+					-Bx$XSTEPS -By$YSTEPS -V -K -Yc -Xc > ${PS_BASE}-$counter.ps
+				fi
+				
+				if [ ${SHOW_SUPPLS[$counter]} -eq 1 ]; then
+				    for vector_file in ${vector_files[@]}; do
+					style_name=${vector_file}_style
+					vector_style=$( echo "${!style_name}" | tr -d "'" )
+					gmt psxy $vector_style -JM$SCALE -R$AOI_REGION ${!vector_file::-4}.gmt -O -K -V >> ${PS_BASE}-$counter.ps			    				
+				    done
+				fi
+			    else			
+				gmt grdimage $CPDFS_dem_HS -C#ffffff,#eeeeee \
+				    -R$AOI_REGION -JM$SCALE -B+t"${GRD_MESSAGE[$counter]}" -Q -Bx$XSTEPS -By$YSTEPS -V -K -Yc -Xc > ${PS_BASE}-$counter.ps
+			    	
+				
+				if [ $page_orientation -eq 1 ]; then
+				    convert -density $resolution -fill red -pointsize 18 -gravity center \
+					-trim -verbose label:"${GRD_MESSAGE[$counter]}" \
+					${PS_BASE}-$counter.ps -quality 100  ${PS_BASE}-$counter.ps
+				else
+				    convert -rotate 90 -density $resolution -fill red -pointsize 18 -gravity center \
+					-trim -verbose label:"${GRD_MESSAGE[$counter]}" \
+					${PS_BASE}-$counter.ps -quality 100  ${PS_BASE}-$counter.ps
+				fi
+			    fi
+			    
+			    if [ $page_orientation -eq 1 ]; then
+				convert -verbose -density $resolution -trim  ${PS_BASE}-$counter.ps -quality 100 ${PS_BASE}-$counter.png
+			    else
+				convert -verbose -rotate 90 -density $resolution -trim  ${PS_BASE}-$counter.ps -quality 100 ${PS_BASE}-$counter.png
+			    fi
+			else
+			    echo; echo "${LABELS[$counter]} in ${PS_BASE}-$counter.ps exists, skipping ..."
+    			fi
+		    done
+
+		    
+    		    echo "Merging PS into $PDF_MERGED_ROT90"
+		    take_diff=$(( ($(date --date="$slave_date" +%s) - $(date --date="$master_date" +%s) )/(60*60*24) ))
+		    if [ "$page_orientation" -eq 1 ]; then
+    			montage ${PS_BASE}-0.png ${PS_BASE}-1.png ${PS_BASE}-2.png ${PS_BASE}-3.png  \
+			    -rotate 90 -geometry +100+150 -density $resolution -title "${master_date}-${slave_date} (${take_diff} days)" \
+			    -quality 100 -tile 4x1 -mode concatenate -verbose $PDF_MERGED_ROT90
+		    else
+			montage -tile 1x4 -geometry +20+30 \
+			    ${PS_BASE}-0.png ${PS_BASE}-1.png ${PS_BASE}-2.png ${PS_BASE}-3.png  \
+			    -title "${master_date}-${slave_date} (${take_diff} days)" \
+			    -density $resolution -quality 100 -mode concatenate -verbose $PDF_MERGED_ROT90
+		    fi
 
 
-		if [ "$clean_up" -ge 1 ]; then
-    		    rm ${PS_BASE}_*.ps 
-		    rm ${PS_BASE}_*.png
+		    if [ "$clean_up" -ge 1 ]; then
+    			rm ${PS_BASE}_*.ps 
+			rm ${PS_BASE}_*.png
+		    fi
+		    
+		    if [ "${HISTEQ_BASE}-$counter.grd" != "$CPDFS_dem_HS" ]; then
+			rm ${HISTEQ_BASE}-*.grd
+		    fi
 		fi
-		
-		if [ "${HISTEQ_BASE}-$counter.grd" != "$CPDFS_dem_HS" ]; then
-		    rm ${HISTEQ_BASE}-*.grd
-		fi
+	    else
+		echo "File $PDF_MERGED_ROT90 exists, skipping ..."
 	    fi
-	else
-	    echo "File $PDF_MERGED_ROT90 exists, skipping ..."
+	    
+	    ((CPDFS_count+1))
 	fi
-	    	
-	((CPDFS_count+1))
     done
     
 

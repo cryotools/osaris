@@ -1,7 +1,7 @@
 ![OSARIS](https://cryo-tools.org/wp-content/uploads/2019/01/OSARIS-logo-600px.png)
 
 ### Open Source SAR Investigation System
-OSARIS provides a framework to process large stacks of synthetic aperture radar (SAR) data in High Performance Computing (HPC) environments.
+OSARIS provides a framework to process large stacks of [Sentinel-1](http://www.esa.int/Our_Activities/Observing_the_Earth/Copernicus/Sentinel-1/Introducing_Sentinel-1) Synthetic Aperture Radar (SAR) data in High Performance Computing (HPC) environments.
 
 ## Table of Contents
 * [Introduction](#introduction)
@@ -10,6 +10,7 @@ OSARIS provides a framework to process large stacks of synthetic aperture radar 
   * [Installation](#installation)
   * [Initial configuration](#initial-configuration)
   * [Launch](#launch)
+* [Tutorial](#tutorial)
 * [Tipps](#tipps)
 * [Modules](#modules)
   * [Concept](#module-concept)
@@ -26,14 +27,14 @@ With the advent of the two Sentinel 1 satellites, high-quality Synthetic Apertur
 Key features of OSARIS are:
 - Convenient configuration (only one main config file, documented templates for all configuration)
 - Modular structure for flexible processing schemes, modules for a variety of tasks readily available
-- Minimal software requirements (bash, csh, GMT, GMTSAR, Slurm)
+- Minimalist software requirements (bash, csh, GMT, GMTSAR, Slurm)
 - Automatic download of relevant Sentinel-1 scenes based on area of interest (AOI) and time interval
 - Automatic download and assignment of orbits
 - Merging of multiple swaths
 - Merging of bursts from multiple slices, omission of bursts that are outside the AOI
 - Single-master and pair-wise processing schemes
 - Clear and simple directory structure and file naming
-- Output files in the form of analysis-ready geocoded stacks of grid files, optionally also cut to AOI
+- Output files in the form of analysis-ready geocoded stacks of grid files, optionally cut to AOI extent
 - Processing time measurements (wall clock versus total processing time)
 - Detailed report and log files
 - Summary PDF showing key processing results for each time step (see module Summary PDF)
@@ -45,7 +46,7 @@ Key features of OSARIS are:
 1. A working installation of [GMTSAR](http://gmt.soest.hawaii.edu/projects/gmt5sar/wiki)
 2. A working SLURM environment, further info and installation instructions at
    https://slurm.schedmd.com/   
-3. [ImageMagick](https://www.imagemagick.org/script/index.php) (optional, required only by the 'Create PDF summary' module) 
+3. [ImageMagick](https://www.imagemagick.org/script/index.php) (optional, required only by the 'Summary PDF' module) 
 
 ### <a name="installation"></a> Installation
 Just clone the OSARIS repository to your machine:
@@ -75,8 +76,11 @@ Go to the OSARIS folder. Launch your run with
 ./osaris.sh ./config/<my_config>.config
 ```
 
+## <a name="tutorial"></a> Tutorial
+If you are new to Sentinel-1 processing, take a look at the [OSARIS Tutorial at CryTools.org](https://cryo-tools.org/tools/osaris/osaris-tutorial-1/) that will guide you through an example, starting from the very basics of finding data.
+
 ## <a name="tipps"></a> Tipps
-- Launch OSARIS from within a [tmux](https://github.com/tmux/tmux/wiki) or [screen](https://www.gnu.org/software/screen/) session to detach your terminal session from the process. Doing this will prevent the OSARIS processing to fail in case you lose connection, your terminal crashes, etc. (besides numerous other advantages of using tmux/screen).
+- Launch OSARIS from within a [tmux](https://github.com/tmux/tmux/wiki) or [screen](https://www.gnu.org/software/screen/) session to detach your terminal session from the process. Doing this will prevent the OSARIS processing to fail in case you lose connection, your terminal crashes, etc. Tmux' feature to arrange multiple windows and panes is extremely handy to monitor log files during processing (see below).
 
 - Start with relatively few scenes and a minimum of modules. Check the output and optimize your configuration. When the basic processing results fit your needs, use the options to turn off pre- and interferometric processing and start adding modules.
 
@@ -88,7 +92,7 @@ to monitor what is going on.
 
 - After processing, take a look at the reports in 'Output/Reports'.
 
-- Use the 'create_pdf_summary' module to get an overview of the interferometric processing results.
+- Use the 'summary_pdf' module to get an overview of the interferometric processing results.
 
 - Make sure the DEM extent is not much bigger than the extent of the scenes you actually want to process. A big DEM will need a lot of extra processing time.
 
@@ -98,9 +102,9 @@ to monitor what is going on.
 
 Modules allow to execute additional processing routines at different stages, i.e. after file downloads, after file extraction, after GMTSAR processing, and after post-processing (more module hooks may be added in the future). As such, OSARIS modules facilitate designing processing schemes that fit individual needs while keeping the core code as compact as possible. 
 
-In order to execute a module, go to the 'MODULES' section in the config file and put the module name (i.e. the name of the subdirectory of modules/) into the array of the adequate hook. For example, if you would like to execute 'Stable Ground Point Identification', 'Harmonize Interferogram Time Series', and 'Create PDF Summary' after GMTSAR interferometric processing, this would be:
+In order to execute a module, go to the 'MODULES' section in the config file and put the module name (i.e. the name of the subdirectory of modules/) into the array of the adequate hook. For example, if you would like to execute 'Stable Ground Point Identification', 'Harmonize Grids', and 'Summary PDF' after GMTSAR interferometric processing, this would be:
 ```sh
-post_processing_mods=( SGP_identification harmonize_intfs create_pdf_summary )
+post_processing_mods=( SGP_identification harmonize_grids summary_pdf )
 ```
 When multiple modules are allocated at one hook the modules will be executed in the same order they appear in the array. 
 Most modules require a config file; A template configuration should be in templates/modules-config which must be copied to the config directory for the module to work:
@@ -140,11 +144,6 @@ Shift grid files relative to 'stable ground points'. Typically used to harmonize
 Call: harmonize_grids
 Status: beta
 
-#### Summary PDF
-Preview key processing results in a single graphic overview. Requires ImageMagick.
-Call: summary_pdf
-Status: beta
-
 #### Ping
 Wake up sleeping nodes.
 Call: ping
@@ -160,6 +159,11 @@ Calculate statistics for a series of grid files.
 Call: statistics
 Status: beta
 
+#### Summary PDF
+Preview key processing results in a single graphic overview. Requires ImageMagick.
+Call: summary_pdf
+Status: beta
+
 #### Timeseries xy
 Extract values for particular coordinates throughout a series of grids (e.g. coherence, phase). 
 Call: timerseries_xy
@@ -169,7 +173,6 @@ Status: beta
 Identify regions where high coherence values drop substantially between two data takes.
 Call: unstable_coh_metric
 Status: beta
-
 
 
 
@@ -205,6 +208,7 @@ For all reports and inquiries please contact [David Loibl](https://hu.berlin/dav
 
 ## <a name="crediting"></a> Crediting OSARIS
 As stated in the license file, you are free to use OSARIS in whatever way you like. If you publish OSARIS results, e.g. in scientific publications, please credit OSARIS using the Zenodo DOI:
+
 [![DOI](https://zenodo.org/badge/108271075.svg)](https://zenodo.org/badge/latestdoi/108271075)
 
 

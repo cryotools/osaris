@@ -34,8 +34,8 @@ log_PATH=$base_PATH/$prefix/Output/Log
 
 job_ID=${previous_scene:15:8}--${current_scene:15:8}
 
-proc_mode=$( cat $work_PATH/proc_mode.txt )
-echo "Processing mode: $proc_mode"
+# proc_mode=$( cat $work_PATH/proc_mode.txt )
+# echo "Processing mode: $proc_mode"
 
 mkdir -pv $work_PATH/$job_ID/F$swath/raw 
 mkdir -pv $work_PATH/$job_ID/F$swath/topo 
@@ -48,21 +48,28 @@ cd $work_PATH/raw/$job_ID-aligned/
 
 echo; echo "- - - - - - - - - - - - - - - - - - - - "
 
-if [ "$proc_mode" = "multislice" ]; then
-    echo "Starting align_cut_tops.csh with options:"
-    echo "Scene 1: $previous_scene"
-    echo "Orbit 1: $previous_orbit"
-    echo "Scene 2: $current_scene"
-    echo "Orbit 2: $current_orbit"; echo
-    $OSARIS_PATH/lib/GMTSAR-mods/align_cut_tops.csh $previous_scene $previous_orbit $current_scene $current_orbit dem.grd
-else
-    echo "Starting align_cut_tops.csh with options:"
-    echo "Scene 1: $previous_scene"
-    echo "Orbit 1: $previous_orbit"
-    echo "Scene 2: $current_scene"
-    echo "Orbit 2: $current_orbit"; echo
-    align_tops.csh $previous_scene $previous_orbit $current_scene $current_orbit dem.grd
-fi
+echo "Starting align_cut_tops.csh with options:"
+echo "Scene 1: $previous_scene"
+echo "Orbit 1: $previous_orbit"
+echo "Scene 2: $current_scene"
+echo "Orbit 2: $current_orbit"; echo
+$OSARIS_PATH/lib/GMTSAR-mods/align_cut_tops.csh $previous_scene $previous_orbit $current_scene $current_orbit dem.grd
+
+# if [ "$proc_mode" = "multislice" ]; then
+#     echo "Starting align_cut_tops.csh with options:"
+#     echo "Scene 1: $previous_scene"
+#     echo "Orbit 1: $previous_orbit"
+#     echo "Scene 2: $current_scene"
+#     echo "Orbit 2: $current_orbit"; echo
+#     $OSARIS_PATH/lib/GMTSAR-mods/align_cut_tops.csh $previous_scene $previous_orbit $current_scene $current_orbit dem.grd
+# else
+#     echo "Starting align_cut_tops.csh with options:"
+#     echo "Scene 1: $previous_scene"
+#     echo "Orbit 1: $previous_orbit"
+#     echo "Scene 2: $current_scene"
+#     echo "Orbit 2: $current_orbit"; echo
+#     align_tops.csh $previous_scene $previous_orbit $current_scene $current_orbit dem.grd
+# fi
 
 
 # INTERFEROMETRIC PROCESSING

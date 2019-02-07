@@ -4,8 +4,23 @@ All notable changes to this OSARIS will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-	
-## [0.7.0] - 2019-01-25	
+
+## [0.7.2] - 2019-02-07
+### Added
+- Parallel processing option for Summary PDF Module
+- Improved burst handling, now also stripping unused bursts in single slice configurations
+
+### Bugs fixed
+- Reporting in GACOS correction module
+- File downloads
+
+
+## [0.7.1] - 2019-01-28
+### Bugs fixed
+- File downloads
+
+
+## [0.7.0] - 2019-01-25
 ### Added
 - Functionality to merge multiple swaths
 - Cutting of output files to an area of interest defined by boundary box coordinates in the config file

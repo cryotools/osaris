@@ -115,8 +115,8 @@ if [ "$aoi_ok" -eq 1 ] && [ "$login_ok" -eq 1 ]; then
 
 	if [ $debug -ge 1 ]; then
 	    echo; echo "Files to download:"
-	    for ASF_file in ${ASF_files[@]} ]; do
-		echo "${ASF_files[@]}"; echo
+	    for ASF_file in ${ASF_files[@]}; do
+		echo "${ASF_file}"; echo
 	    done
 	fi
 

@@ -175,7 +175,9 @@ gmt grdmath atmp.grd FLIPUD = a.grd
 #  
 #  make the new PRM files and SLC
 #
+echo; echo "Executing make_s1a_tops with parameters "$mxml" "$mtiff" "$mpre 1
 make_s1a_tops $mxml $mtiff $mpre 1 
+echo; echo "Executing make_s1a_tops with parameters "$sxml" "$stiff" "$spre" 1 r.grd a.grd"
 make_s1a_tops $sxml $stiff $spre 1 r.grd a.grd
 #
 #  resamp the slave and set the aoffset to zero
