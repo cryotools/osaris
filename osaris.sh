@@ -15,7 +15,7 @@ else
     echo
     echo " ╔══════════════════════════════════════════╗"
     echo " ║                                          ║"
-    echo " ║             OSARIS v. 0.7                ║"
+    echo " ║             OSARIS v. 0.7.2              ║"
     echo " ║   Open Source SAR Investigation System   ║"
     echo " ║                                          ║"
     echo " ╚══════════════════════════════════════════╝"
@@ -135,7 +135,7 @@ else
 	    input_PATH=$base_PATH/$prefix/Input/
 	    mkdir -p $input_PATH
 
-	    source $OSARIS_PATH/lib/s1-file-download.sh  2>&1 >>$logfile	
+	    source $OSARIS_PATH/lib/s1-file-download.sh  2>&1 >>$log_PATH/downloads.log
 	    
 	    echo; echo Downloading finished; echo - - - - - - - - - - - - - - - -; echo
 	else
@@ -185,7 +185,7 @@ else
 
 	echo; echo - - - - - - - - - - - - - - - -; echo "Updating orbit data ..."; echo
 	if [ "$orbit_provider" = "ESA" ]; then
-	    source $OSARIS_PATH/lib/s1-orbit-download.sh $orbits_PATH 5 &>>$logfile
+	    source $OSARIS_PATH/lib/s1-orbit-download.sh $orbits_PATH 5 &>>$log_PATH/downloads.log
 	elif [ "$orbit_provider" = "ASF" ]; then
             if [ -z "$ASF_username" ] || [ -z "$ASF_password" ]; then
 		echo; echo "ERROR: Missing ASF login credentials."

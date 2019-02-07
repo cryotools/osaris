@@ -60,29 +60,27 @@ else
 	if [ "$2" = "SM" ]; then
 	    data_in_file=data_sm_swath${swath}.in
 	    mode="SM"
+	    echo "Processing mode: Single Master"
 	elif [ "$2" = "CMP" ]; then
 	    data_in_file=data_swath${swath}.in
 	    mode="CMP"
+	    echo "Processing mode: Chronologically Moving Pairs"
 	else
 	    echo "No processing mode specified. Processing in 'chronologically moving pairs' mode."
 	    mode="CMP"
 	fi
 
-	if [ $debug -gt 0 ]; then
-	    echo "Data in file: $data_in_file"
-	fi
+	echo; echo "Reading scenes and orbits from $data_in_file"
 
 	while read -r dataline; do	    
-	    cd $work_PATH/raw/	    
-	    echo
-	    echo
-	    echo "Reading scenes and orbits from file data.in"
+	    cd $work_PATH/raw/	    	    
 	    ((dataline_count++))
 	    current_scene=${dataline:0:64}
 	    current_orbit=${dataline:65:77}
 	    
-	    echo "Current scene: $current_scene"
-	    echo "Current orbit: $current_orbit"
+	    echo; echo "Adding data ..."
+	    echo "Scene: $current_scene"
+	    echo "Orbit: $current_orbit"
 	    
 	    start_processing=1
 	    
@@ -144,7 +142,7 @@ else
 		echo "$scene_pair_name" >> $work_PATH/pairs-forward.list
 		
 		echo "Creating directory ${scene_pair_name}-aligned"
-		mkdir -pv $work_PATH/raw/$scene_pair_name-aligned; cd $work_PATH/raw/$scene_pair_name-aligned
+		mkdir -p $work_PATH/raw/$scene_pair_name-aligned; cd $work_PATH/raw/$scene_pair_name-aligned
 		ln -sf $topo_PATH/dem.grd .
 		ln -sf $work_PATH/raw/${scene_1:15:8}_manifest.safe .
 		ln -sf $work_PATH/raw/${scene_2:15:8}_manifest.safe .
