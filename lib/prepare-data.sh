@@ -195,6 +195,10 @@ else
 		   
 		    ln -sf $work_PATH/orig/${files_chrono[$i]}/measurement/${stem}.tiff .
 		    ln -sf $work_PATH/orig/${files_chrono[$i]}/annotation/${stem}.xml .
+		    cd $work_PATH/preprocessing/
+		    ln -sf $work_PATH/orig/${files_chrono[$i]}/measurement/${stem}.tiff .
+		    ln -sf $work_PATH/orig/${files_chrono[$i]}/annotation/${stem}.xml .
+		    cd $work_PATH/preprocessing/raw
 		    make_s1a_tops ${stem}.xml ${stem}.tiff ${stem} 0
 		    scene_prefix="${stem:15:8}_${stem:24:6}_F${swath}"
 		    prefixes+=($scene_prefix)
@@ -242,13 +246,13 @@ else
 		for((i=0;i<$stem_count;++i)); do
 		    stem_string="$stem_string ${stems_chrono[$i]}"		    
 		done
-		
-		if [ $debug -ge 1 ]; then
-		    echo; echo "Executing assemble_tops with parameters:"
-		    echo "$azimuth_min $azimuth_max $stem_string $work_PATH/preprocessing/$stem"
-		fi
-		assemble_tops $azimuth_min $azimuth_max $stem_string $work_PATH/preprocessing/$stem
-			
+		if [ $cut_to_aoi -eq 1 ]; then
+		    if [ $debug -ge 1 ]; then
+		        echo; echo "Executing assemble_tops with parameters:"
+		        echo "$azimuth_min $azimuth_max $stem_string $work_PATH/preprocessing/$stem"
+		    fi
+		    assemble_tops $azimuth_min $azimuth_max $stem_string $work_PATH/preprocessing/$stem
+		fi	
 		cd $work_PATH/preprocessing/
 
 		# Generate new PRM files for assembled tops
