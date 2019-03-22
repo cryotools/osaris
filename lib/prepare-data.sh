@@ -242,13 +242,13 @@ else
 		for((i=0;i<$stem_count;++i)); do
 		    stem_string="$stem_string ${stems_chrono[$i]}"		    
 		done
-		
-		if [ $debug -ge 1 ]; then
-		    echo; echo "Executing assemble_tops with parameters:"
-		    echo "$azimuth_min $azimuth_max $stem_string $work_PATH/preprocessing/$stem"
-		fi
-		assemble_tops $azimuth_min $azimuth_max $stem_string $work_PATH/preprocessing/$stem
-			
+		if [ $cut_to_aoi -eq 1 ]; then
+		    if [ $debug -ge 1 ]; then
+		        echo; echo "Executing assemble_tops with parameters:"
+		        echo "$azimuth_min $azimuth_max $stem_string $work_PATH/preprocessing/$stem"
+		    fi
+		    assemble_tops $azimuth_min $azimuth_max $stem_string $work_PATH/preprocessing/$stem
+		fi	
 		cd $work_PATH/preprocessing/
 
 		# Generate new PRM files for assembled tops
