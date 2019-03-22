@@ -46,8 +46,8 @@ else
     
     if [ -z "$unwrapped_intf_PATH" ]; then
 	echo "No path to unwrapped interferograms specified in ${module_name}.config"
-	echo "Trying default path $output_PATH/Interf-unwrpd ..."
-	unwrapped_intf_PATH="$output_PATH/Interf-unwrpd"
+	echo "Trying default path $output_PATH/Pairs-forward/Interferograms-unwrapped ..."
+	unwrapped_intf_PATH="$output_PATH/Pairs-forward/Interferograms-unwrapped"
     fi
 
     if [ ! -d "$unwrapped_intf_PATH" ]; then
