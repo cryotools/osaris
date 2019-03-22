@@ -39,10 +39,18 @@ job_ID=${previous_scene:15:8}--${current_scene:15:8}
 
 mkdir -pv $work_PATH/$job_ID/F$swath/raw 
 mkdir -pv $work_PATH/$job_ID/F$swath/topo 
+mkdir -pv $work_PATH/raw/$job_ID-aligned/F$swath/
 cd $work_PATH/$job_ID/F$swath/topo; ln -sf $topo_PATH/dem.grd .;
-
-cd $work_PATH/raw/$job_ID-aligned/
-
+cd $work_PATH/raw/$job_ID-aligned/F$swath/
+ln -sf $topo_PATH/dem.grd .
+ln -sf $work_PATH/raw/${previous_scene:15:8}_manifest.safe .
+ln -sf $work_PATH/raw/${current_scene:15:8}_manifest.safe .
+ln -sf $work_PATH/raw/$previous_scene.tiff .
+ln -sf $work_PATH/raw/$current_scene.tiff .
+cp -P $work_PATH/raw/$previous_scene.xml .
+cp -P $work_PATH/raw/$current_scene.xml .
+cp -P $work_PATH/raw/$previous_orbit .
+cp -P $work_PATH/raw/$current_orbit .
 
 # ALIGN SCENE PAIRS
 
@@ -74,12 +82,12 @@ $OSARIS_PATH/lib/GMTSAR-mods/align_cut_tops.csh $previous_scene $previous_orbit 
 
 # INTERFEROMETRIC PROCESSING
 
-if [ ! -f $work_PATH/raw/$job_ID-aligned/a.grd ] || [ ! -f $work_PATH/raw/$job_ID-aligned/r.grd ]; then
+if [ ! -f $work_PATH/raw/$job_ID-aligned/F$swath/a.grd ] || [ ! -f $work_PATH/raw/$job_ID-aligned/F$swath/r.grd ]; then
     echo; echo "ERROR: Scene alignment failed. Aborting interferometric processing ..."; echo
 else
-
+ 
     cd $work_PATH/$job_ID/F$swath/raw/
-    ln -sf $work_PATH/raw/$job_ID-aligned/*F$swath* .
+    ln -sf $work_PATH/raw/$job_ID-aligned/F$swath/*F$swath* .
     
     cd $work_PATH/$job_ID/F$swath/
 
