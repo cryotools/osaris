@@ -278,15 +278,18 @@ set OSARIS_PATH = $4
       if ($shift_topo == 1) then
         ln -s ../../topo/topo_shift.grd .
         intf.csh $ref.PRM $rep.PRM -topo topo_shift.grd  
-        filter.csh $ref.PRM $rep.PRM $filter $dec 
+        filter.csh $ref.PRM $rep.PRM $filter $dec
+	cp -u *gauss* ../../../
       else 
         ln -s ../../topo/topo_ra.grd . 
         intf.csh $ref.PRM $rep.PRM -topo topo_ra.grd 
-        filter.csh $ref.PRM $rep.PRM $filter $dec 
+        filter.csh $ref.PRM $rep.PRM $filter $dec
+	cp -u *gauss* ../../../
       endif
     else
       intf.csh $ref.PRM $rep.PRM
-      filter.csh $ref.PRM $rep.PRM $filter $dec 
+      filter.csh $ref.PRM $rep.PRM $filter $dec
+      cp -u *gauss* ../../../
     endif
     cd ../..
     echo "INTF.CSH, FILTER.CSH - END"
