@@ -195,6 +195,10 @@ else
 		   
 		    ln -sf $work_PATH/orig/${files_chrono[$i]}/measurement/${stem}.tiff .
 		    ln -sf $work_PATH/orig/${files_chrono[$i]}/annotation/${stem}.xml .
+		    cd $work_PATH/preprocessing/
+		    ln -sf $work_PATH/orig/${files_chrono[$i]}/measurement/${stem}.tiff .
+		    ln -sf $work_PATH/orig/${files_chrono[$i]}/annotation/${stem}.xml .
+		    cd $work_PATH/preprocessing/raw
 		    make_s1a_tops ${stem}.xml ${stem}.tiff ${stem} 0
 		    scene_prefix="${stem:15:8}_${stem:24:6}_F${swath}"
 		    prefixes+=($scene_prefix)
