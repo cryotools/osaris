@@ -49,9 +49,9 @@ Key features of OSARIS are:
 3. [ImageMagick](https://www.imagemagick.org/script/index.php) (optional, required only by the 'Summary PDF' module) 
 
 OSARIS can also be used in cloud computing environments that support SLURM:
-- [Amazon Web Services](https://aws.amazon.com/hpc/) provides [example scripts](https://github.com/aws-samples/aws-plugin-for-slurm) and a [tutorial](https://aws.amazon.com/de/blogs/compute/deploying-a-burstable-and-event-driven-hpc-cluster-on-aws-using-slurm-part-1/).
+- [Amazon Web Services](https://aws.amazon.com/hpc/) provides [example scripts](https://github.com/aws-samples/aws-plugin-for-slurm) and a [tutorial](https://aws.amazon.com/de/blogs/compute/deploying-a-burstable-and-event-driven-hpc-cluster-on-aws-using-slurm-part-1/) on SLURM setup.
 - Google's [Cloud Compute Engine](https://cloud.google.com/compute/) has native SLURM support.
-- Penguin Computing's [HPC Cloud](https://www.penguincomputing.com/pod-hpc-cloud/) has native [SLURM support](https://www.penguincomputing.com/documentation/scyld-clusterware/7/admin-guide/admin-guide/batching.html#enabling-torque-or-slurm)
+- Penguin Computing's [HPC Cloud](https://www.penguincomputing.com/pod-hpc-cloud/) has native [SLURM support](https://www.penguincomputing.com/documentation/scyld-clusterware/7/admin-guide/admin-guide/batching.html#enabling-torque-or-slurm).
 
 ### <a name="installation"></a> Installation
 Just clone the OSARIS repository to your machine:
