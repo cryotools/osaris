@@ -60,6 +60,9 @@ else
 	fi    
     }
 
+    
+    # INITIAL SETUP
+
     export OSARIS_PATH=$( pwd )
     echo "OSARIS directory: $OSARIS_PATH" 
     echo
@@ -71,9 +74,9 @@ else
     fi
     echo "Reading configuration file $config_file" 
     source $config_file
-          
+
     echo; echo "Data will be written to $base_PATH/$prefix/"
-    
+
     # Check login credentials
     if [ ! -f $credentials_file ]; then
 	echo; echo "WARNING: Login credentials file not found at ${credentials_file}" 
@@ -96,7 +99,7 @@ else
 	else
 	    echo; echo "Found module configuration directory ${module_config_PATH}"	    
 	fi
-    fi
+    fi        
 
     export work_PATH=$base_PATH/$prefix/Processing
     # Path to working directory
@@ -113,8 +116,20 @@ else
     mkdir -p $output_PATH/Reports
     mkdir -p $log_PATH
 
-    ln -sf $topo_PATH/dem.grd $work_PATH/raw/
-    ln -sf $topo_PATH/dem.grd $work_PATH/topo/        
+    if [ ! -f $topo_PATH/dem.grd ]; then
+	echo; echo
+	echo "CRITICAL CONFIGURATION ERROR:"
+	echo "Topo file not found at $topo_PATH/dem.grd"
+	echo "Review your configuration and restart the processing."
+	echo "Exiting ..."; echo
+	exit
+    else
+	ln -sf $topo_PATH/dem.grd $work_PATH/raw/
+	ln -sf $topo_PATH/dem.grd $work_PATH/topo/        
+    fi
+
+
+    # PREPARE LOGFILES
 
     log_filename=$prefix-$run_identifier.log
     report_filename=$prefix-$run_identifier.report
@@ -176,7 +191,7 @@ else
     sort $work_PATH/input_files.csv > $output_PATH/input_files.csv
 
 
-    # Update orbits when requested
+    # Update orbits if requested
     if [ "$update_orbits" -eq 1 ]; then
 
 	# Start orbit update time measurement
@@ -192,7 +207,7 @@ else
 		echo "Please review your login credentials file."		
 	    else
 		echo "Found ASF login credentials. Starting orbit download ..."
-		wget --http-user=$ASF_username --http-password=$ASF_password -r -l 1 -nc -nd --no-check-certificate -nH --accept EOF -P $orbits_PATH https://s1qc.asf.alaska.edu/aux_poeorb/ &>>$logfile
+		wget --http-user=$ASF_username --http-password=$ASF_password -r -l 1 -nc -nd --no-check-certificate -nH --accept EOF -P $orbits_PATH https://s1qc.asf.alaska.edu/aux_poeorb/ &>>$log_PATH/downloads.log
 	    fi	    
 	fi
 
@@ -240,7 +255,9 @@ else
 	    mkdir -p $work_PATH/orig		
 	    echo
 	    echo - - - - - - - - - - - - - - - - 
-
+	    
+	    if [ -z $polarization ]; then polarization="vv"; fi
+	    
 	    cd $input_PATH
 
 	    for S1_archive in $( ls -r ); do	   	    
@@ -262,7 +279,7 @@ else
 			--account=$slurm_account \
 			--partition=$slurm_extract_partition \
 			--mail-type=$slurm_mailtype \
-			$OSARIS_PATH/lib/PP-extract.sh $input_PATH $S1_archive $work_PATH/orig $output_PATH
+			$OSARIS_PATH/lib/PP-extract.sh $input_PATH $S1_archive $work_PATH/orig $output_PATH $polarization
 		fi
 	    done
 
@@ -466,7 +483,7 @@ else
     OSARIS_runtime=$((OSARIS_end_time-OSARIS_start_time))
       
 
-    echo; echo - - - - - - - - - - - - - - - -; 
+    echo; echo - - - - - - - - - - - - - - - -
     echo Processing finished; echo
     echo Writing reports ... ; echo
 

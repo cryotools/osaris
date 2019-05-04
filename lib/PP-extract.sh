@@ -8,10 +8,10 @@ echo "- - - - - - - - - - - - - - - - - -"
 echo
 
 
-if [ ! $# -eq 4 ]; then
+if [ ! $# -eq 5 ]; then
     echo
     echo "Wrong parameter count, exiting."
-    echo "Usage: PP-extract file target_path output_path"  
+    echo "Usage: PP-extract file target_path output_path polarization"  
     echo
     exit 1
 elif [ ! -f "$1/$2" ]; then
@@ -20,11 +20,25 @@ elif [ ! -f "$1/$2" ]; then
     echo
     exit 2
 else
-
+    # $OSARIS_PATH/lib/PP-extract.sh $input_PATH $S1_archive $work_PATH/orig $output_PATH $polarization
+    input_PATH=$1
+    S1_archive=$2
+    S1_output_PATH=$3
     output_PATH=$4
-
-    echo Extracting file $2 from folder $1 to $3 ... 
-    unzip $1/$2 -x *-vh-* -d $3
+    polarization=$5
+    
+    echo "Extracting file $S1_archive from directory $input_PATH to $S1_output_PATH ..."
+    if [ "$polarization" = "vv" ]; then
+	pol_exclude="-x *-vh-*"
+    elif [ "$polarization" = "vh" ]; then
+	pol_exclude="-x *-vv-*"
+    elif [ "$polarization" = "both" ]; then
+	pol_exclude=""
+    else
+	pol_exclude="-x *-vh-*"
+    fi
+    
+    unzip $input_PATH/$S1_archive $pol_exclude -d $S1_output_PATH
 
     extract_end=`date +%s`
 

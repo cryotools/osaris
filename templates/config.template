@@ -19,6 +19,13 @@ SAR_sensor="Sentinel"
 SAR_datatype="TOPS"
 swaths_to_process=(1 2 3)
 
+polarization="vv"
+# Define which polarization should be used (optional, default "vv")
+# Options (for Sentinel-1 IW):
+# vv
+# vh
+
+
 # Area of interest
 # Coordinates and elevation of upper-left and lower-right corner 
 # points of area of interest in decimal degrees (-180 to 180 notation for longitude values).
