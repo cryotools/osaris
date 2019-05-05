@@ -11,7 +11,7 @@
 cd $input_PATH
 for inputfile in $( ls -1 ); do 
     echo $inputfile >> $output_PATH/Reports/input_files.list
-    echo ${inputfile:18:8} >> $output_PATH/Reports/input_dates.tmp    
+    echo ${inputfile:17:8} >> $output_PATH/Reports/input_dates.tmp    
 done
 input_file_count=$( ls -l | grep -v ^d | wc -l )
 echo "Total input file count: $input_file_count" >> $output_PATH/Reports/input_files.list
