@@ -35,9 +35,19 @@ else
 	echo "No .tif files found in $input_PATH. Exiting."
 	exit
     else
-	echo "Merging ${#dem_files[@]} tiles ..."
-	gdal_merge.py $dem_files -o merged_dem.tif
-	gmt grdconvert merged_dem.tif $output_PATH/dem.grd
+	echo; echo "Merging ${#dem_files[@]} tiles ..."
+	echo "${dem_files[@]}"
+	gdal_merge.py ${dem_files[@]} -o merged_dem.tif
+	gmt grdconvert merged_dem.tif $output_PATH/dem-raw.grd -V
+	grid_mode=$( gmt grdinfo $output_PATH/dem-raw.grd | grep 'Pixel node registration' | awk '{print $6}' )
+	grid_mode=${grid_mode:1}
+	if [ "$grid_mode" == "Cartesian" ]; then
+	    echo; echo "Converting cartesian to geographic grid"
+	    grd_extent=$( gmt grdinfo -I- $output_PATH/dem-raw.grd | awk 'NR==1' )
+	    # grd_centermedian=
+	    gmt grdproject $output_PATH/dem-raw.grd $grd_extent -Jm1:1 -I -G$output_PATH/dem.grd -V
+	fi
+	
 	rm merged_dem.tif
     fi
     

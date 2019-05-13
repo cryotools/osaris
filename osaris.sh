@@ -170,6 +170,10 @@ else
     # Create input file csv
     cd $input_PATH
     input_files=($( ls *.zip ))
+
+    # Make sure no old files are around
+    rm -f $work_PATH/input_files.csv $output_PATH/input_files.csv 
+
     for input_file in ${input_files[@]}; do
 	input_file_elements=${input_file//_/ }
 	input_file_startdatetime=$( echo $input_file_elements | awk '{ print $5 }' )
@@ -491,6 +495,18 @@ else
 
     total_runtime=$((OSARIS_runtime + PP_total_runtime + PP_extract_total_runtime))
     # TODO: Add module runtimes
+
+    if [ $debug -eq 1 ]; then
+	echo; echo
+	echo "Debugging messages for time measurements:"
+	echo "- Time stamp start: $OSARIS_start_time"
+	echo "- Time stamp end:   $OSARIS_end_time"
+	echo "- OSARIS runtime:   $OSARIS_runtime"
+	echo "- PP job runtime:   $PP_total_runtime"
+	echo "- Extract runtime:  $PP_extract_total_runtime"
+	echo "- Total runtime:    $total_runtime"
+	echo
+    fi
 
     echo; echo "Elapsed total processing time (estimate):"
     printf '%02dd %02dh:%02dm:%02ds\n' $(($total_runtime/86400)) $(($total_runtime%86400/3600)) $(($total_runtime%3600/60)) $(($total_runtime%60))

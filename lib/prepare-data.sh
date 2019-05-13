@@ -213,80 +213,141 @@ else
 		    echo; echo "Main stem: $stem"
 		    echo "Main scene prefix: $scene_prefix"
 		fi
+
 		# Obtain radar coordinates for area of interest coordinates (s. config file)		
 		
-		azimuth_1=$( awk 'NR==1' $work_PATH/boundary-box.xyz | SAT_llt2rat ${stem}.PRM 0 | awk '{print $2}' )
-		azimuth_2=$( awk 'NR==2' $work_PATH/boundary-box.xyz | SAT_llt2rat ${stem}.PRM 0 | awk '{print $2}' )
-		azimuth_3=$( awk 'NR==3' $work_PATH/boundary-box.xyz | SAT_llt2rat ${stem}.PRM 0 | awk '{print $2}' )
-		azimuth_4=$( awk 'NR==4' $work_PATH/boundary-box.xyz | SAT_llt2rat ${stem}.PRM 0 | awk '{print $2}' )
+		{
+		    azimuth_1=$( awk 'NR==1' $work_PATH/boundary-box.xyz | SAT_llt2rat ${stem}.PRM 0 | awk '{print $2}' )
+		    azimuth_2=$( awk 'NR==2' $work_PATH/boundary-box.xyz | SAT_llt2rat ${stem}.PRM 0 | awk '{print $2}' )
+		    azimuth_3=$( awk 'NR==3' $work_PATH/boundary-box.xyz | SAT_llt2rat ${stem}.PRM 0 | awk '{print $2}' )
+		    azimuth_4=$( awk 'NR==4' $work_PATH/boundary-box.xyz | SAT_llt2rat ${stem}.PRM 0 | awk '{print $2}' )	       	    
 
-		azimuth_min=$azimuth_1
-		if [ $( echo "$azimuth_2 < $azimuth_min" | bc -l ) -eq 1 ]; then azimuth_min=$azimuth_2; fi
-		if [ $( echo "$azimuth_3 < $azimuth_min" | bc -l ) -eq 1 ]; then azimuth_min=$azimuth_3; fi
-		if [ $( echo "$azimuth_4 < $azimuth_min" | bc -l ) -eq 1 ]; then azimuth_min=$azimuth_4; fi
-		
-		azimuth_max=$azimuth_1
-		if [ $( echo "$azimuth_2 > $azimuth_max" | bc -l ) -eq 1 ]; then azimuth_max=$azimuth_2; fi
-		if [ $( echo "$azimuth_3 > $azimuth_max" | bc -l ) -eq 1 ]; then azimuth_max=$azimuth_3; fi
-		if [ $( echo "$azimuth_4 > $azimuth_max" | bc -l ) -eq 1 ]; then azimuth_max=$azimuth_4; fi
-
-
-		if [ "$debug" -ge 1 ]; then 
-		    echo "Minimum azimuth in AOI is $azimuth_min"
-		    echo "Maximum azimuth in AOI is $azimuth_max"
-		fi
-		
-		# Assemble TOPS, omit burst outside AOI		
-		stem_count=${#stems_chrono[@]}
-		stem_string=""
-		for((i=0;i<$stem_count;++i)); do
-		    stem_string="$stem_string ${stems_chrono[$i]}"		    
-		done
+		    range_1=$( awk 'NR==1' $work_PATH/boundary-box.xyz | SAT_llt2rat ${stem}.PRM 0 | awk '{print $1}' )
+		    range_2=$( awk 'NR==2' $work_PATH/boundary-box.xyz | SAT_llt2rat ${stem}.PRM 0 | awk '{print $1}' )
+		    range_3=$( awk 'NR==3' $work_PATH/boundary-box.xyz | SAT_llt2rat ${stem}.PRM 0 | awk '{print $1}' )
+		    range_4=$( awk 'NR==4' $work_PATH/boundary-box.xyz | SAT_llt2rat ${stem}.PRM 0 | awk '{print $1}' )
+		} &> /dev/null	
 		
 		if [ $debug -ge 1 ]; then
-		    echo; echo "Executing assemble_tops with parameters:"
-		    echo "$azimuth_min $azimuth_max $stem_string $work_PATH/preprocessing/$stem"
+		    echo; printf "Azimuths \t Ranges \n"
+		    printf "$azimuth_1 \t $range_1 \n"
+		    printf "$azimuth_2 \t $range_2 \n"
+		    printf "$azimuth_3 \t $range_3 \n"
+		    printf "$azimuth_4 \t $range_4 \n"
+		    echo
 		fi
-		assemble_tops $azimuth_min $azimuth_max $stem_string $work_PATH/preprocessing/$stem
-			
-		cd $work_PATH/preprocessing/
 
-		# Generate new PRM files for assembled tops
-		if [ $debug -ge 1 ]; then
-		    echo; echo "Executing make_s1a_tops with parameters:"
-		    echo "${stem}.xml ${stem}.tiff S1_${scene_prefix} 0"
-		fi		
-		make_s1a_tops ${stem}.xml ${stem}.tiff S1_${scene_prefix} 0
-		
-		# Generate LED files for assembled tops
-		if [ "$debug" -ge 1 ]; then 
-		    echo; echo "Executing ext_orb_s1a with parameter:"
-		    echo "S1_${scene_prefix}.PRM $orbits_PATH/$orbit_match S1_$scene_prefix"
-		fi
-		ext_orb_s1a S1_${scene_prefix}.PRM $orbits_PATH/$orbit_match S1_$scene_prefix
-		
-		# Prepare data in raw folder for subsequent processing steps ...
-		cd $work_PATH/raw/      		    		    
-		ln -sf $work_PATH/preprocessing/${stem}.xml .
-		ln -sf $work_PATH/preprocessing/${stem}.tiff .		    
-		
-		
-		# Write to data_in file
-		# Check if single_master mode and  current scene is master scene
-		if [ $process_intf_mode = "single_master" ]; then
-		    echo
-		    echo "Target date: ${S1_files[$i]:17:8}"
-		    echo "Master scene date: $master_scene_date"
-		    echo
-		    if [ "$master_scene_date" = "${S1_files[$i]:17:8}" ]; then				
-			echo "${stem}:$orbit_match" >> $work_PATH/raw/data_sm_swath$swath.master	    
-		    else	 
-			echo "${stem}:$orbit_match" >> $work_PATH/raw/data_sm_swath$swath.tmp		
+		max_range=$( grep num_rng_bins ${stem}.PRM | awk '{print $3 }' )
+		rng_sum=0
+		rng_pos=()
+		for rng_nr in {1..4}; do
+		    rng_name="range_$rng_nr"
+		    if [ ! -z ${!rng_name} ]; then
+			if [ $( echo "${!rng_name} < 0" | bc -l ) -eq 1 ]; then 
+			    rng_pos[$rng_nr]=-1
+			elif [ $( echo "${!rng_name} > $max_range" | bc -l ) -eq 1 ]; then 
+			    rng_pos[$rng_nr]=1
+			else
+			    rng_pos[$rng_nr]=0
+			fi
+			rng_sum=$((rng_sum + rng_pos[$rng_nr]))
 		    fi
-		else
-		    echo "${stem:15:8}-${stem}:$orbit_match" >> $work_PATH/raw/data_swath$swath.tmp	    
-		fi			
+		done
 
+		echo; echo "rng_pos: ${rng_pos[@]}"
+		echo "rng_sum: ${rng_sum}"
+		
+		# Check whether the swath does not contain any data for the AoI
+		rng_ok=1
+		azi_ok=1
+		if [ $rng_sum -eq -4 ] || [ $rng_sum -eq 4 ]; then rng_ok=0; fi				    
+		if [ -z $azimuth_1 ] && [ -z $azimuth_2 ] && [ -z $azimuth_3 ] && [ -z $azimuth_4 ]; then azi_ok=0; fi
+
+		if [ $rng_ok -eq 0 ] || [ $azi_ok -eq 0 ]; then
+		    echo; echo "Swath $swath does not contain any data for ${scene_date}. Skipping ..."
+		else
+		    
+		    azimuth_min=9999999999
+		    azimuth_max=-999999999
+		    for azi_nr in {1..4}; do
+			azi_name="azimuth_$azi_nr"
+			if [ ! -z ${!azi_name} ]; then
+			    if [ $( echo "${!azi_name} < $azimuth_min" | bc -l ) -eq 1 ]; then azimuth_min=${!azi_name}; fi
+			    if [ $( echo "${!azi_name} > $azimuth_max" | bc -l ) -eq 1 ]; then azimuth_max=${!azi_name}; fi
+			fi
+		    done
+
+
+		    if [ "$debug" -ge 1 ]; then 
+			echo "Minimum azimuth in AOI is $azimuth_min"
+			echo "Maximum azimuth in AOI is $azimuth_max"
+		    fi
+
+		    
+		    # Assemble TOPS, omit burst outside AOI		
+		    stem_count=${#stems_chrono[@]}
+		    stem_string=""
+		    for((i=0;i<$stem_count;++i)); do
+			stem_string="$stem_string ${stems_chrono[$i]}"		    
+		    done
+		    
+		    if [ $debug -ge 1 ]; then
+			echo; echo "Executing assemble_tops with parameters:"
+			echo "$azimuth_min $azimuth_max $stem_string $work_PATH/preprocessing/$stem"
+		    fi
+		    assemble_tops $azimuth_min $azimuth_max $stem_string $work_PATH/preprocessing/$stem
+		    
+		    cd $work_PATH/preprocessing/
+
+
+		    # Generate new PRM files for assembled tops
+		    if [ $debug -ge 1 ]; then
+			echo; echo "Executing make_s1a_tops with parameters:"
+			echo "${stem}.xml ${stem}.tiff S1_${scene_prefix} 0"
+		    fi		
+		    make_s1a_tops ${stem}.xml ${stem}.tiff S1_${scene_prefix} 0
+		    
+		    if [ ! -f "S1_${scene_prefix}.PRM" ]; then
+			echo; echo "WARNING: PRM file generation failed for ${scene_prefix}."; echo
+		    fi
+
+		    
+		    # Generate LED files for assembled tops
+		    if [ "$debug" -ge 1 ]; then 
+			echo; echo "Executing ext_orb_s1a with parameter:"
+			echo "S1_${scene_prefix}.PRM $orbits_PATH/$orbit_match S1_$scene_prefix"
+		    fi
+		    ext_orb_s1a S1_${scene_prefix}.PRM $orbits_PATH/$orbit_match S1_$scene_prefix
+		    
+		    if [ ! -f "S1_${scene_prefix}.LED" ]; then
+			echo; echo "WARNING: LED file generation failed for ${scene_prefix}"
+			echo "The scene will not be considered for further processing."
+			echo "Please check whether an adequate Orbit file exists in $orbits_PATH"; echo
+		    fi
+
+
+		    # Prepare data in raw folder for subsequent processing steps ...
+		    cd $work_PATH/raw/      		    		    
+		    ln -sf $work_PATH/preprocessing/${stem}.xml .
+		    ln -sf $work_PATH/preprocessing/${stem}.tiff .		    
+		    
+		    
+		    # Write to data_in file
+		    # Check if single_master mode and  current scene is master scene
+		    if [ $process_intf_mode = "single_master" ]; then
+			echo
+			echo "Target date: ${S1_files[$i]:17:8}"
+			echo "Master scene date: $master_scene_date"
+			echo
+			if [ "$master_scene_date" = "${S1_files[$i]:17:8}" ]; then				
+			    echo "${stem}:$orbit_match" >> $work_PATH/raw/data_sm_swath$swath.master	    
+			else	 
+			    echo "${stem}:$orbit_match" >> $work_PATH/raw/data_sm_swath$swath.tmp		
+			fi
+		    else
+			echo "${stem:15:8}-${stem}:$orbit_match" >> $work_PATH/raw/data_swath$swath.tmp	    
+		    fi			
+		fi
 	    done
 	else 
 	    echo "No matching orbit available. Skipping ..."

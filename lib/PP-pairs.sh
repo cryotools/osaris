@@ -41,7 +41,7 @@ mkdir -pv $work_PATH/$job_ID/F$swath/raw
 mkdir -pv $work_PATH/$job_ID/F$swath/topo 
 cd $work_PATH/$job_ID/F$swath/topo; ln -sf $topo_PATH/dem.grd .;
 
-cd $work_PATH/raw/$job_ID-aligned/
+cd $work_PATH/raw/$job_ID-F${swath}-aligned/
 
 
 # ALIGN SCENE PAIRS
@@ -74,36 +74,73 @@ $OSARIS_PATH/lib/GMTSAR-mods/align_cut_tops.csh $previous_scene $previous_orbit 
 
 # INTERFEROMETRIC PROCESSING
 
-if [ ! -f $work_PATH/raw/$job_ID-aligned/a.grd ] || [ ! -f $work_PATH/raw/$job_ID-aligned/r.grd ]; then
+if [ ! -f $work_PATH/raw/$job_ID-F${swath}-aligned/a.grd ] || [ ! -f $work_PATH/raw/$job_ID-F${swath}-aligned/r.grd ]; then
     echo; echo "ERROR: Scene alignment failed. Aborting interferometric processing ..."; echo
 else
 
     cd $work_PATH/$job_ID/F$swath/raw/
-    ln -sf $work_PATH/raw/$job_ID-aligned/*F$swath* .
+    ln -sf $work_PATH/raw/$job_ID-F${swath}-aligned/*F$swath* .
     
     cd $work_PATH/$job_ID/F$swath/
+
+    # Read InSAR configuration from GMTSAR config file 
+    source $OSARIS_PATH/$gmtsar_config_file
+
+    if [ -z $filter_wavelength ]; then filter_wavelength=100; fi
+    if [ -z $dec_factor ]; then        dec_factor=0; fi
+
 
     if [ ${#swaths_to_process[@]} -gt 1 ]; then
 	echo; echo "Multiple swaths mode (${#swaths_to_process[@]} swaths) ..."
 	echo 
 	echo "- - - - - - - - - - - - - - - - - - - - "
-	echo "Starting p2p_S1A_TOPS with options:"
+	echo "Starting p2p_OSARIS_no_unwrap with options:"
 	echo "S1_${previous_scene:15:8}_${previous_scene:24:6}_F$swath"
 	echo "S1_${current_scene:15:8}_${current_scene:24:6}_F$swath"
 	echo "$gmtsar_config_file" 
 	echo "Current directory: $( pwd )"; echo
 
-	$OSARIS_PATH/lib/GMTSAR-mods/p2p_OSARIS_no_unwrap.csh \
-	    S1_${previous_scene:15:8}_${previous_scene:24:6}_F$swath \
-	    S1_${current_scene:15:8}_${current_scene:24:6}_F$swath \
+	master_scene=S1_${previous_scene:15:8}_${previous_scene:24:6}_F$swath
+	slave_scene=S1_${current_scene:15:8}_${current_scene:24:6}_F$swath
+
+	# Step 1: Prepare data for interf. proc.
+	$OSARIS_PATH/lib/InSAR/prep.sh \
+	    $master_scene \
+	    $slave_scene \
+	    $OSARIS_PATH/$gmtsar_config_file \
+	    $OSARIS_PATH \
+	    $work_PATH/boundary-box.xyz
+	
+	# Step 2: Interf. processing
+	$OSARIS_PATH/lib/InSAR/intf.sh \
+	    $master_scene \
+	    $slave_scene \
 	    $OSARIS_PATH/$gmtsar_config_file \
 	    $OSARIS_PATH \
 	    $work_PATH/boundary-box.xyz
 
+	# Step 3: Filter and create result files
+	cd intf
+	$OSARIS_PATH/lib/InSAR/filter.sh \
+	    ${master_scene}.PRM \
+	    ${slave_scene}.PRM \
+	    $filter_wavelength \
+	    $dec_factor
+	
+	cp -u *gauss* ../../
+	cd ..
+    
+	#$OSARIS_PATH/lib/GMTSAR-mods/p2p_OSARIS_no_unwrap.csh \
+	#    $master_scene \
+	#    $slave_scene \
+	#    $OSARIS_PATH/$gmtsar_config_file \
+	#    $OSARIS_PATH \
+	#    $work_PATH/boundary-box.xyz
+
     else
 	echo; echo "Single swath mode ..."; echo 
 	echo "- - - - - - - - - - - - - - - - - - - - "
-	echo "Starting p2p_S1A_TOPS with options:"
+	echo "Starting p2p_S1_OSARIS with options:"
 	echo "S1_${previous_scene:15:8}_${previous_scene:24:6}_F$swath"
 	echo "S1_${current_scene:15:8}_${current_scene:24:6}_F$swath"
 	echo "$gmtsar_config_file" 

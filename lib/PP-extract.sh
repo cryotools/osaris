@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-extract_start=`date +%s`
 echo
 echo "- - - - - - - - - - - - - - - - - -"
 echo "SLURM job EXTRACT started"
@@ -20,6 +19,8 @@ elif [ ! -f "$1/$2" ]; then
     echo
     exit 2
 else
+    extract_start=`date +%s`
+
     # $OSARIS_PATH/lib/PP-extract.sh $input_PATH $S1_archive $work_PATH/orig $output_PATH $polarization
     input_PATH=$1
     S1_archive=$2

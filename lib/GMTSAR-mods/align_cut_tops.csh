@@ -161,6 +161,7 @@ awk '{ printf("%.6f %.6f %.6f \n",$1,$3,$4) }' < offset.dat > a.xyz
 #
 #  fit a surface to the range and azimuth offsets
 #
+
 gmt blockmedian r.xyz -R0/$rmax/0/$amax -I16/8 -r -bo3d -V > rtmp.xyz
 gmt blockmedian a.xyz -R0/$rmax/0/$amax -I16/8 -r -bo3d -V > atmp.xyz
 gmt surface rtmp.xyz -bi3d -R0/$rmax/0/$amax -I16/8 -T0.3 -Grtmp.grd -N1000  -r -V &

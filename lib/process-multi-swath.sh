@@ -74,15 +74,19 @@ else
 	
 	mkdir -p $work_PATH/${s1_pair}/merged
 
-	for swath in ${swaths_to_process[@]}; do
-	    cd $work_PATH/${s1_pair}/F${swath}/intf
-	    s1_code=$( ls -d */ | head -n1 )
-	    s1_code=${s1_code::-1}
-	    cd $s1_code
-	    master_PRM=$( ls *${master_date}*.PRM )
-	    slave_PRM=$( ls *${slave_date}*.PRM )	    
-	    cd $work_PATH/$s1_pair
-	    echo "F${swath}/intf/${s1_code}/:${master_PRM}:${slave_PRM}" >> $work_PATH/merge-files/${s1_pair}.list
+	#for swath in ${swaths_to_process[@]}; do
+	# s1_code=$( ls -d */ | head -n1 )
+	# s1_code=${s1_code::-1}
+	# cd $s1_code
+
+	cd $work_PATH/${s1_pair}
+	swath_dirs=$( ls -d *F* )
+	for swath_dir in ${swath_dirs[@]}; do
+	    if [ -d $swath_dir/intf ]; then
+		cd $swath_dir/intf
+		# master_PRM=$( ls *${master_date}*.PRM )
+		# slave_PRM=$( ls *${slave_date}*.PRM )	    
+		echo "$swath_dir/intf/" >> $work_PATH/merge-files/${s1_pair}.list #${s1_code}/:${master_PRM}:${slave_PRM}
 	done
 
 	# Setup preferred and alternative partition configuration

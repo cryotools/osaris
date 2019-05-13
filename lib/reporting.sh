@@ -38,9 +38,11 @@ if [ $PS_extract -eq 1 ]; then
     
     printf 'Total processing time:\t %02dd %02dh:%02dm:%02ds\n' $(($PP_extract_total_runtime/86400)) $(($PP_extract_total_runtime%86400/3600)) $(($PP_extract_total_runtime%3600/60)) $(($PP_extract_total_runtime%60)) >> $output_PATH/Reports/PP-extract.report
 
-    printf 'Total processing time:\t %02dd %02dh:%02dm:%02ds\n' $(($PP_extract_total_runtime/86400)) $(($PP_extract_total_runtime%86400/3600)) $(($PP_extract_total_runtime%3600/60)) $(($PP_extract_total_runtime%60)) >> $output_PATH/Reports/processing-time.report
-    
-    rm $output_PATH/Reports/PP-extract-stats.list $output_PATH/Reports/PP-extract-stats.tmp
+    printf "File extraction processing time [s]: \t $PP_extract_total_runtime \n" >> $output_PATH/Reports/processing-time.report
+    printf 'File extraction proc. time formatted:\t %02dd %02dh:%02dm:%02ds\n' $(($PP_extract_total_runtime/86400)) $(($PP_extract_total_runtime%86400/3600)) $(($PP_extract_total_runtime%3600/60)) $(($PP_extract_total_runtime%60)) >> $output_PATH/Reports/processing-time.report
+    if [ $clean_up -ge 1 ]; then
+	rm $output_PATH/Reports/PP-extract-stats.list $output_PATH/Reports/PP-extract-stats.tmp
+    fi
 fi
 
 
@@ -101,9 +103,11 @@ done < "$output_PATH/Reports/PP-pairs-stats.list"
 
 printf 'Total processing time:\t %02dd %02dh:%02dm:%02ds\n' $(($PP_total_runtime/86400)) $(($PP_total_runtime%86400/3600)) $(($PP_total_runtime%3600/60)) $(($PP_total_runtime%60)) >> $output_PATH/Reports/PP-pairs.report
 
-printf 'Total processing time:\t %02dd %02dh:%02dm:%02ds\n' $(($PP_total_runtime/86400)) $(($PP_total_runtime%86400/3600)) $(($PP_total_runtime%3600/60)) $(($PP_total_runtime%60)) >> $output_PATH/Reports/processing-time.report
+printf 'PP InSAR processing time:\t %02dd %02dh:%02dm:%02ds\n' $(($PP_total_runtime/86400)) $(($PP_total_runtime%86400/3600)) $(($PP_total_runtime%3600/60)) $(($PP_total_runtime%60)) >> $output_PATH/Reports/processing-time.report
 
-rm $output_PATH/Reports/PP-pairs-stats.list $output_PATH/Reports/PP-pairs-stats.tmp
+if [ $clean_up -ge 1 ]; then
+    rm $output_PATH/Reports/PP-pairs-stats.list $output_PATH/Reports/PP-pairs-stats.tmp
+fi
 
 
 # Create overview report

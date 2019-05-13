@@ -42,6 +42,8 @@ $OSARIS_PATH/lib/GMTSAR-mods/merge_unwrap_geocode.csh \
     $OSARIS_PATH/$gmtsar_config_file \
     $work_PATH/boundary-box.xyz
 
+source $OSARIS_PATH/$gmtsar_config_file
+
 echo; echo "Checking results and moving to files to Output directory ..."; echo
 
 if [ ! "$direction" == "reverse" ]; then
@@ -61,9 +63,9 @@ if [ ! "$direction" == "reverse" ]; then
     cp ./phasefilt_ll.grd $output_PATH/Interferograms/${s1_pair}-interferogram.grd
     if [ -f "$output_PATH/Interferograms/${s1_pair}-interferogram.grd" ]; then status_pha=1; else status_pha=0; fi
 
-    unwrapping_active=`grep threshold_snaphu $OSARIS_PATH/$gmtsar_config_file | awk '{ print $3 }'`
+    # unwrapping_active=`grep threshold_snaphu $OSARIS_PATH/$gmtsar_config_file | awk '{ print $3 }'`
 
-    if (( $(echo "$unwrapping_active > 0" | bc -l ) )); then
+    if (( $(echo "$threshold_snaphu > 0" | bc -l ) )); then
 	mkdir -p $output_PATH/Interf-unwrpd
 	cp ./unwrap_ll.grd $output_PATH/Interf-unwrpd/${s1_pair}-interf_unwrpd.grd
 	if [ -f "$output_PATH/Interf-unwrpd/${s1_pair}-interf_unwrpd.grd" ]; then status_unw=1; else status_unw=0; fi
@@ -85,7 +87,7 @@ runtime=$((end-start))
 
 echo; echo "Writing report  ..."; echo
 
-echo "${previous_scene:15:8} ${current_scene:15:8} $SLURM_JOB_ID $runtime $status_amp $status_coh $status_ccp $status_pha $status_unw $status_los" >> $output_PATH/Reports/PP-pairs-stats.tmp
+echo "${s1_pair:0:8} ${s1_pair:10:8} $SLURM_JOB_ID $runtime $status_amp $status_coh $status_ccp $status_pha $status_unw $status_los" >> $output_PATH/Reports/PP-pairs-stats.tmp
 
 printf 'Processing finished in %02dd %02dh:%02dm:%02ds\n' $(($runtime/86400)) $(($runtime%86400/3600)) $(($runtime%3600/60)) $(($runtime%60))
 

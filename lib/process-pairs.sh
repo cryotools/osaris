@@ -127,9 +127,11 @@ else
 		orbit_1=$previous_orbit
 		scene_2=$current_scene
 		orbit_2=$current_orbit
+
 		if [ $debug -ge 1 ]; then 
 		    echo; echo "Scene 1: ${scene_1:15:8} - Scene 2: ${scene_2:15:8}"
 		fi
+
 		if [ "${scene_1:15:8}" -gt "${scene_2:15:8}" ]; then
 		    start_processing=0
 		    echo "Scenes ${scene_1:15:8} is equal or greater than ${scene_2:15:8}. Skipping ..."
@@ -142,7 +144,7 @@ else
 		echo "$scene_pair_name" >> $work_PATH/pairs-forward.list
 		
 		echo "Creating directory ${scene_pair_name}-aligned"
-		mkdir -p $work_PATH/raw/$scene_pair_name-aligned; cd $work_PATH/raw/$scene_pair_name-aligned
+		mkdir -p $work_PATH/raw/${scene_pair_name}-F${swath}-aligned; cd $work_PATH/raw/${scene_pair_name}-F${swath}-aligned
 		ln -sf $topo_PATH/dem.grd .
 		ln -sf $work_PATH/raw/${scene_1:15:8}_manifest.safe .
 		ln -sf $work_PATH/raw/${scene_2:15:8}_manifest.safe .
@@ -200,7 +202,7 @@ else
 		    echo "$scene_pair_name" >> $work_PATH/pairs-reverse.list
 		    
 		    echo "Creating directory $scene_pair_name"
-		    mkdir -pv $work_PATH/raw/${scene_pair_name}-aligned; cd $work_PATH/raw/${scene_pair_name}-aligned
+		    mkdir -pv $work_PATH/raw/${scene_pair_name}-F${swath}-aligned; cd $work_PATH/raw/${scene_pair_name}-F${swath}-aligned
 		    ln -sf $topo_PATH/dem.grd .
 		    ln -sf $work_PATH/raw/${scene_1:15:8}_manifest.safe .
 		    ln -sf $work_PATH/raw/${scene_2:15:8}_manifest.safe .
