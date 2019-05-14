@@ -109,7 +109,7 @@ else
 	    $slave_scene \
 	    $OSARIS_PATH/$gmtsar_config_file \
 	    $OSARIS_PATH \
-	    $work_PATH/boundary-box.xyz
+	    $work_PATH/proc-params/boundary-box.xyz
 	
 	# Step 2: Interf. processing
 	$OSARIS_PATH/lib/InSAR/intf.sh \
@@ -117,7 +117,7 @@ else
 	    $slave_scene \
 	    $OSARIS_PATH/$gmtsar_config_file \
 	    $OSARIS_PATH \
-	    $work_PATH/boundary-box.xyz
+	    $work_PATH/proc-params/boundary-box.xyz
 
 	# Step 3: Filter and create result files
 	cd intf
@@ -135,7 +135,7 @@ else
 	#    $slave_scene \
 	#    $OSARIS_PATH/$gmtsar_config_file \
 	#    $OSARIS_PATH \
-	#    $work_PATH/boundary-box.xyz
+	#    $work_PATH/proc-params/boundary-box.xyz
 
     else
 	echo; echo "Single swath mode ..."; echo 
@@ -151,7 +151,7 @@ else
 	    S1_${current_scene:15:8}_${current_scene:24:6}_F$swath \
 	    $OSARIS_PATH/$gmtsar_config_file \
 	    $OSARIS_PATH \
-	    $work_PATH/boundary-box.xyz
+	    $work_PATH/proc-params/boundary-box.xyz
 
 	cd $work_PATH/$job_ID/F$swath/intf/
 	intf_dir=($( ls )) 

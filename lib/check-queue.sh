@@ -34,7 +34,10 @@ fi
 # jq=$( squeue -o "%.35j %.7i %.8u %.2t %.10M %.6D %R " | awk -F_ 'NR > 1 {printf"%s\n", $1}' | awk 'NR==1{ print $1}' )
 
 echo
-echo "Waiting for SLURM jobs to finish. This may take a while, take a break."
+echo "Waiting for SLURM jobs to finish. This may take a while."
+echo "Use the 'squeue' command to see the Slurm queue."
+echo "Use 'tail -f <logfile>' to monitor processing logs in the Log directory."
+echo
 
 if [ $display_gfx -eq 1 ]; then
     case "$(( ( RANDOM % 4 )  + 1 ))" in

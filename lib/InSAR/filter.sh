@@ -92,7 +92,7 @@ make_gaussian_filter $1 $dec_rng $az_lks $3 > ijdec
 filter2=gauss_$3
 idec=`cat ijdec | awk -v dc="$dec" '{ print dc*$1 }'`
 jdec=`cat ijdec | awk -v dc="$dec" '{ print dc*$2 }'`
-if [ $#argv == 6 ]; then
+if [ $# -eq 6 ]; then
     idec=`echo $6 $az_lks | awk '{printf("%d",$1/$2)}'`
     jdec=`echo $5 $dec_rng | awk '{printf("%d",$1/$2)}'`
     echo "Setting range_dec=$5, azimuth_dec=$6"
@@ -100,38 +100,44 @@ fi
 echo "$filter2 $idec $jdec ($az_lks $dec_rng)" 
 
 
+
+
 # Filter the two amplitude images
 
-echo "Making amplitudes..."
+echo; echo "Making amplitudes..."
 conv $az_lks $dec_rng $filter1 $1 amp1_tmp.grd=bf
 conv $idec $jdec $filter2 amp1_tmp.grd=bf amp1.grd
-rm amp1_tmp.grd
+rm -f amp1_tmp.grd
 conv $az_lks $dec_rng $filter1 $2 amp2_tmp.grd=bf
 conv $idec $jdec $filter2 amp2_tmp.grd=bf amp2.grd
-rm amp2_tmp.grd
+rm -f amp2_tmp.grd
 
 
 # Filter the real and imaginary parts of the interferogram
 # and compute gradients
 
-echo; echo "Filtering interferogram..."
+echo; echo "Filtering interferogram ..."
 conv $az_lks $dec_rng $filter1 real.grd=bf real_tmp.grd=bf
 conv $idec $jdec $filter2 real_tmp.grd=bf realfilt.grd
-conv $dec $dec $filter4 real_tmp.grd xreal.grd
-conv $dec $dec $filter5 real_tmp.grd yreal.grd
-rm real_tmp.grd 
-rm real.grd
+echo "Computing x and y real parts ..."
+conv $dec $dec $filter4 real_tmp.grd=bf xreal.grd
+conv $dec $dec $filter5 real_tmp.grd=bf yreal.grd
+rm -f real_tmp.grd 
+rm -f real.grd
+echo "Convoluting azimuth looks and range decimation to imaginary part"
 conv $az_lks $dec_rng $filter1 imag.grd=bf imag_tmp.grd=bf
 conv $idec $jdec $filter2 imag_tmp.grd=bf imagfilt.grd
-conv $dec $dec $filter4 imag_tmp.grd ximag.grd
-conv $dec $dec $filter5 imag_tmp.grd yimag.grd
-rm imag_tmp.grd 
-rm imag.grd
+echo "Computing x and y imaginary parts ..."
+conv $dec $dec $filter4 imag_tmp.grd=bf ximag.grd
+conv $dec $dec $filter5 imag_tmp.grd=bf yimag.grd
+rm -f imag_tmp.grd 
+rm -f imag.grd
+
 
 
 # Form amplitude image
 
-echo; echo "Making amplitude..."
+echo; echo "Making display amplitude..."
 gmt grdmath realfilt.grd imagfilt.grd HYPOT  = amp.grd 
 gmt grdmath amp.grd 0.5 POW FLIPUD = display_amp.grd 
 # AMAX=`gmt grdinfo -L2 display_amp.grd | grep stdev | awk '{ print 3*$5 }'`
@@ -181,11 +187,11 @@ gmt grdmath imagfilt.grd realfilt.grd ATAN2 mask.grd MUL FLIPUD = phase.grd
 
 echo; echo "Applying Werner/Goldstein filter to phase..."
 phasefilt -imag imagfilt.grd -real realfilt.grd -amp1 amp1.grd -amp2 amp2.grd -psize 32 
-gmt grdedit filtphase.grd `gmt grdinfo mask.grd -I- --FORMAT_FLOAT_OUT=%.12lg` 
+gmt grdedit filtphase.grd $( gmt grdinfo mask.grd -I- --FORMAT_FLOAT_OUT=%.12lg )
 gmt grdmath filtphase.grd mask.grd MUL FLIPUD = phasefilt.grd
 ##cp phasefilt.grd phasefilt_old.grd
 ##gmt grdmath phasefilt.grd tide.grd SUB PI ADD 2 PI MUL MOD PI SUB = phasefilt.grd
-rm filtphase.grd
+rm -f filtphase.grd
 # gmt grdimage phasefilt.grd $scale -Bxaf+lRange -Byaf+lAzimuth -BWSen -Cphase.cpt -X1.3i -Y3i -P -K > phasefilt.ps
 # gmt psscale -Rphasefilt.grd -J -DJTC+w5i/0.2i+h -Cphase.cpt -Bxa1.57+l"Phase" -By+lrad -O >> phasefilt.ps
 # gmt psconvert -Tf -P -Z phasefilt.ps
@@ -207,4 +213,4 @@ mv mask.grd tmp.grd
 gmt grdmath tmp.grd FLIPUD = mask.grd
 #
 # delete files
-rm tmp.grd tmp2.grd ximag.grd yimag.grd xreal.grd yreal.grd 
+rm -f tmp.grd tmp2.grd ximag.grd yimag.grd xreal.grd yreal.grd 

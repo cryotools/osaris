@@ -55,7 +55,7 @@ else
 
     for s1_pair in ${s1_pairs[@]}; do	
 	s1_pair=${s1_pair::-1}
-	echo "Working on $s1_pair"
+	echo; echo "Preparing Slurm batch jobs for $s1_pair"
 
 	if [[ " ${pairs_forward[@]} " =~ " ${s1_pair} " ]]; then
 	    direction="forward"
@@ -83,7 +83,7 @@ else
 	swath_dirs=$( ls -d *F* )
 
 	if [ $debug -ge 1 ]; then
-	    echo; echo "Swath directories for ${s1_pair}: ${swath_dirs[@]}"
+	    echo "Swath directories found for ${s1_pair}: ${swath_dirs[@]}"
 	fi
 
 	for swath_dir in ${swath_dirs[@]}; do
@@ -112,15 +112,15 @@ else
 
 	sbatch \
     	    --ntasks=$slurm_ntasks_pref \
-    	    --output=$log_PATH/PP-multiswath-%j-out \
-    	    --error=$log_PATH/PP-multiswath-%j-out \
+    	    --output=$log_PATH/PP-MUG-%j-out \
+    	    --error=$log_PATH/PP-MUG-%j-out \
     	    --workdir=$work_PATH \
     	    --job-name=$slurm_jobname \
     	    --qos=$slurm_qos \
     	    --account=$slurm_account \
     	    --partition=$slurm_partition_pref \
     	    --mail-type=$slurm_mailtype \
-    	    $OSARIS_PATH/lib/PP-multiswath.sh \
+    	    $OSARIS_PATH/lib/PP-MUG.sh \
     	    $s1_pair \
     	    $config_file \
     	    $OSARIS_PATH/$gmtsar_config_file \

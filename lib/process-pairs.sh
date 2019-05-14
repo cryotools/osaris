@@ -51,7 +51,17 @@ else
 
     # Process S1 data as defined in data_swath>nr<.in, line by line
     
-    for swath in ${swaths_to_process[@]}; do
+    if [ $debug -ge 1 ]; then
+	if [ "$2" = "SM" ]; then
+	    echo; echo "Processing mode: Single Master"
+	elif [ "$2" = "CMP" ]; then
+	    echo; echo "Processing mode: Chronologically Moving Pairs"
+	else
+	    echo; echo "No processing mode specified. Processing in 'chronologically moving pairs' mode."
+	fi
+    fi
+    
+    for swath in {1..3}; do
 
 	dataline_count=0
 
@@ -60,17 +70,14 @@ else
 	if [ "$2" = "SM" ]; then
 	    data_in_file=data_sm_swath${swath}.in
 	    mode="SM"
-	    echo "Processing mode: Single Master"
 	elif [ "$2" = "CMP" ]; then
 	    data_in_file=data_swath${swath}.in
 	    mode="CMP"
-	    echo "Processing mode: Chronologically Moving Pairs"
 	else
-	    echo "No processing mode specified. Processing in 'chronologically moving pairs' mode."
 	    mode="CMP"
 	fi
 
-	echo; echo "Reading scenes and orbits from $data_in_file"
+	echo; echo "Preparing Slurm batch for Swath $swath"
 
 	while read -r dataline; do	    
 	    cd $work_PATH/raw/	    	    
@@ -96,6 +103,11 @@ else
 		elif  [ -z ${master_orbit+x} ]; then
 		    echo "The orbit was not read correctly from data.in. Please check."
 		    start_processing=0
+		else
+		    if [ "${scene_1:15:8}" -eq "${scene_2:15:8}" ]; then		    
+			echo "Scenes ${scene_1:15:8} is equal to ${scene_2:15:8}. Skipping ..."
+			start_processing=0
+		    fi
 		fi
 
 	    else
@@ -108,37 +120,37 @@ else
 		elif  [ -z ${previous_orbit+x} ]; then
 		    echo "The orbit was not read correctly from data.in. Please check."
 		    start_processing=0
+		else
+		    if [ ! -z $scene_1 ] && [ ! -z $scene_2 ]; then
+			if [ "${scene_1:15:8}" -gt "${scene_2:15:8}" ]; then
+			    echo "Scenes ${scene_1:15:8} is equal or greater than ${scene_2:15:8}. Skipping ..."
+			    start_processing=0
+			fi
+		    fi
 		fi
 	    fi
 	    
- 	    
-	    
-	    if [ $mode = "SM" ]; then		    
-		scene_1=$master_scene
-		orbit_1=$master_orbit
-		scene_2=$current_scene
-		orbit_2=$current_orbit
-		if [ "${scene_1:15:8}" -eq "${scene_2:15:8}" ]; then
-		    start_processing=0
-		    echo "Scenes ${scene_1:15:8} is equal to ${scene_2:15:8}. Skipping ..."
-		fi
-	    else		    
-		scene_1=$previous_scene
-		orbit_1=$previous_orbit
-		scene_2=$current_scene
-		orbit_2=$current_orbit
-
-		if [ $debug -ge 1 ]; then 
-		    echo; echo "Scene 1: ${scene_1:15:8} - Scene 2: ${scene_2:15:8}"
-		fi
-
-		if [ "${scene_1:15:8}" -gt "${scene_2:15:8}" ]; then
-		    start_processing=0
-		    echo "Scenes ${scene_1:15:8} is equal or greater than ${scene_2:15:8}. Skipping ..."
-		fi
+ 	    if [ $debug -ge 1 ]; then 
+		echo; echo "Scene 1: ${scene_1:15:8} - Scene 2: ${scene_2:15:8}"
 	    fi
+
+	    
+
 
 	    if [ "$start_processing" -eq "1" ]; then
+		
+		if [ $mode = "SM" ]; then		    
+		    scene_1=$master_scene
+		    orbit_1=$master_orbit
+		    scene_2=$current_scene
+		    orbit_2=$current_orbit		   		    
+		else		    
+		    scene_1=$previous_scene
+		    orbit_1=$previous_orbit
+		    scene_2=$current_scene
+		    orbit_2=$current_orbit
+		fi
+
 
 		scene_pair_name=${scene_1:15:8}--${scene_2:15:8}
 		echo "$scene_pair_name" >> $work_PATH/pairs-forward.list

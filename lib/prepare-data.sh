@@ -39,24 +39,27 @@ else
     log_PATH=$base_PATH/$prefix/Log
     # Path to directory where the log files will be written    
 
-    # Write coordinates file
-    echo "$lon_1 $lat_1 " > $work_PATH/boundary-box.xy
-    echo "$lon_2 $lat_2 " >> $work_PATH/boundary-box.xy
-    echo "$lon_1 $lat_2 " >> $work_PATH/boundary-box.xy
-    echo "$lon_2 $lat_1 " >> $work_PATH/boundary-box.xy
-   
-    gmt grdtrack $work_PATH/boundary-box.xy -G$work_PATH/topo/dem.grd > $work_PATH/boundary-box.xyz
-
-    echo "$cut_to_aoi" > $work_PATH/cut_to_aoi.flag
-    
-    orbit_list=$( ls $orbits_PATH )
-
-       
+    mkdir -p $work_PATH/proc-params   
     mkdir -p $work_PATH/preprocessing/filelists
     mkdir -p $work_PATH/preprocessing/raw
-    filelist_PATH="$work_PATH/preprocessing/filelists/filelist.txt"
-    rm -f $filelist_PATH
 
+    # Write coordinates file
+    echo "$lon_1 $lat_1 " > $work_PATH/proc-params/boundary-box.xy
+    echo "$lon_2 $lat_2 " >> $work_PATH/proc-params/boundary-box.xy
+    echo "$lon_1 $lat_2 " >> $work_PATH/proc-params/boundary-box.xy
+    echo "$lon_2 $lat_1 " >> $work_PATH/proc-params/boundary-box.xy
+   
+    gmt grdtrack $work_PATH/proc-params/boundary-box.xy -G$work_PATH/proc-params/topo/dem.grd > $work_PATH/proc-params/boundary-box.xyz
+
+    echo "$cut_to_aoi" > $work_PATH/proc-params/cut_to_aoi.flag
+    
+    orbit_list=$( ls $orbits_PATH )
+    
+    filelist_PATH="$work_PATH/proc-params/filelist.txt"
+    swaths_per_scene_PATH="$work_PATH/proc-params/swaths-per-date.list"    
+    rm -f $filelist_PATH $swaths_per_scene_PATH
+    
+    echo "0" > $work_PATH/proc-params/multiswath.flag
 
     # Check whether there are scenes originating from the same pass in orig directory ...
 
@@ -92,6 +95,8 @@ else
 	
 	orbit_match=()
 	S1_files=()
+	swaths4scene=()
+
 	for ((i=1;i<=$file_count;++i)); do
 
 	    S1_files[$i]=$( grep $scene_date $filelist_PATH | awk -v l="${i}" 'NR==l' )	    
@@ -155,10 +160,10 @@ else
 
 	done
 	
-	# If a matching orbits were found -> Prepare files and add to respective data.in files
+	# If a matching orbit was found -> Prepare files and add to respective data.in files
 	if [ ! "${orbit_match}" == "none" ]; then
-
-	    for swath in ${swaths_to_process[@]}; do
+	    
+	    for swath in {1..3}; do
 		
 		# Start the slice merge and burst cut procedure
 
@@ -187,15 +192,20 @@ else
 		stems_chrono=($( cat $work_PATH/stem_list_sorted.tmp | awk '{print $2}' ))
 		files_chrono=($( cat $work_PATH/stem_list_sorted.tmp | awk '{print $3}' ))
 		
-		# cd $work_PATH/orig
 		cd $work_PATH/preprocessing/raw
 
+
+		# Create preliminary PRM and LED files for each input dataset
 		i=0
 		for stem in ${stems_chrono[@]}; do
 		   
 		    ln -sf $work_PATH/orig/${files_chrono[$i]}/measurement/${stem}.tiff .
 		    ln -sf $work_PATH/orig/${files_chrono[$i]}/annotation/${stem}.xml .
+
 		    make_s1a_tops ${stem}.xml ${stem}.tiff ${stem} 0
+
+		    ext_orb_s1a ${stem}.PRM $orbits_PATH/$orbit_match $stem
+
 		    scene_prefix="${stem:15:8}_${stem:24:6}_F${swath}"
 		    prefixes+=($scene_prefix)
 
@@ -217,23 +227,23 @@ else
 		# Obtain radar coordinates for area of interest coordinates (s. config file)		
 		
 		{
-		    azimuth_1=$( awk 'NR==1' $work_PATH/boundary-box.xyz | SAT_llt2rat ${stem}.PRM 0 | awk '{print $2}' )
-		    azimuth_2=$( awk 'NR==2' $work_PATH/boundary-box.xyz | SAT_llt2rat ${stem}.PRM 0 | awk '{print $2}' )
-		    azimuth_3=$( awk 'NR==3' $work_PATH/boundary-box.xyz | SAT_llt2rat ${stem}.PRM 0 | awk '{print $2}' )
-		    azimuth_4=$( awk 'NR==4' $work_PATH/boundary-box.xyz | SAT_llt2rat ${stem}.PRM 0 | awk '{print $2}' )	       	    
+		    azimuth_1=$( awk 'NR==1' $work_PATH/proc-params/boundary-box.xyz | SAT_llt2rat ${stem}.PRM 0 | awk '{print $2}' )
+		    azimuth_2=$( awk 'NR==2' $work_PATH/proc-params/boundary-box.xyz | SAT_llt2rat ${stem}.PRM 0 | awk '{print $2}' )
+		    azimuth_3=$( awk 'NR==3' $work_PATH/proc-params/boundary-box.xyz | SAT_llt2rat ${stem}.PRM 0 | awk '{print $2}' )
+		    azimuth_4=$( awk 'NR==4' $work_PATH/proc-params/boundary-box.xyz | SAT_llt2rat ${stem}.PRM 0 | awk '{print $2}' )	       	    
 
-		    range_1=$( awk 'NR==1' $work_PATH/boundary-box.xyz | SAT_llt2rat ${stem}.PRM 0 | awk '{print $1}' )
-		    range_2=$( awk 'NR==2' $work_PATH/boundary-box.xyz | SAT_llt2rat ${stem}.PRM 0 | awk '{print $1}' )
-		    range_3=$( awk 'NR==3' $work_PATH/boundary-box.xyz | SAT_llt2rat ${stem}.PRM 0 | awk '{print $1}' )
-		    range_4=$( awk 'NR==4' $work_PATH/boundary-box.xyz | SAT_llt2rat ${stem}.PRM 0 | awk '{print $1}' )
+		    range_1=$( awk 'NR==1' $work_PATH/proc-params/boundary-box.xyz | SAT_llt2rat ${stem}.PRM 0 | awk '{print $1}' )
+		    range_2=$( awk 'NR==2' $work_PATH/proc-params/boundary-box.xyz | SAT_llt2rat ${stem}.PRM 0 | awk '{print $1}' )
+		    range_3=$( awk 'NR==3' $work_PATH/proc-params/boundary-box.xyz | SAT_llt2rat ${stem}.PRM 0 | awk '{print $1}' )
+		    range_4=$( awk 'NR==4' $work_PATH/proc-params/boundary-box.xyz | SAT_llt2rat ${stem}.PRM 0 | awk '{print $1}' )
 		} &> /dev/null	
 		
 		if [ $debug -ge 1 ]; then
-		    echo; printf "Azimuths \t Ranges \n"
-		    printf "$azimuth_1 \t $range_1 \n"
-		    printf "$azimuth_2 \t $range_2 \n"
-		    printf "$azimuth_3 \t $range_3 \n"
-		    printf "$azimuth_4 \t $range_4 \n"
+		    echo; echo "Azimuths   Ranges "
+		    echo "$azimuth_1   $range_1"
+		    echo "$azimuth_2   $range_2"
+		    echo "$azimuth_3   $range_3"
+		    echo "$azimuth_4   $range_4"
 		    echo
 		fi
 
@@ -266,7 +276,11 @@ else
 		if [ $rng_ok -eq 0 ] || [ $azi_ok -eq 0 ]; then
 		    echo; echo "Swath $swath does not contain any data for ${scene_date}. Skipping ..."
 		else
-		    
+
+		    # Add the swath to the list of swaths that are considered for processing
+		    swaths4scene+=($swath)
+
+		    # Find minimum and maximum azimuth values
 		    azimuth_min=9999999999
 		    azimuth_max=-999999999
 		    for azi_nr in {1..4}; do
@@ -348,6 +362,11 @@ else
 			echo "${stem:15:8}-${stem}:$orbit_match" >> $work_PATH/raw/data_swath$swath.tmp	    
 		    fi			
 		fi
+		# Add required swaths for the scene to file
+		echo "$scene_date ${swaths4scene[@]}" >> $swaths_per_scene_PATH
+		if [ ${#swaths4scene[@]} -ge 1 ]; then
+		    echo "1" > $work_PATH/proc-params/multiswath.flag
+		fi
 	    done
 	else 
 	    echo "No matching orbit available. Skipping ..."
@@ -367,7 +386,7 @@ else
 
 
 
-    for swath in ${swaths_to_process[@]}; do
+    for swath in {1..3}; do
 	if [ $process_intf_mode = "single_master" ]; then
 	    cat data_sm_swath$swath.master > data_sm_swath$swath.in
 	    sort data_sm_swath$swath.tmp  >> data_sm_swath$swath.in  

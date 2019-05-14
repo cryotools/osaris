@@ -324,6 +324,8 @@ else
 	case "$SAR_sensor" in
 	    Sentinel)	    
 		
+		# multi_swath_mode=$( awk '{print $1}' $work_PATH/proc-params/multiswath.flag )
+
 		if [ $process_intf_mode = "pairs" ]; then
 		    echo; echo "Initializing processing in 'chronologically moving pairs' mode."; echo
 		    cd $OSARIS_PATH
@@ -331,12 +333,18 @@ else
 		    slurm_jobname="$slurm_jobname_prefix-CMP" 
 		    $OSARIS_PATH/lib/check-queue.sh $slurm_jobname 1
 		    
+		    # echo; echo "Swath count: ${#swaths_to_process[@]}"; echo 
+
 		    # If more than one swath are to be considered, start the merging and unwrapping procedure ...
-		    if [ ${#swaths_to_process[@]} -gt 1 ]; then
-			$OSARIS_PATH/lib/process-multi-swath.sh $config_file 2>&1 >>$logfile
-			slurm_jobname="$slurm_jobname_prefix-MSP" 
-			$OSARIS_PATH/lib/check-queue.sh $slurm_jobname 1
-		    fi
+		    # if [ ${#swaths_to_process[@]} -gt 1 ]; then
+		    #if [ $multi_swath_mode -eq 1 ]; then
+
+		    echo; echo "Initializing multi-swath merging and combined processing."; echo
+		    $OSARIS_PATH/lib/process-MUG.sh $config_file 2>&1 >>$logfile
+		    slurm_jobname="$slurm_jobname_prefix-MSP" 
+		    $OSARIS_PATH/lib/check-queue.sh $slurm_jobname 1
+
+		    #fi
 
 		elif [ $process_intf_mode = "single_master" ]; then
 		    echo; echo "Initializing processing in 'single master' mode."; echo
@@ -346,11 +354,14 @@ else
 		    $OSARIS_PATH/lib/check-queue.sh $slurm_jobname 1
 		    
 		    # If more than one swath are to be considered, start the merging and unwrapping procedure ...
-		    if [ ${#swaths_to_process[@]} -gt 1 ]; then
-			$OSARIS_PATH/lib/process-multi-swath.sh $config_file 2>&1 >>$logfile
-			slurm_jobname="$slurm_jobname_prefix-MSP" 
-			$OSARIS_PATH/lib/check-queue.sh $slurm_jobname 1
-		    fi
+		    #if [ $multi_swath_mode -eq 1 ]; then
+		    
+		    echo; echo "Initializing multi-swath merging and combined processing."; echo
+		    $OSARIS_PATH/lib/process-MUG.sh $config_file 2>&1 >>$logfile
+		    slurm_jobname="$slurm_jobname_prefix-MSP" 
+		    $OSARIS_PATH/lib/check-queue.sh $slurm_jobname 1
+
+		    #fi
 
 		# elif [ $process_intf_mode = "both" ]; then
 		#     echo; echo "Initializing processing in both 'single master' and 'chronologically moving pairs' modes.";	echo
@@ -466,7 +477,7 @@ else
 	echo Cleaning up a bit ...
 	if [ $clean_up -eq 1 ]; then
 	    echo "Deleting files used during processing, keeping extracted S1 scenes ..."
-	    rm -rf $work_PATH/Pairs-forward $work_PATH/raw $work_PATH/topo $work_PATH/single_master $work_PATH/orig_cut $work_PATH/UCM
+	    rm -rf $work_PATH/20* $work_PATH/raw $work_PATH/topo $work_PATH/single_master $work_PATH/preprocessing $work_PATH/UCM $work_PATH/proc-params $work_PATH/merge-files 
 	elif [ $clean_up -eq 2 ]; then
 	    echo "Deleting processing folder ..."
 	    rm -rf $work_PATH

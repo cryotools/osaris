@@ -37,7 +37,7 @@ echo "Current path: $( pwd )"
 echo
 echo
 
-$OSARIS_PATH/lib/InSAR/merge_unwrap_geocode.sh \
+$OSARIS_PATH/lib/InSAR/merge-unwrap-geocode.sh \
     $work_PATH/merge-files/${s1_pair}.list \
     $OSARIS_PATH/$gmtsar_config_file \
     $work_PATH/boundary-box.xyz

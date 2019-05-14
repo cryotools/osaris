@@ -53,52 +53,57 @@ printf "\n OSARIS interferometric pair processing report \n" > $output_PATH/Repo
 printf "Total number of pair jobs executed: $(cat $output_PATH/Reports/PP-pairs-stats.list | wc -l) \n \n" >> $output_PATH/Reports/PP-pairs.report
 
 while read -r PP_job; do
-    printf "Slurm job ID:\t\t\t $(echo $PP_job | awk '{ print $3}') \n" >> $output_PATH/Reports/PP-pairs.report
-    scene_1_date=$(echo $PP_job | awk '{ print $1 }')
-    scene_2_date=$(echo $PP_job | awk '{ print $2 }')
-    printf "Scene dates:\t\t\t $scene_1_date $scene_2_date \n" >> $output_PATH/Reports/PP-pairs.report
-    take_diff=$(( ($(date --date="$scene_2_date" +%s) - $(date --date="$scene_1_date" +%s) )/(60*60*24) ))
-    printf "  Days between data takes:\t $take_diff \n" >> $output_PATH/Reports/PP-pairs.report
+    if [ ! -z PP_job ]; then
 
-    if [ ! "$(echo $PP_job | awk '{ print $5 }')" -eq 1 ]; then
-	printf "  Status Amplitude:\t\t failed \n" >> $output_PATH/Reports/PP-pairs.report
+	printf "Slurm job ID:\t\t\t $(echo $PP_job | awk '{ print $3}') \n" >> $output_PATH/Reports/PP-pairs.report
+	scene_1_date=$(echo $PP_job | awk '{ print $1 }')
+	scene_2_date=$(echo $PP_job | awk '{ print $2 }')
+	printf "Scene dates:\t\t\t $scene_1_date $scene_2_date \n" >> $output_PATH/Reports/PP-pairs.report
+	take_diff=$(( ($(date --date="$scene_2_date" +%s) - $(date --date="$scene_1_date" +%s) )/(60*60*24) ))
+	printf "  Days between data takes:\t $take_diff \n" >> $output_PATH/Reports/PP-pairs.report
+
+	if [ ! "$(echo $PP_job | awk '{ print $5 }')" -eq 1 ]; then
+	    printf "  Status Amplitude:\t\t failed \n" >> $output_PATH/Reports/PP-pairs.report
+	else
+	    printf "  Status Amplitude:\t\t ok \n" >> $output_PATH/Reports/PP-pairs.report
+	fi
+
+	if [ ! "$(echo $PP_job | awk '{ print $6 }')" -eq 1 ]; then
+	    printf "  Status Coherence:\t\t failed \n" >> $output_PATH/Reports/PP-pairs.report
+	else
+	    printf "  Status Coherence:\t\t ok \n" >> $output_PATH/Reports/PP-pairs.report
+	fi
+
+	if [ ! "$(echo $PP_job | awk '{ print $7 }')" -eq 1 ]; then
+	    printf "  Status Phase:\t\t\t failed \n" >> $output_PATH/Reports/PP-pairs.report
+	else
+	    printf "  Status Phase:\t\t\t ok \n" >> $output_PATH/Reports/PP-pairs.report
+	fi
+
+	if [ "$(echo $PP_job | awk '{ print $8 }')" -eq 1 ]; then
+	    printf "  Status Unwrapped Intf.:\t ok \n" >> $output_PATH/Reports/PP-pairs.report
+	elif [ "$(echo $PP_job | awk '{ print $8 }')" -eq 2 ]; then
+	    printf "  Status Unwrapped Intf.:\t not processed \n" >> $output_PATH/Reports/PP-pairs.report
+	else
+	    printf "  Status Unwrapped Intf.:\t failed \n" >> $output_PATH/Reports/PP-pairs.report
+	fi
+
+	if [ "$(echo $PP_job | awk '{ print $9 }')" -eq 1 ]; then
+	    printf "  Status LoS Displace.:\t\t ok \n" >> $output_PATH/Reports/PP-pairs.report
+	elif [ "$(echo $PP_job | awk '{ print $9 }')" -eq 2 ]; then
+	    printf "  Status LoS Displace.:\t\t not processed \n" >> $output_PATH/Reports/PP-pairs.report
+	else
+	    printf "  Status LoS Displace.:\t\t failed \n" >> $output_PATH/Reports/PP-pairs.report
+	fi
+	
+	PP_runtime=$(echo $PP_job | awk '{ print $4}')
+	printf '  Processing time:\t\t %02dd %02dh:%02dm:%02ds\n' $(($PP_runtime/86400)) $(($PP_runtime%86400/3600)) $(($PP_runtime%3600/60)) $(($PP_runtime%60)) >> $output_PATH/Reports/PP-pairs.report     
+
+	PP_total_runtime=$((PP_total_runtime + PP_runtime))
+	printf "\n \n" >> $output_PATH/Reports/PP-pairs.report
     else
-	printf "  Status Amplitude:\t\t ok \n" >> $output_PATH/Reports/PP-pairs.report
+	echo "Nothing to report."
     fi
-
-    if [ ! "$(echo $PP_job | awk '{ print $6 }')" -eq 1 ]; then
-	printf "  Status Coherence:\t\t failed \n" >> $output_PATH/Reports/PP-pairs.report
-    else
-	printf "  Status Coherence:\t\t ok \n" >> $output_PATH/Reports/PP-pairs.report
-    fi
-
-    if [ ! "$(echo $PP_job | awk '{ print $7 }')" -eq 1 ]; then
-	printf "  Status Phase:\t\t\t failed \n" >> $output_PATH/Reports/PP-pairs.report
-    else
-	printf "  Status Phase:\t\t\t ok \n" >> $output_PATH/Reports/PP-pairs.report
-    fi
-
-    if [ "$(echo $PP_job | awk '{ print $8 }')" -eq 1 ]; then
-	printf "  Status Unwrapped Intf.:\t ok \n" >> $output_PATH/Reports/PP-pairs.report
-    elif [ "$(echo $PP_job | awk '{ print $8 }')" -eq 2 ]; then
-	printf "  Status Unwrapped Intf.:\t not processed \n" >> $output_PATH/Reports/PP-pairs.report
-    else
-	printf "  Status Unwrapped Intf.:\t failed \n" >> $output_PATH/Reports/PP-pairs.report
-    fi
-
-    if [ "$(echo $PP_job | awk '{ print $9 }')" -eq 1 ]; then
-	printf "  Status LoS Displace.:\t\t ok \n" >> $output_PATH/Reports/PP-pairs.report
-    elif [ "$(echo $PP_job | awk '{ print $9 }')" -eq 2 ]; then
-	printf "  Status LoS Displace.:\t\t not processed \n" >> $output_PATH/Reports/PP-pairs.report
-    else
-	printf "  Status LoS Displace.:\t\t failed \n" >> $output_PATH/Reports/PP-pairs.report
-    fi
-    
-    PP_runtime=$(echo $PP_job | awk '{ print $4}')
-    printf '  Processing time:\t\t %02dd %02dh:%02dm:%02ds\n' $(($PP_runtime/86400)) $(($PP_runtime%86400/3600)) $(($PP_runtime%3600/60)) $(($PP_runtime%60)) >> $output_PATH/Reports/PP-pairs.report     
-
-    PP_total_runtime=$((PP_total_runtime + PP_runtime))
-    printf "\n \n" >> $output_PATH/Reports/PP-pairs.report
 done < "$output_PATH/Reports/PP-pairs-stats.list"
 
 printf 'Total processing time:\t %02dd %02dh:%02dm:%02ds\n' $(($PP_total_runtime/86400)) $(($PP_total_runtime%86400/3600)) $(($PP_total_runtime%3600/60)) $(($PP_total_runtime%60)) >> $output_PATH/Reports/PP-pairs.report

@@ -96,9 +96,14 @@ if [ $proc_stage -eq 1 ]; then
     # s_lines=$( grep num_lines ../raw/$slave.PRM | awk '{print $3}' )
 
     m_lines=$( awk '/num_lines/ {print int($3)}' ../raw/$master.PRM )
-    m_lines=$( awk '/num_lines/ {print int($3)}' ../raw/$slave.PRM )
+    s_lines=$( awk '/num_lines/ {print int($3)}' ../raw/$slave.PRM )
+    
+    # num_lines_comp=$( echo  "$s_lines <  $m_lines" | bc -l )
+    # echo "s_lines <  m_lines: $s_lines <  $m_lines | bc -l"
+    # echo "result: $num_lines_comp"; echo
+    # if [ $( echo "$s_lines <  $m_lines" | bc -l ) -eq 1 ]; then
 
-    if [ $( echo "$s_lines <  $m_lines" | bc -l ) -eq 1 ]; then
+    if [ $s_lines -lt $m_lines ]; then
       update_PRM.csh $master.PRM num_lines $s_lines
       update_PRM.csh $master.PRM num_valid_az $s_lines
       update_PRM.csh $master.PRM nrows $s_lines
@@ -116,8 +121,7 @@ if [ $proc_stage -eq 1 ]; then
     update_PRM.csh $slave.PRM fdd1 0
     update_PRM.csh $slave.PRM fddd1 0
 
-    rm *.log
-    rm *.PRM0
+    rm -f *.log *.PRM0
 
     cd ..
 
@@ -145,7 +149,7 @@ if [ $proc_stage -le 2 ]; then
     
     cp $slave.PRM $slave.PRM0
     resamp $master.PRM $slave.PRM $slave.PRMresamp $slave.SLCresamp 1
-    rm $slave.SLC
+    rm -f $slave.SLC
     mv $slave.SLCresamp $slave.SLC
     cp $slave.PRMresamp $slave.PRM
     cd ..
