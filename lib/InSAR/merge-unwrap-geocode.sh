@@ -115,8 +115,8 @@ if [ $num_swaths -gt 1 ]; then
 	echo "../$swath_path/tmp.PRM:../$swath_path/corr.grd" >> tmp_corrlist
 	echo "../$swath_path/tmp.PRM:../$swath_path/mask.grd" >> tmp_masklist
 	echo "../$swath_path/tmp.PRM:../$swath_path/display_amp.grd" >> tmp_amplist
-	echo "../$swath_path/tmp.PRM:../$swath_path/amp1_db.grd" >> tmp_amp1list
-	echo "../$swath_path/tmp.PRM:../$swath_path/amp2_db.grd" >> tmp_amp2list
+	echo "../$swath_path/tmp.PRM:../$swath_path/amp1-db.grd" >> tmp_amp1list
+	echo "../$swath_path/tmp.PRM:../$swath_path/amp2-db.grd" >> tmp_amp2list
     done < "$input_file"
 
 
@@ -136,7 +136,7 @@ if [ $num_swaths -gt 1 ]; then
     echo "Merging finished"; echo
 
     if [ ! -f trans.dat ]; then
-	led=$( grep led_file $pth$stem".PRM" | awk '{print $3}' )
+	led=$( grep led_file ../${pth::-1}/$stem".PRM" | awk '{print $3}' )
 	cp "$pth$led" .
     fi
 else
@@ -156,7 +156,8 @@ else
     ln -s "$swath_path/amp2_db.grd" .
 fi
 
-cp ../$swath_path/${stem}.PRM .
+cp ../${pth::-1}/${stem}.PRM ../../raw/${stem}.LED .
+
 
 # This step is essential, cut the DEM so it can run faster.
 if [ ! -f trans.dat ]; then
@@ -439,7 +440,7 @@ fi
 echo ""
 echo "GEOCODE-START"
 
-gmt grdmath phasefilt.grd mask.grd MUL=phasefilt_mask.grd -V
+gmt grdmath phasefilt.grd mask.grd MUL = phasefilt_mask.grd -V
 
 # $OSARIS_PATH/lib/GMTSAR-mods/geocode_OSARIS.csh $threshold_geocode $3 $cut_to_aoi
 

@@ -141,22 +141,22 @@ if [ $proc_stage -le 2 ]; then
 
     # Align SLC images  
     cd SLC
-    cp ../raw/*.PRM .
+    cp ../raw/*.PRM ../raw/*.LED .
     ln -s ../raw/$master.SLC .
     ln -s ../raw/$slave.SLC .
-    ln -s ../raw/$master.LED . 
-    ln -s ../raw/$slave.LED .
+    # ln -s ../raw/$master.LED . 
+    # ln -s ../raw/$slave.LED .
     
-    cp $slave.PRM $slave.PRM0
-    resamp $master.PRM $slave.PRM $slave.PRMresamp $slave.SLCresamp 1
-    if [ -f $slave.PRMresamp ] && [ -f $slave.SLCresamp ]; then
-	echo "Succesfully generated aligned PRM and SLC files"
-	rm -f $slave.SLC
-	mv $slave.SLCresamp $slave.SLC
-	cp $slave.PRMresamp $slave.PRM
-    else 
-	echo "WARNING: Focus and align routine failed. Proceeding with original files."
-    fi
+    # cp $slave.PRM $slave.PRM0
+    # resamp $master.PRM $slave.PRM $slave.PRMresamp $slave.SLCresamp 1
+    # if [ -f $slave.PRMresamp ] && [ -f $slave.SLCresamp ]; then
+    # 	echo "Succesfully generated aligned PRM and SLC files"
+    # 	rm -f $slave.SLC
+    # 	mv $slave.SLCresamp $slave.SLC
+    # 	cp $slave.PRMresamp $slave.PRM
+    # else 
+    # 	echo "WARNING: Focus and align routine failed. Proceeding with original files."
+    # fi
     cd ..
 else 
     echo; echo "Skipping focussing and aligning of SLCs (proc_stage set to ${proc_stage})"; echo
