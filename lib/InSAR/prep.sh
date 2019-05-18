@@ -137,7 +137,7 @@ if [ $proc_stage -le 2 ]; then
     echo; echo "Focussing and aligning SLCs ..."; echo
 
     # Clean up 
-    cleanup.csh SLC
+    cleanup.csh SLC &> /dev/null
 
     # Align SLC images  
     cd SLC
@@ -149,9 +149,14 @@ if [ $proc_stage -le 2 ]; then
     
     cp $slave.PRM $slave.PRM0
     resamp $master.PRM $slave.PRM $slave.PRMresamp $slave.SLCresamp 1
-    rm -f $slave.SLC
-    mv $slave.SLCresamp $slave.SLC
-    cp $slave.PRMresamp $slave.PRM
+    if [ -f $slave.PRMresamp ] && [ -f $slave.SLCresamp ]; then
+	echo "Succesfully generated aligned PRM and SLC files"
+	rm -f $slave.SLC
+	mv $slave.SLCresamp $slave.SLC
+	cp $slave.PRMresamp $slave.PRM
+    else 
+	echo "WARNING: Focus and align routine failed. Proceeding with original files."
+    fi
     cd ..
 else 
     echo; echo "Skipping focussing and aligning of SLCs (proc_stage set to ${proc_stage})"; echo
@@ -163,7 +168,7 @@ fi
 if [ $proc_stage -le 3 ]; then
     echo; echo "Topophase processing ..."; echo
     # Clean up
-    cleanup.csh topo
+    cleanup.csh topo &> /dev/null
     
     # Make topo_ra if there is dem.grd
 

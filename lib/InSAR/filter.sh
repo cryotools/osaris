@@ -112,6 +112,10 @@ conv $az_lks $dec_rng $filter1 $2 amp2_tmp.grd=bf
 conv $idec $jdec $filter2 amp2_tmp.grd=bf amp2.grd
 rm -f amp2_tmp.grd
 
+# Convert amplitude to dB.
+# dB = 10 * Log10(Amp)
+gmt grdmath amp1.grd LOG10 10 MUL = amp1-db.grd
+gmt grdmath amp2.grd LOG10 10 MUL = amp2-db.grd
 
 # Filter the real and imaginary parts of the interferogram
 # and compute gradients

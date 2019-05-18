@@ -80,7 +80,7 @@ else
 	# cd $s1_code
 
 	cd $work_PATH/${s1_pair}
-	swath_dirs=$( ls -d *F* )
+	swath_dirs=($( ls -d *F* ))
 
 	if [ $debug -ge 1 ]; then
 	    echo "Swath directories found for ${s1_pair}: ${swath_dirs[@]}"
@@ -91,7 +91,8 @@ else
 		cd $swath_dir/intf
 		master_PRM=$( ls *${master_date}*.PRM )
 		slave_PRM=$( ls *${slave_date}*.PRM )	    
-		echo "$swath_dir/intf/:${master_PRM}:${slave_PRM}" >> $work_PATH/merge-files/${s1_pair}.list #${s1_code}/
+		echo "${swath_dir}/intf/:${master_PRM}:${slave_PRM}" >> $work_PATH/merge-files/${s1_pair}.list #${s1_code}/
+		cd $work_PATH/${s1_pair}
 	    fi
 	done
 

@@ -39,6 +39,7 @@ else
     log_PATH=$base_PATH/$prefix/Log
     # Path to directory where the log files will be written    
 
+    mkdir -p $work_PATH/raw
     mkdir -p $work_PATH/proc-params   
     mkdir -p $work_PATH/preprocessing/filelists
     mkdir -p $work_PATH/preprocessing/raw
@@ -49,7 +50,7 @@ else
     echo "$lon_1 $lat_2 " >> $work_PATH/proc-params/boundary-box.xy
     echo "$lon_2 $lat_1 " >> $work_PATH/proc-params/boundary-box.xy
    
-    gmt grdtrack $work_PATH/proc-params/boundary-box.xy -G$work_PATH/proc-params/topo/dem.grd > $work_PATH/proc-params/boundary-box.xyz
+    gmt grdtrack $work_PATH/proc-params/boundary-box.xy -G$work_PATH/topo/dem.grd > $work_PATH/proc-params/boundary-box.xyz
 
     echo "$cut_to_aoi" > $work_PATH/proc-params/cut_to_aoi.flag
     
@@ -392,10 +393,12 @@ else
 	    sort data_sm_swath$swath.tmp  >> data_sm_swath$swath.in  
 	    # rm data_sm_swath$swath.tmp data_sm_swath$swath.master
 	else
-	    echo "Adding data_swath$swath.tmp to data_swath$swath.in"
-	    sort data_swath$swath.tmp > data_swath${swath}_sorted.tmp
-	    cut -c 10- < data_swath${swath}_sorted.tmp > data_swath$swath.in  
-	    # rm data_swath$swath.tmp
+	    if [ -f data_swath$swath.tmp ]; then
+		echo "Adding data_swath$swath.tmp to data_swath$swath.in"
+		sort data_swath$swath.tmp > data_swath${swath}_sorted.tmp
+		cut -c 10- < data_swath${swath}_sorted.tmp > data_swath$swath.in  
+		# rm data_swath$swath.tmp
+	    fi
 	fi
     done
     

@@ -182,7 +182,13 @@ else
 			slurm_partition_pref=$slurm_partition_alt
 			slurm_ntasks_pref=$slurm_ntasks_alt
 		    fi
+		    
 		fi
+
+		# Calculate reduced ntasks for basic processing routines
+		echo "Slurm ntasks orig: $slurm_ntasks_pref"
+		slurm_ntasks_pref=$((($slurm_ntasks_pref+1)/2))
+		echo "Slurm ntasks reduced: $slurm_ntasks_pref"
 		
 		sbatch \
 		    --ntasks=$slurm_ntasks_pref \

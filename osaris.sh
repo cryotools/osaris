@@ -15,7 +15,7 @@ else
     echo
     echo " ╔══════════════════════════════════════════╗"
     echo " ║                                          ║"
-    echo " ║             OSARIS v. 0.7.2              ║"
+    echo " ║             OSARIS v. 0.7.3              ║"
     echo " ║   Open Source SAR Investigation System   ║"
     echo " ║                                          ║"
     echo " ╚══════════════════════════════════════════╝"
@@ -296,7 +296,9 @@ else
 
 	    cd $OSARIS_PATH
 	fi
-
+	
+	echo "Setting up files and orbits for each scene ..."
+	
 	$OSARIS_PATH/lib/prepare-data.sh $config_file 2>&1 >>$logfile
 
 	echo; echo "SAR data set preparation finished"; echo - - - - - - - - - - - - - - - - ; echo
@@ -527,10 +529,8 @@ else
     echo
 
    
-    echo
-    echo - - - - - - - - - - - - - - - -
-    echo Finished
-    echo - - - - - - - - - - - - - - - -
-    echo
+    echo; echo "- - - - - - - - - - - - - - - -"
+    echo "Finished"
+    echo "- - - - - - - - - - - - - - - -"; echo
 
 fi

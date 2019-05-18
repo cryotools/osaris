@@ -27,6 +27,9 @@ output_PATH=$base_PATH/$prefix/Output
 log_PATH=$base_PATH/$prefix/Output/Log
 # Path to directory where the log files will be written    
 
+master_date=${s1_pair:0:8}
+slave_date=${s1_pair:10:8}
+
 cd $work_PATH/$s1_pair
 
 echo
@@ -40,7 +43,7 @@ echo
 $OSARIS_PATH/lib/InSAR/merge-unwrap-geocode.sh \
     $work_PATH/merge-files/${s1_pair}.list \
     $OSARIS_PATH/$gmtsar_config_file \
-    $work_PATH/boundary-box.xyz
+    $work_PATH/proc-params/boundary-box.xyz
 
 source $OSARIS_PATH/$gmtsar_config_file
 
@@ -48,8 +51,13 @@ echo; echo "Checking results and moving to files to Output directory ..."; echo
 
 if [ ! "$direction" == "reverse" ]; then
     mkdir -p $output_PATH/Amplitudes
-    cp ./display_amp_ll.grd $output_PATH/Amplitudes/${s1_pair}-amplitude.grd
-    if [ -f "$output_PATH/Amplitudes/${s1_pair}-amplitude.grd" ]; then status_amp=1; else status_amp=0; fi
+    cp -n ./amp1_db_ll.grd $output_PATH/Amplitudes/${master_date}-amplitude-db.grd
+    cp -n ./amp2_db_ll.grd $output_PATH/Amplitudes/${slave_date}-amplitude-db.grd
+    if [ -f "$output_PATH/Amplitudes/${master_date}-amplitude-db.grd" ] && [ -f "$output_PATH/Amplitudes/${slave_date}-amplitude-db.grd" ]; then status_amp=1; else status_amp=0; fi
+
+    # mkdir -p $output_PATH/Amplitudes-display
+    # cp ./display_amp_ll.grd $output_PATH/Amplitudes/${s1_pair}-amplitude.grd
+    # if [ -f "$output_PATH/Amplitudes/${s1_pair}-amplitude.grd" ]; then status_amp=1; else status_amp=0; fi
 
     mkdir -p $output_PATH/Conn-comps
     cp ./con_comp_ll.grd $output_PATH/Conn-comps/${s1_pair}-conn_comp.grd
