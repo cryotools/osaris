@@ -88,12 +88,14 @@ if [ $proc_stage -le 4 ]; then
     # mkdir $ref_id"_"$rep_id
     # cd $ref_id"_"$rep_id
 
-    ln -s ../raw/$ref.LED . 
-    ln -s ../raw/$rep.LED .
+    # ln -s ../raw/$ref.LED . 
+    # ln -s ../raw/$rep.LED .
     ln -s ../SLC/$ref.SLC . 
     ln -s ../SLC/$rep.SLC .
     cp ../SLC/$ref.PRM . 
     cp ../SLC/$rep.PRM .
+    cp ../raw/$ref.LED .
+    cp ../raw/$rep.LED .
 
     if [ $topo_phase -eq 1 ]; then
 	if [ $shift_topo -eq 1 ]; then

@@ -341,7 +341,7 @@ else
 		    # if [ ${#swaths_to_process[@]} -gt 1 ]; then
 		    #if [ $multi_swath_mode -eq 1 ]; then
 
-		    echo; echo "Initializing multi-swath merging and combined processing."; echo
+		    echo; echo "Initializing swath merging and combined processing."; echo
 		    $OSARIS_PATH/lib/process-MUG.sh $config_file 2>&1 >>$logfile
 		    slurm_jobname="$slurm_jobname_prefix-MSP" 
 		    $OSARIS_PATH/lib/check-queue.sh $slurm_jobname 1
@@ -358,7 +358,7 @@ else
 		    # If more than one swath are to be considered, start the merging and unwrapping procedure ...
 		    #if [ $multi_swath_mode -eq 1 ]; then
 		    
-		    echo; echo "Initializing multi-swath merging and combined processing."; echo
+		    echo; echo "Initializing swath merging and combined processing."; echo
 		    $OSARIS_PATH/lib/process-MUG.sh $config_file 2>&1 >>$logfile
 		    slurm_jobname="$slurm_jobname_prefix-MSP" 
 		    $OSARIS_PATH/lib/check-queue.sh $slurm_jobname 1

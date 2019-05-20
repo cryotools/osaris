@@ -42,7 +42,7 @@ echo
 
 $OSARIS_PATH/lib/InSAR/merge-unwrap-geocode.sh \
     $work_PATH/merge-files/${s1_pair}.list \
-    $OSARIS_PATH/$gmtsar_config_file \
+    $config_file \
     $work_PATH/proc-params/boundary-box.xyz
 
 source $OSARIS_PATH/$gmtsar_config_file
@@ -73,7 +73,7 @@ if [ ! "$direction" == "reverse" ]; then
 
     # unwrapping_active=`grep threshold_snaphu $OSARIS_PATH/$gmtsar_config_file | awk '{ print $3 }'`
 
-    if (( $(echo "$threshold_snaphu > 0" | bc -l ) )); then
+    if [ $( echo "$threshold_snaphu > 0" | bc -l ) -eq 1 ]; then
 	mkdir -p $output_PATH/Interf-unwrpd
 	cp ./merged/unwrap_ll.grd $output_PATH/Interf-unwrpd/${s1_pair}-interf_unwrpd.grd
 	if [ -f "$output_PATH/Interf-unwrpd/${s1_pair}-interf_unwrpd.grd" ]; then status_unw=1; else status_unw=0; fi

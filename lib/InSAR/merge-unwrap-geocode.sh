@@ -30,11 +30,6 @@ if [ ! $# -eq 3 ]; then
     exit 1
 fi
 
-if [ -f tmp_phaselist ]; then rm tmp_phaselist; fi
-if [ -f tmp_corrlist ]; then rm tmp_corrlist; fi
-if [ -f tmp_masklist ]; then rm tmp_masklist; fi
-if [ -f tmp_amplist ]; then rm tmp_amplist; fi
-
 if [ ! -f dem.grd  ]; then
     echo "Please link dem.grd to current folder"
     exit 1
@@ -51,8 +46,13 @@ if [ ! -f $2 ]; then
     echo "ERROR: Configuration file not found at $2. Aborting merge-unwrap-geocode routine ..."
     exit 1
 else
-    insar_config_file=$2
-    source $insar_config_file
+    config_file=$2
+    source $config_file
+    # source $gmtsar_config_file
+
+    work_PATH=$base_PATH/$prefix/Processing
+    # Path to working directory
+
     # Read in parameters
     # threshold_snaphu=$( grep threshold_snaphu $2 | awk '{print $3}' )
     # threshold_geocode=$( grep threshold_geocode $2 | awk '{print $3}' )
@@ -85,6 +85,12 @@ num_swaths=$( cat $input_file | wc -l )
 
 now_dir=$( pwd )
 mkdir -p ${now_dir}/merged
+
+# Check for and remove old tmp files
+old_tmpfiles=$( ls $now_dir/merged/tmp_* )
+for old_tmpfile in ${old_tmpfiles[@]}; do -f rm $now_dir/merged/$old_tmpfile; done
+
+
 
 if [ $num_swaths -gt 1 ]; then
     echo; echo "$num_swaths swaths found. Merging ..."; echo
@@ -156,7 +162,7 @@ else
     ln -s "$swath_path/amp2_db.grd" .
 fi
 
-cp ../${pth::-1}/${stem}.PRM ../../raw/${stem}.LED .
+cp ../${pth::-1}/${stem}.PRM ../${pth::-1}/${stem}.LED .
 
 
 # This step is essential, cut the DEM so it can run faster.
@@ -164,6 +170,7 @@ if [ ! -f trans.dat ]; then
     # led=$( grep led_file $pth$stem".PRM" | awk '{print $3}' )
     # cp $pth$led .
     echo "Recomputing the projection LUT..."
+    
     ln -s ../../topo/dem.grd .
     # Need to compute the geocoding matrix with supermaster.PRM with rshift  to 0
     rshift=$( grep $stem".PRM" | tail -1 | awk '{print $3}' )
@@ -180,89 +187,105 @@ fi
 #       -> Set values > the maximum (see PRM files) to maximum
 #       -> This must be applied to both p2p...csh and merge_unwrap...csh
 
-if [ -e ../../proc-params/cut_to_aoi.flag ]; then
-    cut_to_aoi=$( cat ../../proc-params/cut_to_aoi.flag )
-    if [ $cut_to_aoi -eq 1 ]; then
 
-	if [ ! -f $3 ]; then
-	    echo "No valid boundary box file provided. Phase unwrapping will be conducted on the whole scene extent."
-	else
-	    SAT_llt2rat $stem".PRM" 1 < $3 > boundary_box_ra.xyz
-	    bb_range_1=$( awk 'NR==1{ print $1 }' boundary_box_ra.xyz )
-	    bb_range_2=$( awk 'NR==2{ print $1 }' boundary_box_ra.xyz )
-	    bb_range_3=$( awk 'NR==3{ print $1 }' boundary_box_ra.xyz )
-	    bb_range_4=$( awk 'NR==4{ print $1 }' boundary_box_ra.xyz )
-	    bb_azimu_1=$( awk 'NR==1{ print $2 }' boundary_box_ra.xyz )
-	    bb_azimu_2=$( awk 'NR==2{ print $2 }' boundary_box_ra.xyz )
-	    bb_azimu_3=$( awk 'NR==3{ print $2 }' boundary_box_ra.xyz )
-	    bb_azimu_4=$( awk 'NR==4{ print $2 }' boundary_box_ra.xyz )
+if [ $cut_to_aoi -eq 1 ]; then
 
+    if [ ! -f $3 ]; then
+	echo "No valid boundary box file provided. Phase unwrapping will be conducted on the whole scene extent."
+    else
+	SAT_llt2rat $stem".PRM" 1 < $3 > boundary_box_ra.xyz
+	bb_range_1=$( awk 'NR==1{ print $1 }' boundary_box_ra.xyz )
+	bb_range_2=$( awk 'NR==2{ print $1 }' boundary_box_ra.xyz )
+	bb_range_3=$( awk 'NR==3{ print $1 }' boundary_box_ra.xyz )
+	bb_range_4=$( awk 'NR==4{ print $1 }' boundary_box_ra.xyz )
+	bb_azimu_1=$( awk 'NR==1{ print $2 }' boundary_box_ra.xyz )
+	bb_azimu_2=$( awk 'NR==2{ print $2 }' boundary_box_ra.xyz )
+	bb_azimu_3=$( awk 'NR==3{ print $2 }' boundary_box_ra.xyz )
+	bb_azimu_4=$( awk 'NR==4{ print $2 }' boundary_box_ra.xyz )
 
-	    # Find min/max values for radar boundary box coordinates
-	    range_max=$bb_range_1
-	    range_min=$bb_range_1
-	    azimu_max=$bb_azimu_1
-	    azimu_min=$bb_azimu_1
-	    
-	    for corner_nr in {2..4}; do
-		rng_name="bb_range_$corner_nr"
-		azi_name="bb_azimu_$corner_nr"
-		if [ ! -z ${!rng_name} ]; then
-		    if [ $( echo "${!rng_name} > $range_max" | bc -l ) -eq 1 ]; then range_max=${!rng_name}; fi
-		    if [ $( echo "${!rng_name} < $range_min" | bc -l ) -eq 1 ]; then range_min=${!rng_name}; fi
-		fi
-		if [ ! -z ${!azi_name} ]; then
-		    if [ $( echo "${!azi_name} > $azimu_max" | bc -l ) -eq 1 ]; then azimu_max=${!azi_name}; fi
-		    if [ $( echo "${!azi_name} < $azimu_min" | bc -l ) -eq 1 ]; then azimu_min=${!azi_name}; fi
-		fi
+	# Find min/max values for radar boundary box coordinates
+	range_max=$bb_range_1
+	range_min=$bb_range_1
+	azimu_max=$bb_azimu_1
+	azimu_min=$bb_azimu_1
 
-	    done
+	if [ $debug -ge 1 ]; then
+	    echo "bb_range_1: $bb_range_1"
+	    echo "bb_range_2: $bb_range_2"
+	    echo "bb_range_3: $bb_range_3"
+	    echo "bb_range_4: $bb_range_4"
+	    echo "bb_azimu_1: $bb_azimu_1"
+	    echo "bb_azimu_2: $bb_azimu_2"
+	    echo "bb_azimu_3: $bb_azimu_3"
+	    echo "bb_azimu_4: $bb_azimu_4"
 
-
-	    # if [ $( echo "$bb_range_2 > $range_max" | bc -l ) == 1 ]; then range_max=$bb_range_2; fi
-	    # if [ $( echo "$bb_range_3 > $range_max" | bc -l ) == 1 ]; then range_max=$bb_range_3; fi
-	    # if [ $( echo "$bb_range_4 > $range_max" | bc -l ) == 1 ]; then range_max=$bb_range_4; fi
-
-	    # range_min=$bb_range_1
-	    # if [ $( echo "$bb_range_2 < $range_min" | bc -l ) == 1 ]; then range_min=$bb_range_2; fi
-	    # fi
-	    # if [ $( echo "$bb_range_3 < $range_min" | bc -l ) == 1 ]; then
-	    # 	range_min=$bb_range_3
-	    # fi
-	    # if [ $( echo "$bb_range_4 < $range_min" | bc -l ) == 1 ]; then
-	    # 	range_min=$bb_range_4
-	    # fi
-
-	    # azimu_max=$bb_azimu_1
-	    # if [ $( echo "$bb_azimu_2 > $azimu_max" | bc -l ) == 1 ]; then
-	    # 	azimu_max=$bb_azimu_2
-	    # fi
-	    # if [ $( echo "$bb_azimu_3 > $azimu_max" | bc -l ) == 1 ]; then
-	    # 	azimu_max=$bb_azimu_3
-	    # fi
-	    # if [ $( echo "$bb_azimu_4 > $azimu_max" | bc -l ) == 1 ]; then
-	    # 	azimu_max=$bb_azimu_4
-	    # fi
-
-	    # azimu_min=$bb_azimu_1
-	    # if [ $( echo "$bb_azimu_2 < $azimu_min" | bc -l ) == 1 ]; then
-	    # 	azimu_min=$bb_azimu_2
-	    # fi
-	    # if [ $( echo "$bb_azimu_3 < $azimu_min" | bc -l ) == 1 ]; then
-	    # 	azimu_min=$bb_azimu_3
-	    # fi
-	    # if [ $( echo "$bb_azimu_4 < $azimu_min" | bc -l ) == 1 ]; then
-	    # 	azimu_min=$bb_azimu_4
-	    # fi
-
-	    region_cut=$range_min"/"$range_max"/"$azimu_min"/"$azimu_max
-	    echo "Var region_cut set to "$region_cut
+	    echo "Intial range min/max: $range_min / $range_max"
+	    echo "Intial azimu min/max: $azimu_min / $azimu_max"
 	fi
-    else 
-	echo "No cutting to area of interest"
-	region_cut=0
+
+	for corner_nr in {2..4}; do
+	    rng_name="bb_range_$corner_nr"
+	    azi_name="bb_azimu_$corner_nr"
+	    if [ ! -z ${!rng_name} ]; then
+		if [ $( echo "${!rng_name} > $range_max" | bc -l ) -eq 1 ]; then range_max=${!rng_name}; fi
+		if [ $( echo "${!rng_name} < $range_min" | bc -l ) -eq 1 ]; then range_min=${!rng_name}; fi
+	    fi
+	    if [ ! -z ${!azi_name} ]; then
+		if [ $( echo "${!azi_name} > $azimu_max" | bc -l ) -eq 1 ]; then azimu_max=${!azi_name}; fi
+		if [ $( echo "${!azi_name} < $azimu_min" | bc -l ) -eq 1 ]; then azimu_min=${!azi_name}; fi
+	    fi
+	    
+	    if [ $debug -ge 1 ]; then	
+		echo "New range min/max: $range_min / $range_max"
+		echo "New azimu min/max: $azimu_min / $azimu_max"
+	    fi
+	done
+
+
+	# if [ $( echo "$bb_range_2 > $range_max" | bc -l ) == 1 ]; then range_max=$bb_range_2; fi
+	# if [ $( echo "$bb_range_3 > $range_max" | bc -l ) == 1 ]; then range_max=$bb_range_3; fi
+	# if [ $( echo "$bb_range_4 > $range_max" | bc -l ) == 1 ]; then range_max=$bb_range_4; fi
+
+	# range_min=$bb_range_1
+	# if [ $( echo "$bb_range_2 < $range_min" | bc -l ) == 1 ]; then range_min=$bb_range_2; fi
+	# fi
+	# if [ $( echo "$bb_range_3 < $range_min" | bc -l ) == 1 ]; then
+	# 	range_min=$bb_range_3
+	# fi
+	# if [ $( echo "$bb_range_4 < $range_min" | bc -l ) == 1 ]; then
+	# 	range_min=$bb_range_4
+	# fi
+
+	# azimu_max=$bb_azimu_1
+	# if [ $( echo "$bb_azimu_2 > $azimu_max" | bc -l ) == 1 ]; then
+	# 	azimu_max=$bb_azimu_2
+	# fi
+	# if [ $( echo "$bb_azimu_3 > $azimu_max" | bc -l ) == 1 ]; then
+	# 	azimu_max=$bb_azimu_3
+	# fi
+	# if [ $( echo "$bb_azimu_4 > $azimu_max" | bc -l ) == 1 ]; then
+	# 	azimu_max=$bb_azimu_4
+	# fi
+
+	# azimu_min=$bb_azimu_1
+	# if [ $( echo "$bb_azimu_2 < $azimu_min" | bc -l ) == 1 ]; then
+	# 	azimu_min=$bb_azimu_2
+	# fi
+	# if [ $( echo "$bb_azimu_3 < $azimu_min" | bc -l ) == 1 ]; then
+	# 	azimu_min=$bb_azimu_3
+	# fi
+	# if [ $( echo "$bb_azimu_4 < $azimu_min" | bc -l ) == 1 ]; then
+	# 	azimu_min=$bb_azimu_4
+	# fi
+
+	region_cut=$range_min"/"$range_max"/"$azimu_min"/"$azimu_max
+	echo "Var region_cut set to "$region_cut
     fi
+else 
+    echo "No cutting to area of interest"
+    region_cut=0
 fi
+
 
 
 
@@ -328,8 +351,7 @@ if [ $( echo "$threshold_snaphu > 0" | bc -l ) -eq 1  ]; then
     #
     # run snaphu
     #
-    sharedir=`gmtsar_sharedir.csh`
-    echo "unwrapping phase with snaphu - higher threshold for faster unwrapping "
+    sharedir=`gmtsar_sharedir.csh`    
 
     if [ $defomax -eq 0 ]; then
 	snaphu phase.in `gmt grdinfo -C phase_patch.grd | cut -f 10` -f $sharedir/snaphu/config/snaphu.conf.brief -g con_comp.out -c corr.in -o unwrap.out -v -s 
@@ -500,14 +522,13 @@ fi
 #  now reproject the phase to lon/lat space
 #
 
-echo "geocode.csh"
-echo "project correlation, phase, unwrapped and amplitude back to lon lat coordinates"
+echo; echo "Geocoding result datasets to WGS84 .."; echo
 maker=$0:t
 today=$( date )
 remarked=$( echo by $USER on $today with $maker )
 echo remarked is $remarked
 
-echo; echo "Projecting coherence to geographic coordinates"
+echo; echo "Projecting coherence to geographic coordinates"; echo
 proj_ra2ll.csh trans.dat corr.grd        corr_ll.grd           
 if [ $cut_to_aoi -eq 1 ]; then
     gmt grdcut corr_ll.grd -Gcorr_ll.grd -R$cut_coords -V
@@ -517,35 +538,35 @@ gmt grdedit -D//"dimensionless"/1///"$PWD:t geocoded correlation"/"$remarked"   
 # proj_ra2ll.csh trans.dat phase.grd       phase_ll.grd 
 # gmt grdedit -D//"radians"/1///"$PWD:t wrapped phase"/"$remarked"                   phase_ll.grd
 
-echo; echo "Projecting filtered phase to geographic coordinates"
+echo; echo "Projecting filtered phase to geographic coordinates"; echo
 proj_ra2ll.csh trans.dat phasefilt.grd   phasefilt_ll.grd
 if [ $cut_to_aoi -eq 1 ]; then
     gmt grdcut phasefilt_ll.grd -Gphasefilt_ll.grd -R$cut_coords -V
 fi
 gmt grdedit -D//"radians"/1///"$PWD:t wrapped phase after filtering"/"$remarked"   phasefilt_ll.grd
 
-echo; echo "Projecting masked phase to geographic coordinates"
+echo; echo "Projecting masked phase to geographic coordinates"; echo
 proj_ra2ll.csh trans.dat phase_mask.grd  phase_mask_ll.grd
 if [ $cut_to_aoi -eq 1 ]; then
     gmt grdcut phase_mask_ll.grd -Gphase_mask_ll.grd -R$cut_coords -V
 fi
 gmt grdedit -D//"radians"/1///"$PWD:t wrapped phase after masking"/"$remarked"     phase_mask_ll.grd
 
-echo; echo "Projecting display amplitude to geographic coordinates"
+echo; echo "Projecting display amplitude to geographic coordinates"; echo
 proj_ra2ll.csh trans.dat display_amp.grd display_amp_ll.grd
 if [ $cut_to_aoi -eq 1 ]; then
     gmt grdcut display_amp_ll.grd -Gdisplay_amp_ll.grd -R$cut_coords -V
 fi
 gmt grdedit -D//"dimensionless"/1///"$PWD:t amplitude"/"$remarked"                  display_amp_ll.grd
 
-echo; echo "Projecting master raw amplitude (dB) to geographic coordinates"
+echo; echo "Projecting master raw amplitude (dB) to geographic coordinates"; echo
 proj_ra2ll.csh trans.dat amp1-db.grd amp1_db_ll.grd
 if [ $cut_to_aoi -eq 1 ]; then
     gmt grdcut amp1_db_ll.grd -Gamp1_db_ll.grd -R$cut_coords -V
 fi
 gmt grdedit -D//"dimensionless"/1///"$PWD:t amplitude (dB)"/"$remarked"                 amp1_db_ll.grd
 
-echo; echo "Projecting slave raw amplitudes (dB) to geographic coordinates"
+echo; echo "Projecting slave raw amplitudes (dB) to geographic coordinates"; echo
 proj_ra2ll.csh trans.dat amp2-db.grd amp2_db_ll.grd
 if [ $cut_to_aoi -eq 1 ]; then
     gmt grdcut amp2_db_ll.grd -Gamp2_db_ll.grd -R$cut_coords -V
@@ -554,13 +575,13 @@ gmt grdedit -D//"dimensionless"/1///"$PWD:t amplitude (dB)"/"$remarked"         
 
 
 if [ -e xphase_mask.grd ]; then
-    echo; echo "Projecting masked xphase to geographic coordinates"
+    echo; echo "Projecting masked xphase to geographic coordinates"; echo
     proj_ra2ll.csh trans.dat xphase_mask.grd xphase_mask_ll.grd
     if [ $cut_to_aoi -eq 1 ]; then
 	gmt grdcut xphase_mask_ll.grd -Gxphase_mask_ll.grd -R$cut_coords -V
     fi
     gmt grdedit -D//"radians"/1///"$PWD:t xphase"/"$remarked"                          xphase_mask_ll.grd
-    echo; echo "Projecting masked yphase to geographic coordinates"
+    echo; echo "Projecting masked yphase to geographic coordinates"; echo
     proj_ra2ll.csh trans.dat yphase_mask.grd yphase_mask_ll.grd
     if [ $cut_to_aoi -eq 1 ]; then
 	gmt grdcut yphase_mask_ll.grd -Gyphase_mask_ll.grd -R$cut_coords -V
@@ -569,7 +590,7 @@ if [ -e xphase_mask.grd ]; then
 fi
 
 if [ -e unwrap_mask.grd ]; then
-    echo; echo "Projecting masked unwrapped phase to geographic coordinates"
+    echo; echo "Projecting masked unwrapped phase to geographic coordinates"; echo
     proj_ra2ll.csh trans.dat unwrap_mask.grd unwrap_mask_ll.grd 
     if [ $cut_to_aoi -eq 1 ]; then
 	gmt grdcut unwrap_mask_ll.grd -Gunwrap_mask_ll.grd -R$cut_coords -V
@@ -578,7 +599,7 @@ if [ -e unwrap_mask.grd ]; then
 fi
 
 if [ -e unwrap.grd ]; then
-    echo; echo "Projecting unwrapped phase to geographic coordinates"
+    echo; echo "Projecting unwrapped phase to geographic coordinates"; echo
     proj_ra2ll.csh trans.dat unwrap.grd unwrap_ll.grd
     if [ $cut_to_aoi -eq 1 ]; then
 	gmt grdcut unwrap_ll.grd -Gunwrap_ll.grd -R$cut_coords -V
@@ -587,7 +608,7 @@ if [ -e unwrap.grd ]; then
 fi
 
 if [ -e phasefilt_mask.grd ]; then
-    echo; echo "Projecting filtered masked phase to geographic coordinates"
+    echo; echo "Projecting filtered masked phase to geographic coordinates"; echo
     proj_ra2ll.csh trans.dat phasefilt_mask.grd phasefilt_mask_ll.grd
     if [ $cut_to_aoi -eq 1 ]; then
 	gmt grdcut phasefilt_mask_ll.grd -Gphasefilt_mask_ll.grd -R$cut_coords -V
@@ -596,7 +617,7 @@ if [ -e phasefilt_mask.grd ]; then
 fi
 
 if [ -e con_comp.grd ]; then
-    echo; echo "Projecting Snaphu connected components to geographic coordinates"
+    echo; echo "Projecting Snaphu connected components to geographic coordinates"; echo
     proj_ra2ll.csh trans.dat con_comp.grd con_comp_ll.grd
     if [ $cut_to_aoi -eq 1 ]; then
 	gmt grdcut con_comp_ll.grd -Gcon_comp_ll.grd -R$cut_coords -V
@@ -605,7 +626,7 @@ if [ -e con_comp.grd ]; then
 fi
 
 
-
+echo; echo "Geocoding finished"; echo
 
 
 
@@ -653,7 +674,7 @@ fi
 #   # grd2kml.csh unwrap_ll unwrap.cpt
 # fi
 
-echo "GEOCODE END"
+
 
 
 rm tmp_phaselist tmp_corrlist tmp_masklist *.eps *.bb
