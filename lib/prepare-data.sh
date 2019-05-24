@@ -39,6 +39,8 @@ else
     log_PATH=$base_PATH/$prefix/Log
     # Path to directory where the log files will be written    
 
+    rm -rf $work_PATH/raw $work_PATH/proc-params $work_PATH/preprocessing/
+
     mkdir -p $work_PATH/raw
     mkdir -p $work_PATH/proc-params   
     mkdir -p $work_PATH/preprocessing/filelists

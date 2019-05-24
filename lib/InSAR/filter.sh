@@ -20,20 +20,20 @@ gmt set PROJ_LENGTH_UNIT = inch
 scale="-JX6.5i"
 thresh="5.e-21"
 
-if [ ! $# -eq 4 ] && [ ! $# -eq 6 ]; then
+if [ ! $# -eq 3 ]; then
     echo ""
-    echo "Usage: filter.sh master.PRM slave.PRM filter decimation [rng_dec azi_dec]"
+    echo "Usage: filter.sh master.PRM slave.PRM OSARIS_config_file"
     echo ""
     echo " Apply gaussian filter to amplitude and phase images."
-    echo " "
-    echo " filter -  wavelength of the filter in meters (0.5 gain)"
-    echo " decimation - (1) better resolution, (2) smaller files"
-    echo " "
-    echo "Example: filter.sh IMG-HH-ALPSRP055750660-H1.0__A.PRM IMG-HH-ALPSRP049040660-H1.0__A.PRM 300  2"
     echo ""
     exit 1
 fi
 
+if [ ! -f $3 ]; then
+    echo; echo "ERROR: no config file found at ${3}! Exiting ..."
+else
+    source $3
+fi
 
 echo; echo "Creating interferometric datasets"; echo
 
@@ -45,18 +45,32 @@ filter3=${sharedir}/filters/fill.3x3
 filter4=${sharedir}/filters/xdir
 filter5=${sharedir}/filters/ydir
 
-dec=$4
+if [ -z $filter_wavelength ]; then 
+    echo "Filter wavelength not set in config file. Using default 100 m."
+    filter_wavelength=100
+else 
+    echo "Filter wavelength set to $filter_wavelength"
+fi
+
+if [ -z $dec_factor ]; then 
+    echo "Decimation factor not set in config file. Using default 0."
+    dec=0
+else
+    echo "Decimation factor set to $dec_factor"
+    dec=$dec_factor
+fi
+
 az_lks=4 
 
-PRF=$( grep PRF *.PRM | awk 'NR == 1 {printf("%d", $3)}' )
+PRF=$( grep PRF *.PRM | awk 'NR == 1 {printf("%d", $filter_wavelength)}' )
 
-if [ $PRF -lt 1000 ]; then
+if [ $( echo "$PRF < 1000" | bc -l ) -eq 1 ]; then
     az_lks=1
 fi
 
 
 # Look for range sampling rate
-rng_samp_rate=$( grep rng_samp_rate $1 | awk 'NR == 1 {printf("%d", $3)}' )
+rng_samp_rate=$( grep rng_samp_rate $1 | awk 'NR == 1 {printf("%d", $filter_wavelength)}' )
 
 echo "rng_samp_rate: $rng_samp_rate"
 
@@ -88,8 +102,8 @@ fi
 
 #  Make the custom filter2 and set the decimation
 
-make_gaussian_filter $1 $dec_rng $az_lks $3 > ijdec
-filter2=gauss_$3
+make_gaussian_filter $1 $dec_rng $az_lks ${filter_wavelength} > ijdec
+filter2=gauss_${filter_wavelength}
 idec=`cat ijdec | awk -v dc="$dec" '{ print dc*$1 }'`
 jdec=`cat ijdec | awk -v dc="$dec" '{ print dc*$2 }'`
 if [ $# -eq 6 ]; then
@@ -101,10 +115,8 @@ echo "$filter2 $idec $jdec ($az_lks $dec_rng)"
 
 
 
-
 # Filter the two amplitude images
 
-echo; echo "Making amplitudes..."
 conv $az_lks $dec_rng $filter1 $1 amp1_tmp.grd=bf
 conv $idec $jdec $filter2 amp1_tmp.grd=bf amp1.grd
 rm -f amp1_tmp.grd
@@ -112,10 +124,16 @@ conv $az_lks $dec_rng $filter1 $2 amp2_tmp.grd=bf
 conv $idec $jdec $filter2 amp2_tmp.grd=bf amp2.grd
 rm -f amp2_tmp.grd
 
-# Convert amplitude to dB.
-# dB = 10 * Log10(Amp)
-gmt grdmath amp1.grd LOG10 10 MUL FLIPUD = amp1-db.grd
-gmt grdmath amp2.grd LOG10 10 MUL FLIPUD = amp2-db.grd
+if [ $proc_amplitudes -eq 1 ]; then
+    echo; echo "Making amplitudes [dB] ..."
+    # Convert amplitude to dB.
+    # dB = 10 * Log10(Amp)
+    gmt grdmath amp1.grd LOG10 10 MUL FLIPUD = amp1-db.grd
+    gmt grdmath amp2.grd LOG10 10 MUL FLIPUD = amp2-db.grd
+else
+    echo; echo "Skipping processing of amplitudes [dB] ..."; echo
+fi
+
 
 # Filter the real and imaginary parts of the interferogram
 # and compute gradients
@@ -123,35 +141,36 @@ gmt grdmath amp2.grd LOG10 10 MUL FLIPUD = amp2-db.grd
 echo; echo "Filtering interferogram ..."
 conv $az_lks $dec_rng $filter1 real.grd=bf real_tmp.grd=bf
 conv $idec $jdec $filter2 real_tmp.grd=bf realfilt.grd
-echo "Computing x and y real parts ..."
+# echo "Computing x and y real parts ..."
 conv $dec $dec $filter4 real_tmp.grd=bf xreal.grd
 conv $dec $dec $filter5 real_tmp.grd=bf yreal.grd
 rm -f real_tmp.grd 
 rm -f real.grd
-echo "Convoluting azimuth looks and range decimation to imaginary part"
+# echo "Convoluting azimuth looks and range decimation to imaginary part"
 conv $az_lks $dec_rng $filter1 imag.grd=bf imag_tmp.grd=bf
 conv $idec $jdec $filter2 imag_tmp.grd=bf imagfilt.grd
-echo "Computing x and y imaginary parts ..."
+# echo "Computing x and y imaginary parts ..."
 conv $dec $dec $filter4 imag_tmp.grd=bf ximag.grd
 conv $dec $dec $filter5 imag_tmp.grd=bf yimag.grd
-rm -f imag_tmp.grd 
-rm -f imag.grd
 
 
 
 # Form amplitude image
 
-echo; echo "Making display amplitude..."
-gmt grdmath realfilt.grd imagfilt.grd HYPOT  = amp.grd 
-gmt grdmath amp.grd 0.5 POW FLIPUD = display_amp.grd 
-# AMAX=`gmt grdinfo -L2 display_amp.grd | grep stdev | awk '{ print 3*$5 }'`
-# gmt grd2cpt display_amp.grd -Z -D -L0/$AMAX -Cgray > display_amp.cpt
-# echo "N  255   255   254" >> display_amp.cpt
-# gmt grdimage display_amp.grd -Cdisplay_amp.cpt $scale -Bxaf+lRange -Byaf+lAzimuth -BWSen -X1.3i -Y3i -P -K > display_amp.ps
-# gmt psscale -Rdisplay_amp.grd -J -DJTC+w5i/0.2i+h+ef -Cdisplay_amp.cpt -Bx0+l"Amplitude (histogram equalized)" -O >> display_amp.ps
-# gmt psconvert -Tf -P -Z display_amp.ps
-# echo "Amplitude map: display_amp.pdf"
-
+if [ $proc_amplit_ifg -eq 1 ]; then
+    echo; echo "Making display amplitude..."
+    gmt grdmath realfilt.grd imagfilt.grd HYPOT  = amp.grd 
+    gmt grdmath amp.grd 0.5 POW FLIPUD = display_amp.grd 
+    # AMAX=`gmt grdinfo -L2 display_amp.grd | grep stdev | awk '{ print 3*$5 }'`
+    # gmt grd2cpt display_amp.grd -Z -D -L0/$AMAX -Cgray > display_amp.cpt
+    # echo "N  255   255   254" >> display_amp.cpt
+    # gmt grdimage display_amp.grd -Cdisplay_amp.cpt $scale -Bxaf+lRange -Byaf+lAzimuth -BWSen -X1.3i -Y3i -P -K > display_amp.ps
+    # gmt psscale -Rdisplay_amp.grd -J -DJTC+w5i/0.2i+h+ef -Cdisplay_amp.cpt -Bx0+l"Amplitude (histogram equalized)" -O >> display_amp.ps
+    # gmt psconvert -Tf -P -Z display_amp.ps
+    # echo "Amplitude map: display_amp.pdf"
+else
+    echo; echo "Skipping processing of interferometric amplitude"; echo
+fi
 
 # Form the correlation
 
@@ -195,26 +214,33 @@ gmt grdedit filtphase.grd $( gmt grdinfo mask.grd -I- --FORMAT_FLOAT_OUT=%.12lg 
 gmt grdmath filtphase.grd mask.grd MUL FLIPUD = phasefilt.grd
 ##cp phasefilt.grd phasefilt_old.grd
 ##gmt grdmath phasefilt.grd tide.grd SUB PI ADD 2 PI MUL MOD PI SUB = phasefilt.grd
-rm -f filtphase.grd
 # gmt grdimage phasefilt.grd $scale -Bxaf+lRange -Byaf+lAzimuth -BWSen -Cphase.cpt -X1.3i -Y3i -P -K > phasefilt.ps
 # gmt psscale -Rphasefilt.grd -J -DJTC+w5i/0.2i+h -Cphase.cpt -Bxa1.57+l"Phase" -By+lrad -O >> phasefilt.ps
 # gmt psconvert -Tf -P -Z phasefilt.ps
 # echo "Filtered phase map: phasefilt.pdf"
 
 
-# Form the phase gradients
+# Form the phase gradients      
+if [ $proc_ifg_grdnts -eq 1 ]; then
+    echo; echo "Making phase gradients ..."
+    gmt grdmath amp.grd 2. POW = amp_pow.grd
+    gmt grdmath realfilt.grd ximag.grd MUL imagfilt.grd xreal.grd MUL SUB amp_pow.grd DIV mask.grd MUL FLIPUD = xphase.grd
+    gmt grdmath realfilt.grd yimag.grd MUL imagfilt.grd yreal.grd MUL SUB amp_pow.grd DIV mask.grd MUL FLIPUD = yphase.grd 
+    #  gmt makecpt -Cgray -T-0.7/0.7/0.1 -Z -N > phase_grad.cpt
+    #  echo "N  255   255   254" >> phase_grad.cpt
+    #  gmt grdimage xphase.grd $scale -Cphase_grad.cpt -X.2i -Y.5i -P > xphase.ps
+    #  gmt grdimage yphase.grd $scale -Cphase_grad.cpt -X.2i -Y.5i -P > yphase.ps
+else
+    echo; echo "Skipping processing of phase gradients"; echo
+fi
 
-echo; echo "Making phase gradients ..."
-gmt grdmath amp.grd 2. POW = amp_pow.grd
-gmt grdmath realfilt.grd ximag.grd MUL imagfilt.grd xreal.grd MUL SUB amp_pow.grd DIV mask.grd MUL FLIPUD = xphase.grd
-gmt grdmath realfilt.grd yimag.grd MUL imagfilt.grd yreal.grd MUL SUB amp_pow.grd DIV mask.grd MUL FLIPUD = yphase.grd 
-#  gmt makecpt -Cgray -T-0.7/0.7/0.1 -Z -N > phase_grad.cpt
-#  echo "N  255   255   254" >> phase_grad.cpt
-#  gmt grdimage xphase.grd $scale -Cphase_grad.cpt -X.2i -Y.5i -P > xphase.ps
-#  gmt grdimage yphase.grd $scale -Cphase_grad.cpt -X.2i -Y.5i -P > yphase.ps
-#
 mv mask.grd tmp.grd 
 gmt grdmath tmp.grd FLIPUD = mask.grd
-#
-# delete files
-rm -f tmp.grd tmp2.grd ximag.grd yimag.grd xreal.grd yreal.grd 
+
+# Clean up 
+if [ $clean_up -ge 1 ]; then
+    rm -f imag_tmp.grd 
+    rm -f filtphase.grd
+    rm -f imag.grd
+    rm -f tmp.grd tmp2.grd ximag.grd yimag.grd xreal.grd yreal.grd 
+fi

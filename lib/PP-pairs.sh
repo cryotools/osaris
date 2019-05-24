@@ -86,10 +86,10 @@ else
     cd $work_PATH/$job_ID/F$swath/
 
     # Read InSAR configuration from GMTSAR config file 
-    source $OSARIS_PATH/$gmtsar_config_file
+    # source $OSARIS_PATH/$gmtsar_config_file
 
-    if [ -z $filter_wavelength ]; then filter_wavelength=100; fi
-    if [ -z $dec_factor ]; then        dec_factor=0; fi
+    # if [ -z $filter_wavelength ]; then filter_wavelength=100; fi
+    # if [ -z $dec_factor ]; then        dec_factor=0; fi
 
 
     # if [ ${#swaths_to_process[@]} -gt 1 ]; then
@@ -109,7 +109,7 @@ else
     $OSARIS_PATH/lib/InSAR/prep.sh \
 	$master_scene \
 	$slave_scene \
-	$OSARIS_PATH/$gmtsar_config_file \
+	$config_file \
 	$OSARIS_PATH \
 	$work_PATH/proc-params/boundary-box.xyz
     
@@ -117,7 +117,7 @@ else
     $OSARIS_PATH/lib/InSAR/intf.sh \
 	$master_scene \
 	$slave_scene \
-	$OSARIS_PATH/$gmtsar_config_file \
+	$config_file \
 	$OSARIS_PATH \
 	$work_PATH/proc-params/boundary-box.xyz
 
@@ -126,8 +126,7 @@ else
     $OSARIS_PATH/lib/InSAR/filter.sh \
 	${master_scene}.PRM \
 	${slave_scene}.PRM \
-	$filter_wavelength \
-	$dec_factor
+	$config_file 
     
     cp -u *gauss* ../../
     cd ..

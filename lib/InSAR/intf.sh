@@ -13,7 +13,7 @@
 # unset noclobber
 
 if [ $# -lt 4 ]; then
-    echo; echo "Usage: intf.sh master_scene slave_scene GMTSAR_config_file OSARIS_PATH boundary_box.xyz"; echo
+    echo; echo "Usage: intf.sh master_scene slave_scene OSARIS_config_file OSARIS_PATH boundary_box.xyz"; echo
     echo "Example: intf.sh S1A20150526_F1 S1A20150607_F1 config.tsx.slc.txt home/user/osaris /workpath/boundary_box.xyz"; echo; echo
     exit 1
 fi

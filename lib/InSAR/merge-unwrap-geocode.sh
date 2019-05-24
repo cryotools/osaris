@@ -162,7 +162,9 @@ else
     ln -s "$swath_path/amp2_db.grd" .
 fi
 
-cp ../${pth::-1}/${stem}.PRM ../${pth::-1}/${stem}.LED .
+cd ${now_dir}/merged
+cp ../${pth::-1}/${stem}.PRM .
+cp ../${pth::-1}/${stem}.LED .
 
 
 # This step is essential, cut the DEM so it can run faster.
@@ -288,25 +290,22 @@ fi
 
 
 
-
-
 # Unwrap interferometric phase
-
 
 if [ ! -z $region_cut  ]; then
     region_cut=$( gmt grdinfo phasefilt.grd -I- | cut -c3-20 )
 fi
-if [ $( echo "$threshold_snaphu > 0" | bc -l ) -eq 1  ]; then
+
+#if [ $( echo "$threshold_snaphu > 0" | bc -l ) -eq 1  ]; then
+if [ $proc_ifg_unwrpd -eq 1 ]; then
+
+    echo; echo "Unwrapping interferometric phase with Snaphu"; echo
+
     if [ $switch_land -eq 1 ]; then
 	if [ ! -f landmask_ra.grd ]; then
             landmask.csh $region_cut
 	fi
-    fi
-
-    echo; echo "Unwrapping interferometric phase with Snaphu"
-
-    #   $OSARIS_PATH/lib/GMTSAR-mods/snaphu_OSARIS.csh $threshold_snaphu $defomax $region_cut
-
+    fi    
 
     #
     # prepare the files adding the correlation mask
@@ -399,43 +398,14 @@ if [ $( echo "$threshold_snaphu > 0" | bc -l ) -eq 1  ]; then
     # boundA=`gmt grdinfo unwrap.grd -C | awk '{print ($5-$4)/4}'`
     # gmt grdimage unwrap.grd -Iunwrap_grad.grd -Cunwrap.cpt -JX6.5i -B"$boundR":Range:/"$boundA":Azimuth:WSen -X1.3i -Y3i -P -K > unwrap.ps
     # gmt psscale -D3.3/-1.5/5/0.2h -Cunwrap.cpt -B"$std":"unwrapped phase, rad": -O -E >> unwrap.ps
-    #
-    # clean up
-    #
-    rm tmp.grd corr_tmp.grd unwrap.out tmp2.grd unwrap_grad.grd 
-    rm phase.in corr.in 
-    #
-    #   cleanup more
-    #
-    rm wrap.grd corr_patch.grd phase_patch.grd mask_patch.grd mask3.grd mask3.out
-    #
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    
+    # Clean up
+    if [ $clean_up -ge 1 ]; then
+	rm -f tmp.grd corr_tmp.grd unwrap.out tmp2.grd unwrap_grad.grd 
+	rm -f phase.in corr.in 
+	rm -f wrap.grd corr_patch.grd phase_patch.grd mask_patch.grd mask3.grd mask3.out
+    fi
 
     # if [ $near_interp -eq 1 ]; then
     #   snaphu_interp.csh $threshold_snaphu $defomax $region_cut
@@ -443,10 +413,9 @@ if [ $( echo "$threshold_snaphu > 0" | bc -l ) -eq 1  ]; then
     #   snaphu.csh $threshold_snaphu $defomax $region_cut
     # fi
 
-    echo "SNAPHU.CSH - END"
+    
 else
-    echo ""
-    echo "SKIP UNWRAP PHASE"
+    echo; echo "Skipping phase unwrapping ..."; echo
 fi
 
 
@@ -459,41 +428,45 @@ fi
 #if [ -f ralt.grd) rm ralt.grd
 
 # if [ $threshold_geocode != 0 ]; then
-echo ""
-echo "GEOCODE-START"
+
+
 
 gmt grdmath phasefilt.grd mask.grd MUL = phasefilt_mask.grd -V
 
-# $OSARIS_PATH/lib/GMTSAR-mods/geocode_OSARIS.csh $threshold_geocode $3 $cut_to_aoi
 
+# If activated, mask phase and phase gradient using correlation
 
-
-
-
-
-
-
-#
-#   first mask the phase and phase gradient using the correlation
-#
-
-
-
-gmt grdmath corr.grd $threshold_geocode GE 0 NAN mask.grd MUL = mask2.grd -V
-gmt grdmath phase.grd mask2.grd MUL = phase_mask.grd
-if [ -e xphase.grd ]; then
-    gmt grdmath xphase.grd mask2.grd MUL = xphase_mask.grd
-    gmt grdmath yphase.grd mask2.grd MUL = yphase_mask.grd
+if [ $( echo "$threshold_geocode > 0" | bc -l ) -eq 1 ]; then
+    echo; echo "Preparing coherence masks for phase datasets (threshold $threshold_geocode)"
+    gmt grdmath corr.grd $threshold_geocode GE 0 NAN mask.grd MUL = mask2.grd -V
+    gmt grdmath phase.grd mask2.grd MUL = phase_mask.grd
+    if [ -e xphase.grd ]; then
+	gmt grdmath xphase.grd mask2.grd MUL = xphase_mask.grd
+	gmt grdmath yphase.grd mask2.grd MUL = yphase_mask.grd
+    fi
+    if [ -e unwrap.grd ]; then 
+	gmt grdcut mask2.grd `gmt grdinfo unwrap.grd -I-` -Gmask3.grd
+	gmt grdmath unwrap.grd mask3.grd MUL = unwrap_mask.grd
+    fi
+    if [ -e phasefilt.grd ]; then 
+	gmt grdmath phasefilt.grd mask2.grd MUL = phasefilt_mask.grd
+    fi
+else
+    echo; echo "Skipping coherence masking for phase datasets (threshold $threshold_geocode)"
+    if [ -e xphase.grd ]; then
+	mv xphase.grd xphase_mask.grd
+	mv yphase.grd yphase_mask.grd
+    fi
+    if [ -e unwrap.grd ]; then 
+	mv unwrap.grd unwrap_mask.grd
+    fi
+    if [ -e phasefilt.grd ]; then 
+	mv phasefilt.grd phasefilt_mask.grd
+    fi
 fi
-if [ -e unwrap.grd ]; then 
-    gmt grdcut mask2.grd `gmt grdinfo unwrap.grd -I-` -Gmask3.grd
-    gmt grdmath unwrap.grd mask3.grd MUL = unwrap_mask.grd
-fi
-if [ -e phasefilt.grd ]; then 
-    gmt grdmath phasefilt.grd mask2.grd MUL = phasefilt_mask.grd
-fi
 
 
+# TODO: use vars from config file
 if [ -e $bbox_file ]; then
     lon_1=$( awk 'NR==1{ print $1 }' $bbox_file )
     lon_2=$( awk 'NR==2{ print $1 }' $bbox_file )
@@ -518,139 +491,159 @@ if [ -e $bbox_file ]; then
 fi 
 
 
-#
-#  now reproject the phase to lon/lat space
-#
+#  Reproject the phase to lon/lat space
 
-echo; echo "Geocoding result datasets to WGS84 .."; echo
+echo; echo "Geocoding result datasets to WGS84 ..."; echo
+
 maker=$0:t
 today=$( date )
 remarked=$( echo by $USER on $today with $maker )
-echo remarked is $remarked
 
-echo; echo "Projecting coherence to geographic coordinates"; echo
-proj_ra2ll.csh trans.dat corr.grd        corr_ll.grd           
-if [ $cut_to_aoi -eq 1 ]; then
-    gmt grdcut corr_ll.grd -Gcorr_ll.grd -R$cut_coords -V
+# echo remarked is $remarked
+
+
+
+if [ $proc_coherences -eq 1 ]; then
+    echo; echo "Projecting coherence to geographic coordinates"; echo
+    proj_ra2ll.csh trans.dat corr.grd        corr_ll.grd           
+    if [ $cut_to_aoi -eq 1 ]; then
+	gmt grdcut corr_ll.grd -Gcorr_ll.grd -R$cut_coords -V
+    fi
+    gmt grdedit -D//"dimensionless"/1///"$PWD:t geocoded correlation"/"$remarked"      corr_ll.grd
+else 
+    echo; echo "Skipping reprojection of coherence (proc_coherences set to ${proc_coherences})"
 fi
-gmt grdedit -D//"dimensionless"/1///"$PWD:t geocoded correlation"/"$remarked"      corr_ll.grd
 
 # proj_ra2ll.csh trans.dat phase.grd       phase_ll.grd 
 # gmt grdedit -D//"radians"/1///"$PWD:t wrapped phase"/"$remarked"                   phase_ll.grd
 
-echo; echo "Projecting filtered phase to geographic coordinates"; echo
-proj_ra2ll.csh trans.dat phasefilt.grd   phasefilt_ll.grd
-if [ $cut_to_aoi -eq 1 ]; then
-    gmt grdcut phasefilt_ll.grd -Gphasefilt_ll.grd -R$cut_coords -V
-fi
-gmt grdedit -D//"radians"/1///"$PWD:t wrapped phase after filtering"/"$remarked"   phasefilt_ll.grd
-
-echo; echo "Projecting masked phase to geographic coordinates"; echo
-proj_ra2ll.csh trans.dat phase_mask.grd  phase_mask_ll.grd
-if [ $cut_to_aoi -eq 1 ]; then
-    gmt grdcut phase_mask_ll.grd -Gphase_mask_ll.grd -R$cut_coords -V
-fi
-gmt grdedit -D//"radians"/1///"$PWD:t wrapped phase after masking"/"$remarked"     phase_mask_ll.grd
-
-echo; echo "Projecting display amplitude to geographic coordinates"; echo
-proj_ra2ll.csh trans.dat display_amp.grd display_amp_ll.grd
-if [ $cut_to_aoi -eq 1 ]; then
-    gmt grdcut display_amp_ll.grd -Gdisplay_amp_ll.grd -R$cut_coords -V
-fi
-gmt grdedit -D//"dimensionless"/1///"$PWD:t amplitude"/"$remarked"                  display_amp_ll.grd
-
-echo; echo "Projecting master raw amplitude (dB) to geographic coordinates"; echo
-proj_ra2ll.csh trans.dat amp1-db.grd amp1_db_ll.grd
-if [ $cut_to_aoi -eq 1 ]; then
-    gmt grdcut amp1_db_ll.grd -Gamp1_db_ll.grd -R$cut_coords -V
-fi
-gmt grdedit -D//"dimensionless"/1///"$PWD:t amplitude (dB)"/"$remarked"                 amp1_db_ll.grd
-
-echo; echo "Projecting slave raw amplitudes (dB) to geographic coordinates"; echo
-proj_ra2ll.csh trans.dat amp2-db.grd amp2_db_ll.grd
-if [ $cut_to_aoi -eq 1 ]; then
-    gmt grdcut amp2_db_ll.grd -Gamp2_db_ll.grd -R$cut_coords -V
-fi
-gmt grdedit -D//"dimensionless"/1///"$PWD:t amplitude (dB)"/"$remarked"                  amp2_db_ll.grd
+# if [ $proc_ifg_filtrd -eq 1 ]; then
+#     echo; echo "Projecting filtered phase to geographic coordinates"; echo
+#     proj_ra2ll.csh trans.dat phasefilt.grd   phasefilt_ll.grd
+#     if [ $cut_to_aoi -eq 1 ]; then
+# 	gmt grdcut phasefilt_ll.grd -Gphasefilt_ll.grd -R$cut_coords -V
+#     fi
+#     gmt grdedit -D//"radians"/1///"$PWD:t wrapped phase after filtering"/"$remarked"   phasefilt_ll.grd
+# else 
+#     echo; echo "Skipping reprojection of filtered phase (proc_ifg_filtrd set to $proc_ifg_filtrd)"
+# fi
 
 
-if [ -e xphase_mask.grd ]; then
-    echo; echo "Projecting masked xphase to geographic coordinates"; echo
-    proj_ra2ll.csh trans.dat xphase_mask.grd xphase_mask_ll.grd
+# if [ $proc_ifg_filtrd -eq 1 ]; then
+# echo; echo "Projecting masked phase to geographic coordinates"; echo
+# proj_ra2ll.csh trans.dat phase_mask.grd  phase_mask_ll.grd
+# if [ $cut_to_aoi -eq 1 ]; then
+#     gmt grdcut phase_mask_ll.grd -Gphase_mask_ll.grd -R$cut_coords -V
+# fi
+# gmt grdedit -D//"radians"/1///"$PWD:t wrapped phase after masking"/"$remarked"     phase_mask_ll.grd
+
+
+if [ $proc_amplit_ifg -eq 1 ]; then
+    echo; echo "Projecting display amplitude to geographic coordinates"; echo
+    proj_ra2ll.csh trans.dat display_amp.grd display_amp_ll.grd
     if [ $cut_to_aoi -eq 1 ]; then
-	gmt grdcut xphase_mask_ll.grd -Gxphase_mask_ll.grd -R$cut_coords -V
+	gmt grdcut display_amp_ll.grd -Gdisplay_amp_ll.grd -R$cut_coords -V
     fi
-    gmt grdedit -D//"radians"/1///"$PWD:t xphase"/"$remarked"                          xphase_mask_ll.grd
-    echo; echo "Projecting masked yphase to geographic coordinates"; echo
-    proj_ra2ll.csh trans.dat yphase_mask.grd yphase_mask_ll.grd
-    if [ $cut_to_aoi -eq 1 ]; then
-	gmt grdcut yphase_mask_ll.grd -Gyphase_mask_ll.grd -R$cut_coords -V
-    fi
-    gmt grdedit -D//"radians"/1///"$PWD:t yphase"/"$remarked"                          yphase_mask_ll.grd
+    gmt grdedit -D//"dimensionless"/1///"$PWD:t amplitude"/"$remarked"                  display_amp_ll.grd
+else 
+    echo; echo "Skipping reprojection of interf. amplitude (proc_amplit_ifg set to ${proc_amplit_ifg})"
 fi
 
-if [ -e unwrap_mask.grd ]; then
-    echo; echo "Projecting masked unwrapped phase to geographic coordinates"; echo
-    proj_ra2ll.csh trans.dat unwrap_mask.grd unwrap_mask_ll.grd 
+
+if [ $proc_amplitudes -eq 1 ]; then
+    echo; echo "Projecting master raw amplitude (dB) to geographic coordinates"; echo
+    proj_ra2ll.csh trans.dat amp1-db.grd amp1_db_ll.grd
     if [ $cut_to_aoi -eq 1 ]; then
-	gmt grdcut unwrap_mask_ll.grd -Gunwrap_mask_ll.grd -R$cut_coords -V
+	gmt grdcut amp1_db_ll.grd -Gamp1_db_ll.grd -R$cut_coords -V
     fi
-    gmt grdedit -D//"radians"/1///"PWD:t unwrapped, masked phase"/"$remarked"        unwrap_mask_ll.grd
+    gmt grdedit -D//"dimensionless"/1///"$PWD:t amplitude (dB)"/"$remarked"                 amp1_db_ll.grd
+
+    echo; echo "Projecting slave raw amplitudes (dB) to geographic coordinates"; echo
+    proj_ra2ll.csh trans.dat amp2-db.grd amp2_db_ll.grd
+    if [ $cut_to_aoi -eq 1 ]; then
+	gmt grdcut amp2_db_ll.grd -Gamp2_db_ll.grd -R$cut_coords -V
+    fi
+    gmt grdedit -D//"dimensionless"/1///"$PWD:t amplitude (dB)"/"$remarked"                  amp2_db_ll.grd
+else 
+    echo; echo "Skipping reprojection of amplitudes [dB] (proc_amplitudes set to ${proc_amplitudes})"
 fi
 
-if [ -e unwrap.grd ]; then
-    echo; echo "Projecting unwrapped phase to geographic coordinates"; echo
-    proj_ra2ll.csh trans.dat unwrap.grd unwrap_ll.grd
-    if [ $cut_to_aoi -eq 1 ]; then
-	gmt grdcut unwrap_ll.grd -Gunwrap_ll.grd -R$cut_coords -V
+
+
+if [ $proc_ifg_grdnts -eq 1 ]; then
+    if [ -e xphase.grd ]; then    
+	echo; echo "Projecting masked xphase to geographic coordinates"; echo
+	proj_ra2ll.csh trans.dat xphase.grd xphase_ll.grd
+	if [ $cut_to_aoi -eq 1 ]; then
+	    gmt grdcut xphase_ll.grd -Gxphase_ll.grd -R$cut_coords -V
+	fi
+	gmt grdedit -D//"radians"/1///"$PWD:t xphase"/"$remarked"                          xphase_ll.grd
+	echo; echo "Projecting masked yphase to geographic coordinates"; echo
+	proj_ra2ll.csh trans.dat yphase.grd yphase_ll.grd
+	if [ $cut_to_aoi -eq 1 ]; then
+	    gmt grdcut yphase_ll.grd -Gyphase_ll.grd -R$cut_coords -V
+	fi
+	gmt grdedit -D//"radians"/1///"$PWD:t yphase"/"$remarked"                          yphase_ll.grd
     fi
-    gmt grdedit -D//"radians"/1///"PWD:t unwrapped phase"/"$remarked"               unwrap_ll.grd
+else 
+    echo; echo "Skipping reprojection of phase gradients (proc_ifg_grdnts set to ${proc_ifg_grdnts})"
 fi
 
-if [ -e phasefilt_mask.grd ]; then
-    echo; echo "Projecting filtered masked phase to geographic coordinates"; echo
-    proj_ra2ll.csh trans.dat phasefilt_mask.grd phasefilt_mask_ll.grd
-    if [ $cut_to_aoi -eq 1 ]; then
-	gmt grdcut phasefilt_mask_ll.grd -Gphasefilt_mask_ll.grd -R$cut_coords -V
+
+
+if [ $proc_ifg_unwrpd -eq 1 ]; then
+    if [ -e unwrap_mask.grd ]; then
+	echo; echo "Projecting masked unwrapped phase to geographic coordinates"; echo
+	proj_ra2ll.csh trans.dat unwrap_mask.grd unwrap_mask_ll.grd 
+	if [ $cut_to_aoi -eq 1 ]; then
+	    gmt grdcut unwrap_mask_ll.grd -Gunwrap_mask_ll.grd -R$cut_coords -V
+	fi
+	gmt grdedit -D//"radians"/1///"PWD:t unwrapped, masked phase"/"$remarked"        unwrap_mask_ll.grd
     fi
-    gmt grdedit -D//"phase in radians"/1///"PWD:t wrapped phase masked filtered"/"$remarked"   phasefilt_mask_ll.grd
+else 
+    echo; echo "Skipping reprojection of unwrapped interferogram (proc_ifg_unwrpd set to ${proc_ifg_unwrpd})"
 fi
 
-if [ -e con_comp.grd ]; then
-    echo; echo "Projecting Snaphu connected components to geographic coordinates"; echo
-    proj_ra2ll.csh trans.dat con_comp.grd con_comp_ll.grd
-    if [ $cut_to_aoi -eq 1 ]; then
-	gmt grdcut con_comp_ll.grd -Gcon_comp_ll.grd -R$cut_coords -V
+
+# if [ -e unwrap.grd ]; then
+#     echo; echo "Projecting unwrapped phase to geographic coordinates"; echo
+#     proj_ra2ll.csh trans.dat unwrap.grd unwrap_ll.grd
+#     if [ $cut_to_aoi -eq 1 ]; then
+# 	gmt grdcut unwrap_ll.grd -Gunwrap_ll.grd -R$cut_coords -V
+#     fi
+#     gmt grdedit -D//"radians"/1///"PWD:t unwrapped phase"/"$remarked"               unwrap_ll.grd
+# fi
+
+if [ $proc_ifg_filtrd -eq 1 ]; then
+    if [ -e phasefilt_mask.grd ]; then
+	echo; echo "Projecting filtered masked phase to geographic coordinates"; echo
+	proj_ra2ll.csh trans.dat phasefilt_mask.grd phasefilt_mask_ll.grd
+	if [ $cut_to_aoi -eq 1 ]; then
+	    gmt grdcut phasefilt_mask_ll.grd -Gphasefilt_mask_ll.grd -R$cut_coords -V
+	fi
+	gmt grdedit -D//"phase in radians"/1///"PWD:t wrapped phase masked filtered"/"$remarked"   phasefilt_mask_ll.grd
     fi
-    gmt grdedit -D//"dimensionless"/1///"PWD:t connected components"/"$remarked" con_comp_ll.grd
+else 
+    echo; echo "Skipping reprojection of filtered interferogram (proc_ifg_filtrd set to ${proc_ifg_filtrd})"
 fi
+
+
+if [ $proc_ifg_concmp -eq 1 ]; then
+    if [ -e con_comp.grd ]; then
+	echo; echo "Projecting Snaphu connected components to geographic coordinates"; echo
+	proj_ra2ll.csh trans.dat con_comp.grd con_comp_ll.grd
+	if [ $cut_to_aoi -eq 1 ]; then
+	    gmt grdcut con_comp_ll.grd -Gcon_comp_ll.grd -R$cut_coords -V
+	fi
+	gmt grdedit -D//"dimensionless"/1///"PWD:t connected components"/"$remarked" con_comp_ll.grd
+    fi
+else 
+    echo; echo "Skipping reprojection of Snaphu's connected components (proc_ifg_concmp set to ${proc_ifg_concmp})"
+fi
+
 
 
 echo; echo "Geocoding finished"; echo
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 # 
 # proj_ra2ll.csh trans.dat phasefilt.grd phasefilt_ll.grd

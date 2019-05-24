@@ -15,14 +15,14 @@ else
     echo
     echo " ╔══════════════════════════════════════════╗"
     echo " ║                                          ║"
-    echo " ║             OSARIS v. 0.7.3              ║"
+    echo " ║         OSARIS v. 0.7.3alpha             ║"
     echo " ║   Open Source SAR Investigation System   ║"
     echo " ║                                          ║"
     echo " ╚══════════════════════════════════════════╝"
     echo 
-    echo - - - - - - - - - - - - - - - - - - - - - - - 
-    echo    Loading configuration          
-    echo - - - - - - - - - - - - - - - - - - - - - - -
+    echo "- - - - - - - - - - - - - - - - - - - - - - -"
+    echo "   Loading configuration          "
+    echo "- - - - - - - - - - - - - - - - - - - - - - -"
 
 
     function include_modules {
@@ -360,7 +360,7 @@ else
 		    
 		    echo; echo "Initializing swath merging and combined processing."; echo
 		    $OSARIS_PATH/lib/process-MUG.sh $config_file 2>&1 >>$logfile
-		    slurm_jobname="$slurm_jobname_prefix-MSP" 
+		    slurm_jobname="$slurm_jobname_prefix-MUG" 
 		    $OSARIS_PATH/lib/check-queue.sh $slurm_jobname 1
 
 		    #fi
@@ -432,7 +432,7 @@ else
 
 
     # TODO: Make module
-    if [ "$process_reverse_intfs" -eq 1 ]; then
+    if [ "$proc_ifg_revers" -eq 1 ]; then
 	
 	# Start unwrapping sum time measurement
 	printf '\n\nFwd-Rev-Unwrapping sum calculation' >> $output_PATH/Reports/$report_filename

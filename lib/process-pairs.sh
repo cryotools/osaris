@@ -214,7 +214,7 @@ else
 			"forward"
 
 
-		    if [ ! -z $process_reverse_intfs ] && [ "$process_reverse_intfs" -eq 1 ]; then
+		    if [ ! -z $proc_ifg_revers ] && [ "$proc_ifg_revers" -eq 1 ]; then
 
 			# Process reverse pairs ...
 
