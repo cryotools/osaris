@@ -70,8 +70,8 @@ if [ ! "$direction" == "reverse" ]; then
 
     if [ $proc_ifg_grdnts -eq 1 ]; then
 	mkdir -p $output_PATH/Interf-gradients	
-	cp ./merged/xphase_mask_ll.grd $output_PATH/Interf-gradient/${s1_pair}-xphase.grd
-	cp ./merged/yphase_mask_ll.grd $output_PATH/Interf-gradient/${s1_pair}-yphase.grd
+	cp ./merged/xphase_ll.grd $output_PATH/Interf-gradients/${s1_pair}-xphase.grd
+	cp ./merged/yphase_ll.grd $output_PATH/Interf-gradients/${s1_pair}-yphase.grd
 	if [ -f "$output_PATH/Interf-gradients/${s1_pair}-xphase.grd" ] && [ -f "$output_PATH/Interf-gradients/${s1_pair}-yphase.grd" ]; then status_gnt=1; else status_gnt=0; fi
     else
 	status_gnt=2
@@ -96,7 +96,7 @@ if [ ! "$direction" == "reverse" ]; then
 
     if [ $proc_ifg_filtrd -eq 1 ]; then
 	mkdir -p $output_PATH/Interferograms
-	cp ./merged/phasefilt_ll.grd $output_PATH/Interferograms/${s1_pair}-interferogram.grd
+	cp ./merged/phasefilt_mask_ll.grd $output_PATH/Interferograms/${s1_pair}-interferogram.grd
 	if [ -f "$output_PATH/Interferograms/${s1_pair}-interferogram.grd" ]; then status_pha=1; else status_pha=0; fi
     else
 	status_pha=2
@@ -106,7 +106,7 @@ if [ ! "$direction" == "reverse" ]; then
     # if [ $( echo "$threshold_snaphu > 0" | bc -l ) -eq 1 ]; then
     if [ $proc_ifg_unwrpd -eq 1 ]; then
 	mkdir -p $output_PATH/Interf-unwrpd
-	cp ./merged/unwrap_ll.grd $output_PATH/Interf-unwrpd/${s1_pair}-interf_unwrpd.grd
+	cp ./merged/unwrap_mask_ll.grd $output_PATH/Interf-unwrpd/${s1_pair}-interf_unwrpd.grd
 	if [ -f "$output_PATH/Interf-unwrpd/${s1_pair}-interf_unwrpd.grd" ]; then status_unw=1; else status_unw=0; fi
     else
 	status_unw=2

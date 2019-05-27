@@ -123,6 +123,10 @@ if [ $num_swaths -gt 1 ]; then
 	echo "../$swath_path/tmp.PRM:../$swath_path/display_amp.grd" >> tmp_amplist
 	echo "../$swath_path/tmp.PRM:../$swath_path/amp1-db.grd" >> tmp_amp1list
 	echo "../$swath_path/tmp.PRM:../$swath_path/amp2-db.grd" >> tmp_amp2list
+	if [ $proc_ifg_grdnts -eq 1 ]; then
+	    echo "../$swath_path/tmp.PRM:../$swath_path/xphase.grd" >> tmp_xphslist
+	    echo "../$swath_path/tmp.PRM:../$swath_path/yphase.grd" >> tmp_yphslist
+	fi
     done < "$input_file"
 
 
@@ -139,6 +143,10 @@ if [ $num_swaths -gt 1 ]; then
     merge_swath tmp_amplist display_amp.grd
     merge_swath tmp_amp1list amp1-db.grd
     merge_swath tmp_amp2list amp2-db.grd
+    if [ $proc_ifg_grdnts -eq 1 ]; then
+	merge_swath tmp_xphslist xphase.grd
+	merge_swath tmp_yphslist yphase.grd
+    fi
     echo "Merging finished"; echo
 
     if [ ! -f trans.dat ]; then
@@ -160,6 +168,10 @@ else
     ln -s "$swath_path/display_amp.grd" .
     ln -s "$swath_path/amp1_db.grd" .
     ln -s "$swath_path/amp2_db.grd" .
+    if [ $proc_ifg_grdnts -eq 1 ]; then
+	ln -s "$swath_path/xphase.grd" .
+	ln -s "$swath_path/yphase.grd" .
+    fi
 fi
 
 cd ${now_dir}/merged
@@ -175,11 +187,14 @@ if [ ! -f trans.dat ]; then
     
     ln -s ../../topo/dem.grd .
     # Need to compute the geocoding matrix with supermaster.PRM with rshift  to 0
-    rshift=$( grep $stem".PRM" | tail -1 | awk '{print $3}' )
-    update_PRM $stem".PRM" rshift 0
-    gmt grd2xyz --FORMAT_FLOAT_OUT=%lf dem.grd -s | SAT_llt2rat $stem".PRM" 1 -bod > trans.dat
+    rshift=$( grep ${stem}.PRM | tail -1 | awk '{print $3}' )
+    echo "Creating zero rshift PRM"
+    update_PRM ${stem}.PRM rshift 0
+    echo "Creating trans.dat from zero rshift PRM"
+    gmt grd2xyz --FORMAT_FLOAT_OUT=%lf dem.grd -s | SAT_llt2rat ${stem}.PRM 1 -bod > trans.dat
     #  rshift back for other usage
-    update_PRM $stem".PRM" rshift $rshift
+    echo "Shifting PRM back for other applications"
+    update_PRM ${stem}.PRM rshift $rshift
 fi
 
 
@@ -570,21 +585,19 @@ fi
 
 
 
-if [ $proc_ifg_grdnts -eq 1 ]; then
-    if [ -e xphase.grd ]; then    
-	echo; echo "Projecting masked xphase to geographic coordinates"; echo
-	proj_ra2ll.csh trans.dat xphase.grd xphase_ll.grd
-	if [ $cut_to_aoi -eq 1 ]; then
-	    gmt grdcut xphase_ll.grd -Gxphase_ll.grd -R$cut_coords -V
-	fi
-	gmt grdedit -D//"radians"/1///"$PWD:t xphase"/"$remarked"                          xphase_ll.grd
-	echo; echo "Projecting masked yphase to geographic coordinates"; echo
-	proj_ra2ll.csh trans.dat yphase.grd yphase_ll.grd
-	if [ $cut_to_aoi -eq 1 ]; then
-	    gmt grdcut yphase_ll.grd -Gyphase_ll.grd -R$cut_coords -V
-	fi
-	gmt grdedit -D//"radians"/1///"$PWD:t yphase"/"$remarked"                          yphase_ll.grd
+if [ $proc_ifg_grdnts -eq 1 ]; then    
+    echo; echo "Projecting masked xphase to geographic coordinates"; echo
+    proj_ra2ll.csh trans.dat xphase_mask.grd xphase_ll.grd
+    if [ $cut_to_aoi -eq 1 ]; then
+	gmt grdcut xphase_ll.grd -Gxphase_ll.grd -R$cut_coords -V
     fi
+    gmt grdedit -D//"radians"/1///"$PWD:t xphase"/"$remarked"                          xphase_ll.grd
+    echo; echo "Projecting masked yphase to geographic coordinates"; echo
+    proj_ra2ll.csh trans.dat yphase_mask.grd yphase_ll.grd
+    if [ $cut_to_aoi -eq 1 ]; then
+	gmt grdcut yphase_ll.grd -Gyphase_ll.grd -R$cut_coords -V
+    fi
+    gmt grdedit -D//"radians"/1///"$PWD:t yphase"/"$remarked"                          yphase_ll.grd
 else 
     echo; echo "Skipping reprojection of phase gradients (proc_ifg_grdnts set to ${proc_ifg_grdnts})"
 fi
@@ -670,4 +683,4 @@ echo; echo "Geocoding finished"; echo
 
 
 
-rm tmp_phaselist tmp_corrlist tmp_masklist *.eps *.bb
+rm -f tmp_phaselist tmp_corrlist tmp_masklist *.eps *.bb
