@@ -213,10 +213,11 @@ For all reports and inquiries please contact [David Loibl](https://hu.berlin/dav
 
 
 ## <a name="crediting"></a> Crediting OSARIS
-As stated in the license file, you are free to use OSARIS in whatever way you like. If you publish OSARIS results, e.g. in scientific publications, please credit OSARIS using the Zenodo DOI:
+As stated in the license file, you are free to use OSARIS in whatever way you like. If you publish OSARIS results, e.g. in scientific publications, please refer to the OSARIS [method paper in Frontiers in Earth Science](https://www.frontiersin.org/articles/10.3389/feart.2019.00172/full).
+
+In addition, we encourage adding a reference to the version of OSARIS you have used for processing using the respective Zenodo DOI:
 
 [![DOI](https://zenodo.org/badge/108271075.svg)](https://zenodo.org/badge/latestdoi/108271075)
-
 
 ## <a name="credits-contributors"></a> Credits / Contributors
 A (hopefully) full list of contributors is available in `doc/contributors.md` - Many thanks to all those who have contributed to make this a better tool. Many thanks to Bodo Bookhagen and Ziyadin Cakir who substantially supported the conception of OSARIS with thoughtful comments and by sharing scripts. 
