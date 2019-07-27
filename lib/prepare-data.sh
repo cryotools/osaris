@@ -365,11 +365,14 @@ else
 			echo "${stem:15:8}-${stem}:$orbit_match" >> $work_PATH/raw/data_swath$swath.tmp	    
 		    fi			
 		fi
+
 		# Add required swaths for the scene to file
 		echo "$scene_date ${swaths4scene[@]}" >> $swaths_per_scene_PATH
+
 		if [ ${#swaths4scene[@]} -ge 1 ]; then
 		    echo "1" > $work_PATH/proc-params/multiswath.flag
 		fi
+
 	    done
 	else 
 	    echo "No matching orbit available. Skipping ..."
@@ -388,18 +391,28 @@ else
     fi
 
 
-
+    echo; echo "Preparing data lists ..."
+    cd $work_PATH/raw
     for swath in {1..3}; do
 	if [ $process_intf_mode = "single_master" ]; then
-	    cat data_sm_swath$swath.master > data_sm_swath$swath.in
-	    sort data_sm_swath$swath.tmp  >> data_sm_swath$swath.in  
-	    # rm data_sm_swath$swath.tmp data_sm_swath$swath.master
+	    if [ -f data_sm_swath$swath.tmp ]; then
+		num_data_lines=$( wc -l < "data_sm_swath$swath.tmp" )
+		echo "Found $num_data_lines data sets for swath $swath"
+		cat data_sm_swath$swath.master > data_sm_swath$swath.in
+		sort data_sm_swath$swath.tmp  >> data_sm_swath$swath.in  
+		# rm data_sm_swath$swath.tmp data_sm_swath$swath.master
+	    else 
+		echo "No data found for swath $swath"
+	    fi
 	else
 	    if [ -f data_swath$swath.tmp ]; then
-		echo "Adding data_swath$swath.tmp to data_swath$swath.in"
+		num_data_lines=$( wc -l < "data_swath$swath.tmp" )
+		echo "Found $num_data_lines data sets for swath $swath"
 		sort data_swath$swath.tmp > data_swath${swath}_sorted.tmp
 		cut -c 10- < data_swath${swath}_sorted.tmp > data_swath$swath.in  
 		# rm data_swath$swath.tmp
+	    else 
+		echo "No data found for swath $swath"	    
 	    fi
 	fi
     done

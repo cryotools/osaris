@@ -44,6 +44,7 @@ else
 
 
     cd $work_PATH
+    rm -rf merge-files
     mkdir -p merge-files
     
     s1_pairs=($( ls -d *20*/ ))
@@ -51,7 +52,7 @@ else
     if [ -f $work_PATH/pairs-reverse.list ]; then pairs_reverse=($( cat $work_PATH/pairs-reverse.list )); fi
     
 
-    slurm_jobname="$slurm_jobname_prefix-MSP"
+    slurm_jobname="$slurm_jobname_prefix-MUG"
 
     for s1_pair in ${s1_pairs[@]}; do	
 	s1_pair=${s1_pair::-1}

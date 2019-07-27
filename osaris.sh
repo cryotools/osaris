@@ -343,7 +343,7 @@ else
 
 		    echo; echo "Initializing swath merging and combined processing."; echo
 		    $OSARIS_PATH/lib/process-MUG.sh $config_file 2>&1 >>$logfile
-		    slurm_jobname="$slurm_jobname_prefix-MSP" 
+		    slurm_jobname="$slurm_jobname_prefix-MUG" 
 		    $OSARIS_PATH/lib/check-queue.sh $slurm_jobname 1
 
 		    #fi

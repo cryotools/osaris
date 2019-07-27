@@ -23,6 +23,7 @@ if [ $# -lt 3 ]; then
     echo "   Input path       -> The directory containing grid files"
     echo "   Reference point  -> Coordinates of reference point in decimal degrees using the format"
     echo "                       Longitude/Latitude, e.g. 165.1/-12.5"
+    echo "                       Alternatively, set to 'median' to harmonize grids to their respective medians"
     echo "   Output path      -> Output grids will be written here"
     echo 
     echo " Output:"
@@ -40,10 +41,14 @@ else
    
     mkdir -p $HG_output_PATH
     mkdir -p $HG_work_PATH
-   
-    echo "Reference point is set to $ref_point_xy_coords"
-    ref_point_array=(${ref_point_xy_coords//\// })
-    echo "${ref_point_array[0]} ${ref_point_array[1]}" > $HG_work_PATH/ref_point.xy
+    
+    if [ "$ref_point_xy_coords" == "median" ]; then
+	echo "Harmonizing grids to their respective medians."
+    else
+	echo "Reference point is set to $ref_point_xy_coords"
+	ref_point_array=(${ref_point_xy_coords//\// })
+	echo "${ref_point_array[0]} ${ref_point_array[1]}" > $HG_work_PATH/ref_point.xy
+    fi
 
                 
     if [ ! -d "$grid_input_PATH" ]; then
@@ -58,15 +63,20 @@ else
 	grid_files=($( ls *.grd ))
 	for grid_file in ${grid_files[@]}; do
 
-	    # Get xy coordinates of 'stable ground point' from file and check the value the raster set has at this location.
-	    gmt grdtrack $HG_work_PATH/ref_point.xy -G${grid_input_PATH}/${grid_file} >> $HG_work_PATH/${grid_input_PATH_basename}_ref_point_vals.xyz
-	    ref_point_grid_trk=$( gmt grdtrack ${HG_work_PATH}/ref_point.xy -G${grid_input_PATH}/${grid_file} )
-
-	    if [ ! -z ${ref_point_grid_trk+x} ]; then
-		ref_point_grid_val=$( echo "$ref_point_grid_trk" | awk '{ print $3 }')		    
-		# if [ $debug -gt 1 ]; then echo "Stable ground diff ${grid_input_PATH}/${grid_file}: $ref_point_grid_val"; fi
+	    if [ "$ref_point_xy_coords" == "median" ]; then
+		# Obtain median value of grid
+		ref_point_grid_val=$( gmt grdinfo -L1 $grid_file | grep median | awk '{print $3}' )
 	    else
-		echo "GMT grdtrack for stable ground yielded no result for ${grid_input_PATH}/${grid_file}. Skipping"
+		# Get xy coordinates of 'stable ground point' from file and check the value the raster set has at this location.
+		gmt grdtrack $HG_work_PATH/ref_point.xy -G${grid_input_PATH}/${grid_file} >> $HG_work_PATH/${grid_input_PATH_basename}_ref_point_vals.xyz
+		ref_point_grid_trk=$( gmt grdtrack ${HG_work_PATH}/ref_point.xy -G${grid_input_PATH}/${grid_file} )
+
+		if [ ! -z ${ref_point_grid_trk+x} ]; then
+		    ref_point_grid_val=$( echo "$ref_point_grid_trk" | awk '{ print $3 }')		    
+		    # if [ $debug -gt 1 ]; then echo "Stable ground diff ${grid_input_PATH}/${grid_file}: $ref_point_grid_val"; fi
+		else
+		    echo "GMT grdtrack for stable ground yielded no result for ${grid_input_PATH}/${grid_file}. Skipping"
+		fi
 	    fi
 	    
 	    if [ ! -z ${ref_point_grid_val+x} ]; then

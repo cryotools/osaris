@@ -84,12 +84,12 @@ fi
 num_swaths=$( cat $input_file | wc -l )
 
 now_dir=$( pwd )
+rm -rf ${now_dir}/merged
 mkdir -p ${now_dir}/merged
 
-# Check for and remove old tmp files
-old_tmpfiles=$( ls $now_dir/merged/tmp_* )
-for old_tmpfile in ${old_tmpfiles[@]}; do -f rm $now_dir/merged/$old_tmpfile; done
-
+# Remove old tmp files
+rm -f merged/tmp_*
+#for old_tmpfile in ${old_tmpfiles[@]}; do rm -f $now_dir/merged/$old_tmpfile; done
 
 
 if [ $num_swaths -gt 1 ]; then
@@ -103,15 +103,15 @@ if [ $num_swaths -gt 1 ]; then
 	prm2=$( echo $line | awk -F: '{print $3}' )
 
 	cd $pth
-	rshift=$( grep rshift $prm2 | tail -1 | awk '{print $3}' )
+	# rshift=$( grep rshift $prm2 | tail -1 | awk '{print $3}' )
 	fs1=$( grep first_sample $prm | awk '{print $3}' )
 	fs2=$( grep first_sample $prm2 | awk '{print $3}' )
 
-	cp $prm tmp.PRM
-	if [ $fs2 > $fs1 ]; then
-	    update_PRM tmp.PRM first_sample $fs2
+	cp $prm2 tmp.PRM
+	if [ $fs1 > $fs2 ]; then
+	    update_PRM tmp.PRM first_sample $fs1
 	fi
-	update_PRM tmp.PRM rshift $rshift
+	# update_PRM tmp.PRM rshift $rshift
 
 
 	cd $now_dir/merged
@@ -131,10 +131,12 @@ if [ $num_swaths -gt 1 ]; then
 
 
     pth=$( awk -F: 'NR==1 {print $1}' $input_file )
-    stem=$( awk -F: 'NR==1 {print $2}' $input_file | awk -F"." '{print $1}' )
+    #stem=$( awk -F: 'NR==1 {print $2}' $input_file | awk -F"." '{print $1}' )
+    stem=$( awk -F: 'NR==1 {print $3}' $input_file | awk -F"." '{print $1}' )
     #echo $pth $stem
 
     cd ${now_dir}/merged
+
     echo; echo "Merging files"
     merge_swath tmp_phaselist phasefilt.grd $stem
     merge_swath tmp_raw_phaselist phase.grd
@@ -149,10 +151,10 @@ if [ $num_swaths -gt 1 ]; then
     fi
     echo "Merging finished"; echo
 
-    if [ ! -f trans.dat ]; then
-	led=$( grep led_file ../${pth::-1}/$stem".PRM" | awk '{print $3}' )
-	cp "$pth$led" .
-    fi
+    # if [ ! -f trans.dat ]; then
+    # 	led=$( grep led_file ../${pth::-1}/$stem".PRM" | awk '{print $3}' )
+    # 	cp "$pth$led" .
+    # fi
 else
     # Only one swath. Prepare files directly
     pth=$( awk -F: 'NR==1{print $1}' $input_file )
@@ -175,26 +177,51 @@ else
 fi
 
 cd ${now_dir}/merged
+
+# echo
+# echo "Current directory: $( pwd )"
+# echo "Copy path: ../${pth::-1}/${stem}.LED"
+# echo
+
 cp ../${pth::-1}/${stem}.PRM .
-cp ../${pth::-1}/${stem}.LED .
+led_file=$( awk '/led_file/{print $3}' ../${pth::-1}/${stem}.PRM )
+if [ "$debug" -ge 1 ]; then
+    echo
+    echo "PRM: ../${pth::-1}/${stem}.PRM"
+    echo "LED: ../${pth::-1}/$led_file"
+    current_dir=$( pwd )
+    echo "Current directory: $current_dir"
+    if [ -f ../${pth::-1}/$led_file ]; then
+	echo "LED file found"
+    else
+	echo "LED file not found"
+    fi
+fi
+cp ../${pth::-1}/$led_file .
+
 
 
 # This step is essential, cut the DEM so it can run faster.
 if [ ! -f trans.dat ]; then
     # led=$( grep led_file $pth$stem".PRM" | awk '{print $3}' )
     # cp $pth$led .
-    echo "Recomputing the projection LUT..."
+    echo; echo "Recomputing the projection LUT..."
     
     ln -s ../../topo/dem.grd .
     # Need to compute the geocoding matrix with supermaster.PRM with rshift  to 0
     rshift=$( grep ${stem}.PRM | tail -1 | awk '{print $3}' )
+    cp ${stem}.PRM tmp.PRM
     echo "Creating zero rshift PRM"
     update_PRM ${stem}.PRM rshift 0
+    echo "Converting DEM to xyz file"
+    gmt grd2xyz --FORMAT_FLOAT_OUT=%lf dem.grd -s > dem.xyz
     echo "Creating trans.dat from zero rshift PRM"
-    gmt grd2xyz --FORMAT_FLOAT_OUT=%lf dem.grd -s | SAT_llt2rat ${stem}.PRM 1 -bod > trans.dat
+    SAT_llt2rat ${stem}.PRM 1 -bod < dem.xyz > trans.dat
     #  rshift back for other usage
     echo "Shifting PRM back for other applications"
-    update_PRM ${stem}.PRM rshift $rshift
+    #update_PRM ${stem}.PRM rshift $rshift
+    mv ${stem}.PRM zero_rshift.PRM
+    mv tmp.PRM ${stem}.PRM
 fi
 
 
@@ -482,28 +509,28 @@ fi
 
 
 # TODO: use vars from config file
-if [ -e $bbox_file ]; then
-    lon_1=$( awk 'NR==1{ print $1 }' $bbox_file )
-    lon_2=$( awk 'NR==2{ print $1 }' $bbox_file )
-    lat_1=$( awk 'NR==1{ print $2 }' $bbox_file )
-    lat_2=$( awk 'NR==2{ print $2 }' $bbox_file )
-    if [ $( echo "$lon_1 > $lon_2" | bc -l ) -eq 1 ]; then
-	lon_max=$lon_1
-	lon_min=$lon_2
-    else
-	lon_max=$lon_2
-	lon_min=$lon_1
-    fi
-    if [ $( echo "$lat_1 > $lat_2" | bc -l ) -eq 1 ]; then
-	lat_max=$lat_1
-	lat_min=$lat_2
-    else
-	lat_max=$lat_2
-	lat_min=$lat_1
-    fi
-    
-    cut_coords=$lon_min"/"$lon_max"/"$lat_min"/"$lat_max
-fi 
+# if [ -e $bbox_file ]; then
+# lon_1=$( awk 'NR==1{ print $1 }' $bbox_file )
+# lon_2=$( awk 'NR==2{ print $1 }' $bbox_file )
+# lat_1=$( awk 'NR==1{ print $2 }' $bbox_file )
+# lat_2=$( awk 'NR==2{ print $2 }' $bbox_file )
+if [ $( echo "$lon_1 > $lon_2" | bc -l ) -eq 1 ]; then
+    lon_max=$lon_1
+    lon_min=$lon_2
+else
+    lon_max=$lon_2
+    lon_min=$lon_1
+fi
+if [ $( echo "$lat_1 > $lat_2" | bc -l ) -eq 1 ]; then
+    lat_max=$lat_1
+    lat_min=$lat_2
+else
+    lat_max=$lat_2
+    lat_min=$lat_1
+fi
+
+cut_coords=$lon_min"/"$lon_max"/"$lat_min"/"$lat_max
+#fi 
 
 
 #  Reproject the phase to lon/lat space
@@ -554,7 +581,7 @@ fi
 
 
 if [ $proc_amplit_ifg -eq 1 ]; then
-    echo; echo "Projecting display amplitude to geographic coordinates"; echo
+    echo; echo "Projecting interferogram amplitude to geographic coordinates"; echo
     proj_ra2ll.csh trans.dat display_amp.grd display_amp_ll.grd
     if [ $cut_to_aoi -eq 1 ]; then
 	gmt grdcut display_amp_ll.grd -Gdisplay_amp_ll.grd -R$cut_coords -V
@@ -683,4 +710,4 @@ echo; echo "Geocoding finished"; echo
 
 
 
-rm -f tmp_phaselist tmp_corrlist tmp_masklist *.eps *.bb
+# rm -f tmp_phaselist tmp_corrlist tmp_masklist *.eps *.bb

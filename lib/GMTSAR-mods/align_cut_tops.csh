@@ -195,9 +195,11 @@ mv $spre".SLCresamp" $spre".SLC"
 mv $spre".PRMresamp" $spre".PRM"
 #
 if ($tmp_da > -1000 && $tmp_da < 1000) then
-  fitoffset.csh 3 3 offset.dat >> $spre.PRM
+  # fitoffset.csh 3 3 offset.dat >> $spre.PRM
+  fitoffset 3 3 offset.dat $spre.PRM
 else
-  fitoffset.csh 3 3 offset2.dat >> $spre.PRM
+  # fitoffset.csh 3 3 offset2.dat >> $spre.PRM
+  fitoffset 3 3 offset2.dat $spre.PRM
 endif
 #
 #   re-extract the lED files

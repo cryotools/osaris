@@ -45,7 +45,7 @@ $OSARIS_PATH/lib/InSAR/merge-unwrap-geocode.sh \
     $config_file \
     $work_PATH/proc-params/boundary-box.xyz
 
-source $OSARIS_PATH/$gmtsar_config_file
+# source $OSARIS_PATH/$gmtsar_config_file
 
 echo; echo "Checking results and moving to files to Output directory ..."; echo
 

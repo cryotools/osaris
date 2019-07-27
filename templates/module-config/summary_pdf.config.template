@@ -26,8 +26,8 @@ activate_PP=0
 
 # Datasets to display
 
-DIRECTORY_1="$output_PATH/Amplitudes"
-LABEL_1="Amplitude"
+DIRECTORY_1="$output_PATH/Interf-amplitudes"
+LABEL_1="Interferogram amplitude"
 HIST_EQ_1=1
 CPT_1="gray"
 RANGE_1="0/0.0015/0.0001"
