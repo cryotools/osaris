@@ -103,7 +103,7 @@ if [ $num_swaths -gt 1 ]; then
 	prm2=$( echo $line | awk -F: '{print $3}' )
 
 	cd $pth
-	# rshift=$( grep rshift $prm2 | tail -1 | awk '{print $3}' )
+	rshift=$( grep rshift $prm2 | tail -1 | awk '{print $3}' )
 	fs1=$( grep first_sample $prm | awk '{print $3}' )
 	fs2=$( grep first_sample $prm2 | awk '{print $3}' )
 
@@ -111,7 +111,7 @@ if [ $num_swaths -gt 1 ]; then
 	if [ $fs1 > $fs2 ]; then
 	    update_PRM tmp.PRM first_sample $fs1
 	fi
-	# update_PRM tmp.PRM rshift $rshift
+	update_PRM tmp.PRM rshift $rshift
 
 
 	cd $now_dir/merged
@@ -131,8 +131,8 @@ if [ $num_swaths -gt 1 ]; then
 
 
     pth=$( awk -F: 'NR==1 {print $1}' $input_file )
-    #stem=$( awk -F: 'NR==1 {print $2}' $input_file | awk -F"." '{print $1}' )
-    stem=$( awk -F: 'NR==1 {print $3}' $input_file | awk -F"." '{print $1}' )
+    stem=$( awk -F: 'NR==1 {print $2}' $input_file | awk -F"." '{print $1}' )
+    # stem=$( awk -F: 'NR==1 {print $3}' $input_file | awk -F"." '{print $1}' )
     #echo $pth $stem
 
     cd ${now_dir}/merged
@@ -151,6 +151,28 @@ if [ $num_swaths -gt 1 ]; then
     fi
     echo "Merging finished"; echo
 
+
+
+    # cp ../${pth::-1}/${stem}.PRM .
+    # led_file=$( awk '/led_file/{print $3}' ../${pth::-1}/${stem}.PRM )
+    # if [ "$debug" -ge 1 ]; then
+    # 	echo
+    # 	echo "PRM: ../${pth::-1}/${stem}.PRM"
+    # 	echo "LED: ../${pth::-1}/$led_file"
+    # 	current_dir=$( pwd )
+    # 	echo "Current directory: $current_dir"
+    # 	if [ -f ../${pth::-1}/$led_file ]; then
+    # 	    echo "LED file found"
+    # 	else
+    # 	    echo "LED file not found"
+    # 	fi
+    # fi
+    # cp ../${pth::-1}/$led_file .
+
+
+
+
+
     # if [ ! -f trans.dat ]; then
     # 	led=$( grep led_file ../${pth::-1}/$stem".PRM" | awk '{print $3}' )
     # 	cp "$pth$led" .
@@ -165,9 +187,9 @@ else
     swath_path=${pth::-1}
     cd ${now_dir}/merged
     
-    if [ ! -f trans.dat ]; then
-	ln -s "${now_dir}/${swath_path::-4}/topo/trans.dat" .
-    fi
+    # if [ ! -f trans.dat ]; then
+    # 	ln -s "${now_dir}/${swath_path::-5}/topo/trans.dat" .
+    # fi
 
     
     ln -s "${now_dir}/$swath_path/mask.grd" .
@@ -222,15 +244,25 @@ fi
 cp ../${pth::-1}/$led_file .
 
 
+
 # This step is essential, cut the DEM so it can run faster.
 if [ ! -f trans.dat ]; then
-    # led=$( grep led_file $pth$stem".PRM" | awk '{print $3}' )
-    # cp $pth$led .
+    
+    # if [ -e ${now_dir}/$pth$stem".PRM" ]; then 
+    #     echo "Reading LED info from ${now_dir}/$pth$stem.PRM"
+    #     led=$( grep led_file ${now_dir}/$pth$stem".PRM" | awk '{print $3}' )
+    #     echo "LED file: ${now_dir}/$pth$led"
+    #     cp ${now_dir}/$pth$led .
+    # else
+    #     echo "No PRM file found at $pth${stem}.PRM"
+    # fi        
+
     echo; echo "Recomputing the projection LUT..."
     
     ln -s ../../topo/dem.grd .
     # Need to compute the geocoding matrix with supermaster.PRM with rshift  to 0
-    rshift=$( grep ${stem}.PRM | tail -1 | awk '{print $3}' )
+    rshift=$( grep rshift ${stem}.PRM | tail -1 | awk '{print $3}' )
+
     cp ${stem}.PRM tmp.PRM
     echo "Creating zero rshift PRM"
     update_PRM ${stem}.PRM rshift 0
@@ -244,7 +276,6 @@ if [ ! -f trans.dat ]; then
     mv ${stem}.PRM zero_rshift.PRM
     mv tmp.PRM ${stem}.PRM
 fi
-
 
 
 
@@ -357,8 +388,8 @@ fi
 
 # Unwrap interferometric phase
 
-if [ ! -z $region_cut  ]; then
-    region_cut=$( gmt grdinfo amp1.grd -I- | cut -c3-20 )
+if [ -z $region_cut  ]; then
+    region_cut=$( gmt grdinfo ${pth::-1}/amp1.grd -I- | cut -c3-20 )
 fi
 
 #if [ $( echo "$threshold_snaphu > 0" | bc -l ) -eq 1  ]; then

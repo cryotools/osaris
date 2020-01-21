@@ -141,11 +141,11 @@ if [ $proc_stage -le 2 ]; then
 
     # Align SLC images  
     cd SLC
-    cp ../raw/*.PRM ../raw/*.LED .
+    cp ../raw/*.PRM . # ../raw/*.LED .
     ln -s ../raw/$master.SLC .
     ln -s ../raw/$slave.SLC .
-    # ln -s ../raw/$master.LED . 
-    # ln -s ../raw/$slave.LED .
+    ln -s ../raw/$master.LED . 
+    ln -s ../raw/$slave.LED .
     
     # cp $slave.PRM $slave.PRM0
     # resamp $master.PRM $slave.PRM $slave.PRMresamp $slave.SLCresamp 1
